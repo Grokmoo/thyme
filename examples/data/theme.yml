@@ -1,0 +1,64 @@
+fonts:
+  medium:
+    source: roboto
+    size: 20
+  small:
+    source: roboto
+    size: 16
+image_sets:
+  gui:
+    source: gui
+    images:
+      window_bg:
+        position: [0, 0]
+        grid_size: [32, 32]
+      button_normal:
+        position: [96, 0]
+        grid_size: [32, 12]
+      button_hover:
+        position: [96, 36]
+        grid_size: [32, 12]
+      button_pressed:
+        position: [96, 72]
+        grid_size: [32, 12]
+      button_disabled:
+        position: [96, 108]
+        grid_size: [32, 12]
+      button_active:
+        position: [96, 144]
+        grid_size: [32, 12]
+      button:
+        states:
+          Normal: button_normal
+          Hover: button_hover
+          Pressed: button_pressed
+          Disabled: button_disabled
+          Active: button_active
+          Active + Hover: button_active
+          Active + Pressed: button_pressed
+widgets:
+  root: {}
+  label:
+    font: small
+    border: { left: 5, right: 5 }
+    text_align: Center
+    height_from: FontLine
+  button:
+    font: small
+    wants_mouse: true
+    background: gui/button
+    text_align: Center
+    size: [150, 24]
+    border: [5, 5, 5, 5]
+  window:
+    background: gui/window_bg
+    wants_mouse: true
+    layout: Vertical
+    layout_spacing: [5, 5]
+    border: { top: 5, bot: 5, right: 5, left: 5 }
+    child_align: Center
+    children:
+      title:
+        from: label
+        font: medium
+        align: Top

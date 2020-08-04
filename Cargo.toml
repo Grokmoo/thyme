@@ -2,6 +2,10 @@
 name = "thyme"
 version = "0.1.0"
 authors = ["Jared Stephen <grok_moo@yahoo.com>"]
+description = "Thyme GUI"
+homepage = "https://github.com/Grokmoo/Grokmoo"
+repository = "https://github.com/Grokmoo/Grokmoo"
+license = "Apache-2.0"
 edition = "2018"
 
 [dependencies]
@@ -11,3 +15,6 @@ glium = "0.27"
 winit = "0.22"
 serde = { version = "1.0", features = [ "derive" ] }
 rusttype = { version = "0.9" }
+
+[dev-dependencies]
+serde_yaml = "0.8"
