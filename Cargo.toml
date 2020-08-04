@@ -1,0 +1,13 @@
+[package]
+name = "thyme"
+version = "0.1.0"
+authors = ["Jared Stephen <grok_moo@yahoo.com>"]
+edition = "2018"
+
+[dependencies]
+log = { version = "0.4" }
+image = { version = "0.23", default_features = false, features = [ "png" ] }
+glium = "0.27"
+winit = "0.22"
+serde = "1.0"
+rusttype = { version = "0.9" }
