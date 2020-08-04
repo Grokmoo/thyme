@@ -1,10 +1,13 @@
 [package]
 name = "thyme"
-version = "0.1.0"
+version = "0.0.1"
 authors = ["Jared Stephen <grok_moo@yahoo.com>"]
 description = "Thyme GUI"
 homepage = "https://github.com/Grokmoo/Grokmoo"
 repository = "https://github.com/Grokmoo/Grokmoo"
+readme = "README.md"
+keywords = ["gamedev", "graphics", "gui"]
+categories = ["game-development", "gui", "rendering"]
 license = "Apache-2.0"
 edition = "2018"
 
