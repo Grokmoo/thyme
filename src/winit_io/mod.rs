@@ -6,6 +6,10 @@ pub struct WinitIo {}
 
 impl IO for WinitIo {}
 
+impl Default for WinitIo {
+    fn default() -> Self { WinitIo::new() }
+}
+
 impl WinitIo {
     pub fn new() -> WinitIo {
         WinitIo {}

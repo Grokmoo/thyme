@@ -124,23 +124,22 @@ impl<'de> Visitor<'de> for AnimStateVisitor {
 
     fn visit_str<E: de::Error>(self, value: &str) -> Result<Self::Value, E> {
         let mut keys = [AnimStateKey::Normal; 4];
-        let mut key_index = 0;
         let mut normal_found = false;
 
-        for key_id in value.split('+') {
+        for (key_index, key_id) in value.split('+').enumerate() {
             if key_index >= keys.len() {
                 return Err(E::custom(format!("Only a maximum of {} AnimStateKeys are allowed", keys.len())));
             }
 
             if normal_found {
-                return Err(E::custom(format!("Normal may only be specified as the sole AnimStateKey")));
+                return Err(E::custom("Normal may only be specified as the sole AnimStateKey"));
             }
 
             let key_id = key_id.trim();
             match key_id {
                 "Normal" => {
                     if key_index != 0 {
-                        return Err(E::custom(format!("Normal may only be specified as the sole AnimStateKey")));
+                        return Err(E::custom("Normal may only be specified as the sole AnimStateKey"));
                     }
                     normal_found = true;
                 },
@@ -160,8 +159,6 @@ impl<'de> Visitor<'de> for AnimStateVisitor {
                     return Err(E::custom(format!("Unable to parse AnimStateKey from {}", key_id)));
                 }
             }
-
-            key_index += 1;
         }
 
         keys.sort();
@@ -171,8 +168,8 @@ impl<'de> Visitor<'de> for AnimStateVisitor {
 }
 
 fn add_if_not_already_present<E: de::Error>(keys: &mut [AnimStateKey; 4], max_index: usize, key: AnimStateKey) -> Result<(), E> {
-    for i in 0..max_index {
-        if keys[i] == key {
+    for other in keys.iter().copied().take(max_index) {
+        if other == key {
             return Err(E::custom(format!("Duplicate AnimStateKey {:?}", key)));
         }
     }

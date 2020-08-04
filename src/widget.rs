@@ -270,7 +270,7 @@ fn pos(parent: &Widget, pos: Point, self_size: Point, align: Align) -> Point {
         },
     };
 
-    let pos = pos - match align {
+    pos - match align {
         Align::Left => Point { x: 0.0, y: self_size.y / 2.0 },
         Align::Right => Point { x: self_size.x, y: self_size.y / 2.0 },
         Align::Bot => Point { x: self_size.x / 2.0, y: self_size.y },
@@ -280,9 +280,7 @@ fn pos(parent: &Widget, pos: Point, self_size: Point, align: Align) -> Point {
         Align::BotRight => Point { x: self_size.x, y: self_size.y },
         Align::TopLeft => Point { x: 0.0, y: 0.0 },
         Align::TopRight => Point { x: self_size.x, y: 0.0 },
-    };
-
-    pos
+    }
 }
 
 pub struct WidgetBuilder<'a> {

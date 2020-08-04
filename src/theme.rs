@@ -77,7 +77,7 @@ impl ThemeSet {
         let mut themes = Vec::new();
         let mut handle_index = 0;
         for (theme_id, theme) in definition.widgets {
-            WidgetTheme::new(
+            WidgetTheme::create(
                 "",
                 None,
                 theme_id, 
@@ -157,7 +157,7 @@ impl ThemeSet {
     }
 
     pub fn theme(&self, id: &str) -> Option<&WidgetTheme> {
-        self.handle(id).and_then(|handle| Some(&self.themes[handle.id as usize]))
+        self.handle(id).map(|handle| &self.themes[handle.id as usize])
     }
 
     pub fn font(&self, handle: FontHandle) -> &Font {
@@ -237,7 +237,8 @@ pub struct WidgetTheme {
 }
 
 impl WidgetTheme {
-    fn new(
+    #[allow(clippy::too_many_arguments)]
+    fn create(
         parent_id: &str,
         parent_handle: Option<WidgetThemeHandle>,
         id: String,
@@ -248,14 +249,14 @@ impl WidgetTheme {
         images: &HashMap<String, Image>,
         fonts: &HashMap<String, FontSummary>,
     ) -> Result<WidgetThemeHandle, Error> {
-        if id.contains("/") {
+        if id.contains('/') {
             return Err(
                 Error::Theme(format!("'{}' theme name invalid.  the '/' character is not allowed", id))
             );
         }
 
         // handle top level as a special case
-        let parent_id = if parent_id.len() == 0 {
+        let parent_id = if parent_id.is_empty() {
             id.to_string()
         } else {
             format!("{}/{}", parent_id, id)
@@ -318,7 +319,7 @@ impl WidgetTheme {
 
         let mut children = Vec::new();
         for (child_id, child_def) in def.children {
-            let child = WidgetTheme::new(
+            let child = WidgetTheme::create(
                 &parent_id,
                 Some(handle),
                 child_id,
@@ -357,7 +358,7 @@ fn merge_from(
     to.from = from.from;
 
     if to.wants_mouse.is_none() { to.wants_mouse = from.wants_mouse; }
-    if to.font.is_none() { to.font = from.font.clone(); }
+    if to.font.is_none() { to.font = from.font; }
     if to.background.is_none() { to.background = from.background.clone(); }
     if to.foreground.is_none() { to.foreground = from.foreground.clone(); }
     if to.text_align.is_none() { to.text_align = from.text_align; }
@@ -655,6 +656,7 @@ impl Image {
             ImageDefinitionKind::Composed { grid_size, position} => {
                 let mut tex_coords = [[TexCoord::default(); 4]; 4];
                 for y in 0..4 {
+                    #[allow(clippy::needless_range_loop)]
                     for x in 0..4 {
                         let x_val = position[0] + x as u32 * grid_size[0];
                         let y_val = position[1] + y as u32 * grid_size[1];
