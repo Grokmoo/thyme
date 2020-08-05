@@ -25,6 +25,7 @@ pub struct WidgetThemeDefinition {
 
     // all fields are options instead of using default so
     // we can detect when to override them
+    pub text_color: Option<Color>,
     pub wants_mouse: Option<bool>,
     pub text_align: Option<Align>,
     pub pos: Option<Point>,
@@ -50,6 +51,9 @@ pub struct ImageSet {
 
 #[derive(Serialize, Deserialize)]
 pub struct ImageDefinition {
+    #[serde(default)]
+    pub color: Color,
+
     #[serde(flatten)]
     pub kind: ImageDefinitionKind,
 }
@@ -276,4 +280,98 @@ pub enum HeightRelative {
 
 impl Default for HeightRelative {
     fn default() -> Self { HeightRelative::Normal }
+}
+
+#[derive(Serialize, Copy, Clone, Debug)]
+pub struct Color {
+    pub r: f32,
+    pub g: f32,
+    pub b: f32,
+}
+
+impl Color {
+    pub fn white() -> Self { Color { r: 1.0, g: 1.0, b: 1.0 }}
+    pub fn black() -> Self { Color { r: 0.0, g: 0.0, b: 0.0 }}
+    pub fn red() -> Self { Color { r: 1.0, g: 0.0, b: 0.0 }}
+    pub fn green() -> Self { Color { r: 0.0, g: 1.0, b: 1.0 }}
+    pub fn blue() -> Self { Color { r: 0.0, g: 0.0, b: 1.0 }}
+    pub fn cyan() -> Self { Color { r: 0.0, g: 1.0, b: 1.0 }}
+    pub fn yellow() -> Self { Color { r: 1.0, g: 1.0, b: 0.0 }}
+    pub fn magenta() -> Self { Color { r: 1.0, g: 1.0, b: 1.0 }}
+}
+
+impl Default for Color {
+    fn default() -> Self {
+        Color { r: 1.0, g: 1.0, b: 1.0 }
+    }
+}
+
+impl Into<[f32; 3]> for Color {
+    fn into(self) -> [f32; 3] {
+        [self.r, self.g, self.b]
+    }
+}
+
+struct ColorVisitor;
+
+impl<'de> Visitor<'de> for ColorVisitor {
+    type Value = Color;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("A valid color name or # followed by a 6 character \
+            (2 digits per color) or 3 character (1 digit per color) hex string")
+    }
+
+    fn visit_str<E: de::Error>(self, value: &str) -> Result<Self::Value, E> {
+        if value.starts_with('#') {
+            let count = value.chars().count();
+            if value.len() != count {
+                // non single byte characters which cannot be parsed
+                return Err(E::custom(format!("{} is not a valid 3 or 6 character hex code", value)));
+            }
+            match count {
+                4 => {
+                    let r = hex_str_to_color_component(&value[1..2])? / 16.0;
+                    let g = hex_str_to_color_component(&value[2..3])? / 16.0;
+                    let b = hex_str_to_color_component(&value[3..4])? / 16.0;
+                    Ok(Color { r, g, b })
+                },
+                7 => {
+                    let r = hex_str_to_color_component(&value[1..3])? / 255.0;
+                    let g = hex_str_to_color_component(&value[3..5])? / 255.0;
+                    let b = hex_str_to_color_component(&value[5..7])? / 255.0;
+                    Ok(Color { r, g, b })
+                },
+                _ => Err(E::custom(format!("{} is not a valid 3 or 6 character hex code", value)))
+            }
+        } else {
+            Ok(match value {
+                "white" => Color::white(),
+                "black" => Color::black(),
+                "red" => Color::red(),
+                "green" => Color::green(),
+                "blue" => Color::blue(),
+                "cyan" => Color::cyan(),
+                "yellow" => Color::yellow(),
+                "magenta" => Color::magenta(),
+                _ => {
+                    return Err(E::custom(format!("Unable to parse color from {}.  Hex codes must start with #", value)));
+                }
+            })
+        }
+    }
+}
+
+fn hex_str_to_color_component<E: de::Error>(input: &str) -> Result<f32, E> {
+    let c = u8::from_str_radix(input, 16).map_err(|_| {
+        E::custom(format!("Unable to parse color component from {}", input))
+    })?;
+
+    Ok(c as f32)
+}
+
+impl<'de> Deserialize<'de> for Color {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Color, D::Error> {
+        deserializer.deserialize_str(ColorVisitor)
+    }
 }

@@ -10,7 +10,7 @@ mod theme;
 pub use theme::{ThemeSet, Image, FontChar, Font, FontSummary};
 
 mod theme_definition;
-pub use theme_definition::{ThemeDefinition, AnimStateKey, AnimState, Align, Layout, WidthRelative, HeightRelative};
+pub use theme_definition::{ThemeDefinition, AnimStateKey, AnimState, Align, Color, Layout, WidthRelative, HeightRelative};
 
 mod point;
 pub use point::{Point, Rect, Border};

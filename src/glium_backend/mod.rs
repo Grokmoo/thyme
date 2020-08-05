@@ -276,7 +276,7 @@ impl<'a> FontTextureWriter<'a> {
         }
     }
 }
-implement_vertex!(Vertex, position, tex_coords);
+implement_vertex!(Vertex, position, tex_coords, color);
 
 struct GliumFont {
     texture: Texture2d,
@@ -359,13 +359,16 @@ const VERTEX_SHADER_SRC: &str = r#"
 
   in vec2 position;
   in vec2 tex_coords;
+  in vec3 color;
 
   out vec2 v_tex_coords;
+  out vec3 v_color;
 
   uniform mat4 matrix;
 
   void main() {
     v_tex_coords = tex_coords;
+    v_color = color;
     gl_Position = matrix * vec4(position, 0.0, 1.0);
   }
 "#;
@@ -374,13 +377,14 @@ const FRAGMENT_SHADER_SRC: &str = r#"
   #version 140
 
   in vec2 v_tex_coords;
+  in vec3 v_color;
 
   out vec4 color;
 
   uniform sampler2D tex;
 
   void main() {
-    color = texture(tex, v_tex_coords);
+    color = vec4(v_color, 1.0) * texture(tex, v_tex_coords);
   }
 "#;
 
@@ -388,12 +392,13 @@ const FONT_FRAGMENT_SHADER_SRC: &str = r#"
     #version 140
 
     in vec2 v_tex_coords;
+    in vec3 v_color;
 
     out vec4 color;
 
     uniform sampler2D tex;
     
     void main() {
-        color = vec4(1.0, 1.0, 1.0, texture(tex, v_tex_coords).r);
+        color = vec4(v_color, texture(tex, v_tex_coords).r);
     }
 "#;

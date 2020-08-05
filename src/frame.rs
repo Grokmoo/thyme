@@ -1,5 +1,5 @@
 use crate::{
-    Align, AnimState, AnimStateKey, Context, Font, FontHandle,
+    Align, AnimState, AnimStateKey, Color, Context, Font, FontHandle,
     Image, Rect, Point, TextureHandle, ThemeSet, Widget
 };
 
@@ -123,6 +123,7 @@ fn render_recursive(
             render_text(
                 themes.font(font_summary.handle),
                 widget.text_align(),
+                widget.text_color(),
                 fg_size,
                 draw_data,
                 cur_draw,
@@ -133,9 +134,11 @@ fn render_recursive(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn render_text(
     font: &Font,
     align: Align,
+    color: Color,
     area_size: Point,
     draw_data: &mut DrawData,
     cur_draw: &mut Option<DrawList>,
@@ -161,6 +164,7 @@ fn render_text(
         pos.into(),
         text,
         align,
+        color,
     )
 }
 
@@ -202,6 +206,7 @@ fn render_if_present(
 pub struct Vertex {
     pub position: [f32; 2],
     pub tex_coords: [f32; 2],
+    pub color: [f32; 3],
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]
@@ -241,11 +246,13 @@ impl DrawList {
         self.vertices.push(Vertex {
             position: [ul.position[0], lr.position[1]],
             tex_coords: [ul.tex_coords[0], lr.tex_coords[1]],
+            color: ul.color,
         });
         self.vertices.push(lr);
         self.vertices.push(Vertex {
             position: [lr.position[0], ul.position[1]],
             tex_coords: [lr.tex_coords[0], ul.tex_coords[1]],
+            color: lr.color,
         });
     }
 }

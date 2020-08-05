@@ -4,7 +4,7 @@ use crate::theme_definition::{
     ThemeDefinition, ImageDefinition, ImageDefinitionKind, WidgetThemeDefinition, AnimState,
 };
 use crate::{
-    Error, TextureData, TextureHandle, FontHandle, FontSource, TexCoord, DrawList,
+    Color, Error, TextureData, TextureHandle, FontHandle, FontSource, TexCoord, DrawList,
     Vertex, Point, Border, Align, Layout, WidthRelative, HeightRelative, Renderer,
 };
 
@@ -216,6 +216,7 @@ pub struct WidgetTheme {
     pub handle: WidgetThemeHandle,
 
     pub text: Option<String>,
+    pub text_color: Option<Color>,
     pub font: Option<FontSummary>,
     pub background: Option<String>,
     pub foreground: Option<String>,
@@ -298,6 +299,7 @@ impl WidgetTheme {
             id,
             full_id: parent_id.to_string(),
             text: def.text,
+            text_color: def.text_color,
             font,
             background,
             foreground,
@@ -508,7 +510,15 @@ impl Font {
 
     pub fn handle(&self) -> FontHandle { self.handle }
 
-    pub fn draw(&self, draw_list: &mut DrawList, area_size: Point, pos: [f32; 2], text: &str, align: Align) {
+    pub fn draw(
+        &self,
+        draw_list: &mut DrawList,
+        area_size: Point,
+        pos: [f32; 2],
+        text: &str,
+        align: Align,
+        color: Color,
+    ) {
         let mut y_pos = pos[1];
         let mut x_pos = pos[0];
         let mut width = 0.0;
@@ -543,10 +553,12 @@ impl Font {
                 Vertex {
                     position: [x_pos, y_pos + font_char.y_offset + self.ascent],
                     tex_coords: font_char.tex_coords[0].into(),
+                    color: color.into()
                 }, Vertex {
                     position: [x_pos + font_char.size.x, y_pos + font_char.size.y + font_char.y_offset + self.ascent],
                     tex_coords: font_char.tex_coords[1].into(),
-                }
+                    color: color.into()
+                },
             );
 
             x_pos += font_char.x_advance;
@@ -622,6 +634,7 @@ enum ImageKind {
 #[derive(Clone)]
 pub struct Image {
     texture: TextureHandle,
+    color: Color,
     kind: ImageKind
 }
 
@@ -685,6 +698,7 @@ impl Image {
         };
 
         Ok(Image {
+            color: def.color,
             texture: texture.handle,
             kind
         })
@@ -717,10 +731,12 @@ impl Image {
             Vertex {
                 position: [pos[0], pos[1]],
                 tex_coords: tex[0].into(),
+                color: self.color.into(),
             },
             Vertex {
                 position: [pos[0] + size[0], pos[1] + size[1]],
                 tex_coords: tex[1].into(),
+                color: self.color.into(),
             }
         );
     }
@@ -737,10 +753,12 @@ impl Image {
             Vertex {
                 position: pos,
                 tex_coords: tex[0][0].into(),
+                color: self.color.into(),
             },
             Vertex {
                 position: [pos[0] + grid_size[0], pos[1] + grid_size[1]],
                 tex_coords: tex[1][1].into(),
+                color: self.color.into(),
             },
         );
 
@@ -749,10 +767,12 @@ impl Image {
                 Vertex {
                     position: [pos[0] + grid_size[0], pos[1]],
                     tex_coords: tex[1][0].into(),
+                    color: self.color.into(),
                 },
                 Vertex {
                     position: [pos[0] + size[0] - grid_size[0], pos[1] + grid_size[1]],
                     tex_coords: tex[2][1].into(),
+                    color: self.color.into(),
                 }
             );
         }
@@ -761,10 +781,12 @@ impl Image {
             Vertex {
                 position: [pos[0] + size[0] - grid_size[0], pos[1]],
                 tex_coords: tex[2][0].into(),
+                color: self.color.into(),
             },
             Vertex {
                 position: [pos[0] + size[0], pos[1] + grid_size[1]],
                 tex_coords: tex[3][1].into(),
+                color: self.color.into(),
             },
         );
 
@@ -773,10 +795,12 @@ impl Image {
                 Vertex {
                     position: [pos[0], pos[1] + grid_size[1]],
                     tex_coords: tex[0][1].into(),
+                    color: self.color.into(),
                 },
                 Vertex {
                     position: [pos[0] + grid_size[0], pos[1] + size[1] - grid_size[1]],
                     tex_coords: tex[1][2].into(),
+                    color: self.color.into(),
                 },
             );
 
@@ -785,10 +809,12 @@ impl Image {
                     Vertex {
                         position: [pos[0] + grid_size[0], pos[1] + grid_size[1]],
                         tex_coords: tex[1][1].into(),
+                        color: self.color.into(),
                     },
                     Vertex {
                         position: [pos[0] + size[0] - grid_size[0], pos[1] + size[1] - grid_size[1]],
                         tex_coords: tex[2][2].into(),
+                        color: self.color.into(),
                     },
                 );
             }
@@ -797,10 +823,12 @@ impl Image {
                 Vertex {
                     position: [pos[0] + size[0] - grid_size[0], pos[1] + grid_size[1]],
                     tex_coords: tex[2][1].into(),
+                    color: self.color.into(),
                 },
                 Vertex {
                     position: [pos[0] + size[0], pos[1] + size[1] - grid_size[1]],
                     tex_coords: tex[3][2].into(),
+                    color: self.color.into(),
                 }
             );
         }
@@ -809,10 +837,12 @@ impl Image {
             Vertex {
                 position: [pos[0], pos[1] + size[1] - grid_size[1]],
                 tex_coords: tex[0][2].into(),
+                color: self.color.into(),
             },
             Vertex {
                 position: [pos[0] + grid_size[0], pos[1] + size[1]],
                 tex_coords: tex[1][3].into(),
+                color: self.color.into(),
             }
         );
 
@@ -821,10 +851,12 @@ impl Image {
                 Vertex {
                     position: [pos[0] + grid_size[0], pos[1] + size[1] - grid_size[1]],
                     tex_coords: tex[1][2].into(),
+                    color: self.color.into(),
                 },
                 Vertex {
                     position: [pos[0] + size[0] - grid_size[0], pos[1] + size[1]],
                     tex_coords: tex[2][3].into(),
+                    color: self.color.into(),
                 }
             );
         }
@@ -833,10 +865,12 @@ impl Image {
             Vertex {
                 position: [pos[0] + size[0] - grid_size[0], pos[1] + size[1] - grid_size[1]],
                 tex_coords: tex[2][2].into(),
+                color: self.color.into(),
             },
             Vertex {
                 position: [pos[0] + size[0], pos[1] + size[1]],
                 tex_coords: tex[3][3].into(),
+                color: self.color.into(),
             }
         );
     }

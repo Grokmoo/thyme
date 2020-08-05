@@ -1,7 +1,7 @@
 use glium::glutin::{self, event::{Event, WindowEvent}, event_loop::{ControlFlow, EventLoop}, window::WindowBuilder};
 use glium::{Display, Surface};
 
-use thyme::{Frame, Widget, Align};
+use thyme::{Color, Frame, Widget, Align};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // load assets
@@ -66,7 +66,11 @@ fn build_ui(ui: &mut Frame, root: &mut Widget) {
     .children(|parent| {
         parent.label(ui, "title", "Window Title");
         parent.gap(20.0);
-        parent.label(ui, "label", "This is some smaller text.");
+
+        parent.start(ui, "label")
+        .text("This is some smaller text")
+        .text_color(Color::cyan())
+        .finish(ui);
 
         if parent.button(ui, "button", "Toggle").clicked {
            ui.toggle_open("window2");

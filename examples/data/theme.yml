@@ -62,3 +62,4 @@ widgets:
       title:
         from: label
         font: medium
+        text_color: "#F0F"

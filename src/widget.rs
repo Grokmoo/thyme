@@ -1,4 +1,4 @@
-use crate::{AnimState, AnimStateKey, FontSummary, Frame, Point, Border, Align, Layout, WidthRelative, HeightRelative};
+use crate::{AnimState, AnimStateKey, Color, FontSummary, Frame, Point, Border, Align, Layout, WidthRelative, HeightRelative};
 use crate::theme::{WidgetThemeHandle, WidgetTheme};
 
 pub struct Widget {
@@ -8,6 +8,7 @@ pub struct Widget {
     theme_id: String,
     theme: WidgetThemeHandle,
     text: Option<String>,
+    text_color: Color,
     wants_mouse: bool,
     text_align: Align,
     font: Option<FontSummary>,
@@ -36,6 +37,7 @@ impl Widget {
             theme,
             text: None,
             text_align: Align::default(),
+            text_color: Color::default(),
             font: None,
             background: None,
             foreground: None,
@@ -74,6 +76,7 @@ impl Widget {
         Widget {
             theme_id: theme.full_id.to_string(),
             text: theme.text.clone(),
+            text_color: theme.text_color.unwrap_or_default(),
             text_align: theme.text_align.unwrap_or_default(),
             wants_mouse: theme.wants_mouse.unwrap_or_default(),
             font,
@@ -99,6 +102,7 @@ impl Widget {
     }
 
     pub fn children(&self) -> impl Iterator<Item=&Widget> { self.children.iter() }
+    pub fn text_color(&self) -> Color { self.text_color }
     pub fn text_align(&self) -> Align { self.text_align }
     pub fn text(&self) -> Option<&str> { self.text.as_deref() }
     pub fn font(&self) -> Option<FontSummary> { self.font }
@@ -318,6 +322,12 @@ impl<'a> WidgetBuilder<'a> {
     #[must_use]
     pub fn id<T: Into<String>>(mut self, id: T) -> WidgetBuilder<'a> {
         self.widget.id = Some(id.into());
+        self
+    }
+
+    #[must_use]
+    pub fn text_color(mut self, color: Color) -> WidgetBuilder<'a> {
+        self.widget.text_color = color;
         self
     }
 
