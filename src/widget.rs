@@ -222,7 +222,8 @@ fn size(
     let y = match height_from {
         HeightRelative::Normal => size.y,
         HeightRelative::Parent => size.y + parent.size.y - parent.border.vertical(),
-        HeightRelative::FontLine => size.y + font.map_or(0.0, |sum| sum.line_height) + border.vertical(),
+        HeightRelative::FontLine => size.y + font.map_or(0.0,
+            |sum| sum.line_height) + border.vertical(),
     };
     Point { x, y }
 }
@@ -512,11 +513,11 @@ impl<'a> WidgetBuilder<'a> {
         if !self.manual_pos {
             use Align::*;
             let (x, y) = match self.parent.child_align {
-                Left => (size.x, size.y),
-                Right => (-size.x, size.y),
-                Bot => (size.x, -size.y),
-                Top => (size.x, size.y),
-                Center => (size.x, size.y),
+                Left => (size.x, 0.0),
+                Right => (-size.x, 0.0),
+                Bot => (0.0, -size.y),
+                Top => (0.0, size.y),
+                Center => (0.0, 0.0),
                 BotLeft => (size.x, -size.y),
                 BotRight => (-size.x, -size.y),
                 TopLeft => (size.x, size.y),

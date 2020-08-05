@@ -51,14 +51,14 @@ widgets:
     size: [150, 24]
     border: [5, 5, 5, 5]
   window:
+    font: small
     background: gui/window_bg
     wants_mouse: true
     layout: Vertical
     layout_spacing: [5, 5]
     border: { top: 5, bot: 5, right: 5, left: 5 }
-    child_align: Center
+    child_align: Top
     children:
       title:
         from: label
         font: medium
-        align: Top

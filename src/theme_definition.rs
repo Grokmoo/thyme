@@ -255,7 +255,7 @@ pub struct FontDefinition {
     pub size: f32,
 }
 
-#[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub enum WidthRelative {
     Normal,
@@ -266,7 +266,7 @@ impl Default for WidthRelative {
     fn default() -> Self { WidthRelative::Normal }
 }
 
-#[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub enum HeightRelative {
     Normal,

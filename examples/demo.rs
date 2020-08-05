@@ -65,10 +65,11 @@ fn build_ui(ui: &mut Frame, root: &mut Widget) {
     .align(Align::Center)
     .children(|parent| {
         parent.label(ui, "title", "Window Title");
+        parent.gap(20.0);
         parent.label(ui, "label", "This is some smaller text.");
 
         if parent.button(ui, "button", "Toggle").clicked {
-            ui.toggle_open("window2");
+           ui.toggle_open("window2");
         }
     })
     .finish(ui);
