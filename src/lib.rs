@@ -1,7 +1,9 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap};
+use std::rc::Rc;
+use std::cell::RefCell;
 
 mod frame;
-pub use frame::{Frame, Vertex, DrawMode, DrawList, DrawData};
+pub use frame::{Frame};
 
 mod glium_backend;
 pub use glium_backend::GliumRenderer;
@@ -15,8 +17,13 @@ pub use theme_definition::{ThemeDefinition, AnimStateKey, AnimState, Align, Colo
 mod point;
 pub use point::{Point, Rect, Border};
 
+mod recipes;
+
+mod render;
+pub use render::{Vertex, DrawMode, DrawList, DrawData};
+
 mod widget;
-pub use widget::{Widget, WidgetBuilder};
+pub use widget::{Widget, WidgetBuilder, WidgetState};
 
 mod winit_io;
 pub use winit_io::WinitIo;
@@ -90,80 +97,129 @@ impl<'a, R: Renderer, I: IO> Builder<'a, R, I> {
         let textures = self.textures;
         let fonts = self.font_sources;
         let themes = ThemeSet::new(self.theme_def, textures, fonts, self.renderer)?;
-        Ok(Context {
-            display_size,
-            themes,
-            opened: HashSet::new(),
-            mouse_pos: Point::default(),
-            mouse_pressed: [false; 3],
-            mouse_clicked: [false; 3],
-            mouse_taken_last_frame: false,
-            mouse_pressed_outside: [false; 3],
-        })
+        Ok(Context::new(themes, display_size))
     }
 }
 
-pub struct Context {
+#[derive(Copy, Clone)]
+pub struct PersistentState {
+    pub is_open: bool,
+    pub resize: Point,
+    pub moved: Point,
+}
+
+impl Default for PersistentState {
+    fn default() -> Self {
+        PersistentState {
+            is_open: true,
+            resize: Point::default(),
+            moved: Point::default(),
+        }
+    }
+}
+
+pub(crate) struct ContextInternal {
     themes: ThemeSet,
-    mouse_taken_last_frame: bool,
+    mouse_taken_last_frame: Option<String>,
 
     mouse_pressed_outside: [bool; 3],
 
-    opened: HashSet<String>,
+    persistent_state: HashMap<String, PersistentState>,
 
+    last_mouse_pos: Point,
     mouse_pos: Point,
     mouse_pressed: [bool; 3],
     mouse_clicked: [bool; 3],
     display_size: Point,
 }
 
-impl Context {
+impl ContextInternal {
+    fn state(&self, id: &str) -> PersistentState {
+        self.persistent_state.get(id).copied().unwrap_or_default()
+    }
+
+    fn state_mut<T: Into<String>>(&mut self, id: T) -> &mut PersistentState {
+        self.persistent_state.entry(id.into()).or_default()
+    }
+
     fn mouse_pressed_outside(&self) -> bool {
         for pressed in self.mouse_pressed_outside.iter() {
             if *pressed { return true; }
         }
         false
     }
+}
+
+pub struct Context {
+    internal: Rc<RefCell<ContextInternal>>,
+}
+
+impl Context {
+    fn new(themes: ThemeSet, display_size: Point) -> Context {
+        let internal = ContextInternal {
+            display_size,
+            themes,
+            persistent_state: HashMap::new(),
+            mouse_pos: Point::default(),
+            last_mouse_pos: Point::default(),
+            mouse_pressed: [false; 3],
+            mouse_clicked: [false; 3],
+            mouse_taken_last_frame: None,
+            mouse_pressed_outside: [false; 3],
+        };
+
+        Context {
+            internal: Rc::new(RefCell::new(internal))
+        }
+    }
+
+    pub fn wants_mouse(&self) -> bool {
+        let internal = self.internal.borrow();
+        internal.mouse_taken_last_frame.is_some()
+    }
 
     pub(crate) fn set_display_size(&mut self, size: Point) {
-        self.display_size = size;
+        let mut internal = self.internal.borrow_mut();
+        internal.display_size = size;
     }
 
     pub(crate) fn set_mouse_pressed(&mut self, pressed: bool, index: usize) {
-        if index >= self.mouse_pressed.len() {
+        let mut internal = self.internal.borrow_mut();
+
+        if index >= internal.mouse_pressed.len() {
             return;
         }
 
         // don't take a mouse press that started outside the GUI elements
-        if pressed && !self.mouse_taken_last_frame {
-            self.mouse_pressed_outside[index] = true;
+        if pressed && internal.mouse_taken_last_frame.is_none() {
+            internal.mouse_pressed_outside[index] = true;
         }
 
-        if !pressed && self.mouse_pressed_outside[index] {
-            self.mouse_pressed_outside[index] = false;
+        if !pressed && internal.mouse_pressed_outside[index] {
+            internal.mouse_pressed_outside[index] = false;
         }
 
-        if self.mouse_pressed[index] && !pressed {
-            self.mouse_clicked[index] = true;
+        if internal.mouse_pressed[index] && !pressed {
+            internal.mouse_clicked[index] = true;
         }
 
-        self.mouse_pressed[index] = pressed;
+        internal.mouse_pressed[index] = pressed;
     }
 
     pub(crate) fn set_mouse_pos(&mut self, pos: Point) {
-        self.mouse_pos = pos;
+        let mut internal = self.internal.borrow_mut();
+        internal.mouse_pos = pos;
     }
 
-    pub fn wants_mouse(&self) -> bool { self.mouse_taken_last_frame }
+    pub fn create_frame(&mut self) -> Frame {
+        let (theme, display_size) = {
+            let internal = self.internal.borrow();
+            (internal.themes.handle("root").unwrap(), internal.display_size)
+        };
+        let context = Context { internal: Rc::clone(&self.internal) };
 
-    pub fn create_frame(&mut self) -> (Frame, Widget) {
-        let theme = self.themes.handle("root").unwrap();
-        let display_size = self.display_size;
-
-        let frame = Frame::new(display_size, self);
         let root = Widget::root(theme, display_size);
-
-        (frame, root)
+        Frame::new(context, root)
     }
 }
 

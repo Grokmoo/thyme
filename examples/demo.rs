@@ -1,7 +1,7 @@
 use glium::glutin::{self, event::{Event, WindowEvent}, event_loop::{ControlFlow, EventLoop}, window::WindowBuilder};
 use glium::{Display, Surface};
 
-use thyme::{Color, Frame, Widget, Align};
+use thyme::{Color, Frame, Align, Point};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // load assets
@@ -40,11 +40,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let mut target = display.draw();
             target.clear_color(0.0, 0.0, 0.0, 0.0);
 
-            let (mut frame, mut root) = context.create_frame();
+            let mut frame = context.create_frame();
 
-            build_ui(&mut frame, &mut root);
+            build_ui(&mut frame);
 
-            let draw_data = frame.render(root);
+            let draw_data = frame.render();
             renderer.draw(&mut target, &draw_data).unwrap();
 
             target.finish().unwrap();
@@ -59,31 +59,50 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// The function to build the Thyme user interface.  Called once each frame.  This
 /// example demonstrates a combination of Rust layout and styling as well as use
 /// of the theme definition file, loaded above
-fn build_ui(ui: &mut Frame, root: &mut Widget) {
-    root.start(ui, "window")
-    .size(300.0, 300.0)
-    .align(Align::Center)
-    .children(|parent| {
-        parent.label(ui, "title", "Window Title");
-        parent.gap(20.0);
+fn build_ui(ui: &mut Frame) {
+    ui.window("window", "main_window", Point::new(300.0, 300.0), |ui| {
+        ui.gap(20.0);
 
-        parent.start(ui, "label")
+        ui.start("label")
         .text("This is some smaller text")
         .text_color(Color::cyan())
-        .finish(ui);
+        .finish();
 
-        if parent.button(ui, "button", "Toggle").clicked {
-           ui.toggle_open("window2");
+        let label = if ui.is_open("window2") {
+            "Close Window"
+        } else {
+            "Open Window"
+        };
+        if ui.button("button", label).clicked {
+            ui.toggle_open("window2");
         }
-    })
-    .finish(ui);
+    });
 
-    root.start(ui, "window")
+    ui.start("window")
     .id("window2")
     .size(200.0, 200.0)
     .align(Align::Bot)
-    .children(|parent| {
-        parent.label(ui, "title", "Subwindow");
-    })
-    .finish(ui);
+    .children(|ui| {
+        let result = ui.start("titlebar")
+        .children(|ui| {
+            ui.label("title", "Window Title");
+
+            if ui.button("close", "").clicked {
+                ui.set_open("window2", false);
+            }
+        }).finish();
+
+        if result.pressed {
+            ui.modify("window2", |state| {
+                state.moved = state.moved + result.dragged;
+            });
+        }
+
+        let result = ui.button("handle", "");
+        if result.pressed {
+            ui.modify("window2", |state| {
+                state.resize = state.resize + result.dragged;
+            });
+        }
+    }).finish();
 }

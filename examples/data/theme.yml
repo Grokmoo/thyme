@@ -36,6 +36,63 @@ image_sets:
           Active: button_active
           Active + Hover: button_active
           Active + Pressed: button_pressed
+      small_button_normal:
+        position: [204, 0]
+        grid_size: [5, 5]
+      small_button_hover:
+        position: [204, 15]
+        grid_size: [5, 5]
+      small_button_pressed:
+        position: [204, 30]
+        grid_size: [5, 5]
+      small_button_disabled:
+        position: [204, 45]
+        grid_size: [5, 5]
+      small_button_active:
+        position: [204, 60]
+        grid_size: [5, 5]
+      small_button:
+        states:
+          Normal: small_button_normal
+          Hover: small_button_hover
+          Pressed: small_button_pressed
+          Disabled: small_button_disabled
+          Active: small_button_active
+          Active + Hover: small_button_active
+          Active + Pressed: small_button_pressed
+      close_icon_normal:
+        position: [219, 0]
+        size: [12, 12]
+      close_icon_pressed:
+        position: [219, 12]
+        size: [12, 12]
+      close_icon_disabled:
+        position: [219, 24]
+        size: [12, 12]
+      close_icon:
+        states:
+          Normal: close_icon_normal
+          Hover: close_icon_normal
+          Pressed: close_icon_pressed
+          Disabled: close_icon_disabled
+      window_handle_normal:
+        position: [192, 0]
+        size: [12, 12]
+      window_handle_hover:
+        position: [192, 12]
+        size: [12, 12]
+      window_handle_pressed:
+        position: [192, 24]
+        size: [12, 12]
+      window_handle_disabled:
+        position: [192, 36]
+        size: [12, 12]
+      window_handle:
+        states:
+          Normal: window_handle_normal
+          Hover: window_handle_hover
+          Pressed: window_handle_pressed
+          Disabled: window_handle_disabled
 widgets:
   root: {}
   label:
@@ -43,6 +100,10 @@ widgets:
     border: { left: 5, right: 5 }
     text_align: Center
     height_from: FontLine
+  window_handle:
+    wants_mouse: true
+    background: gui/window_handle
+    size: [12, 12]
   button:
     font: small
     wants_mouse: true
@@ -59,7 +120,24 @@ widgets:
     border: { top: 5, bot: 5, right: 5, left: 5 }
     child_align: Top
     children:
-      title:
-        from: label
-        font: medium
-        text_color: "#F0F"
+      titlebar:
+        wants_mouse: true
+        background: gui/small_button
+        size: [0, 30]
+        width_from: Parent
+        child_align: Center
+        children:
+          title:
+            from: label
+            font: medium
+          close:
+            wants_mouse: true
+            background: gui/small_button
+            foreground: gui/close_icon
+            size: [20, 20]
+            border: [4, 4, 4, 4]
+            align: TopRight
+      handle:
+        from: window_handle
+        align: BotRight
+        pos: [-1, -1]

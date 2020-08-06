@@ -1,4 +1,7 @@
-use crate::{AnimState, AnimStateKey, Color, FontSummary, Frame, Point, Border, Align, Layout, WidthRelative, HeightRelative};
+use crate::{
+    AnimState, AnimStateKey, Color, FontSummary, Frame, Point, Border,
+    Align, Layout, WidthRelative, HeightRelative, PersistentState,
+};
 use crate::theme::{WidgetThemeHandle, WidgetTheme};
 
 pub struct Widget {
@@ -18,8 +21,7 @@ pub struct Widget {
     size: Point,
     width_from: WidthRelative,
     height_from: HeightRelative,
-    children: Vec<Widget>,
-    id: Option<String>,
+    id: String,
     
     border: Border,
     layout: Layout,
@@ -28,6 +30,7 @@ pub struct Widget {
     align: Align,
     cursor: Point,
     anim_state: AnimState,
+    hidden: bool,
 }
 
 impl Widget {
@@ -54,9 +57,9 @@ impl Widget {
             size,
             width_from: WidthRelative::default(),
             height_from: HeightRelative::default(),
-            children: Vec::new(),
-            id: None,
+            id: String::new(),
             anim_state: AnimState::normal(),
+            hidden: false,
         }
     }
 
@@ -72,6 +75,12 @@ impl Widget {
         let cursor_pos = if align == parent.child_align { parent.cursor } else { Point::default() };
         let raw_pos = theme.pos.unwrap_or(cursor_pos);
         let pos = pos(parent, raw_pos, size, align);
+
+        let id = if parent.id.is_empty() {
+            theme.id.to_string()
+        } else {
+            format!("{}/{}", parent.id, theme.id)
+        };
 
         Widget {
             theme_id: theme.full_id.to_string(),
@@ -95,13 +104,13 @@ impl Widget {
             height_from,
             child_align: theme.child_align.unwrap_or_default(),
             align,
-            children: Vec::new(),
-            id: None,
+            id,
             anim_state: AnimState::normal(),
+            hidden: false,
         }
     }
 
-    pub fn children(&self) -> impl Iterator<Item=&Widget> { self.children.iter() }
+    pub fn hidden(&self) -> bool { self.hidden }
     pub fn text_color(&self) -> Color { self.text_color }
     pub fn text_align(&self) -> Align { self.text_align }
     pub fn text(&self) -> Option<&str> { self.text.as_deref() }
@@ -109,8 +118,9 @@ impl Widget {
     pub fn foreground(&self) -> Option<&str> { self.foreground.as_deref() }
     pub fn background(&self) -> Option<&str> { self.background.as_deref() }
     pub fn border(&self) -> Border { self.border }
-    pub fn id(&self) -> Option<&str> { self.id.as_deref() }
+    pub fn id(&self) -> &str { &self.id }
     pub fn theme(&self) -> WidgetThemeHandle { self.theme }
+    pub fn theme_id(&self) -> &str { &self.theme_id }
     pub fn anim_state(&self) -> AnimState { self.anim_state }
     pub fn size(&self) -> Point { self.size }
     pub fn pos(&self) -> Point { self.pos }
@@ -127,46 +137,6 @@ impl Widget {
         self.cursor
     }
 
-    #[must_use]
-    pub fn start(&mut self, frame: &mut Frame, theme: &str) -> WidgetBuilder {
-        let theme_id = if self.theme_id.is_empty() {
-            theme.to_string()
-        } else {
-            format!("{}/{}", self.theme_id, theme)
-        };
-
-        let theme = match frame.context().themes.theme(&theme_id) {
-            None => {
-                match frame.context().themes.theme(theme) {
-                    None => {
-                        // TODO remove unwrap
-                        log::error!("Unable to locate theme either at {} or {}", theme_id, theme);
-                        panic!();
-                    }, Some(theme) => theme,
-                }
-            }, Some(theme) => theme,
-        };
-
-        WidgetBuilder::new(self, theme)
-    }
-
-    // convenience methods
-    pub fn child(&mut self, frame: &mut Frame, theme: &str) -> WidgetState {
-        self.start(frame, theme).finish(frame)
-    }
-
-    pub fn label<T: Into<String>>(&mut self, frame: &mut Frame, theme: &str, text: T) {
-        self.start(frame, theme).text(text).finish(frame);
-    }
-
-    pub fn button<T: Into<String>>(&mut self, frame: &mut Frame, theme: &str, label: T) -> WidgetState {
-        self.start(frame, theme).text(label).wants_mouse(true).finish(frame)
-    }
-
-    pub fn toggle_button<T: Into<String>>(&mut self, frame: &mut Frame, theme: &str, label: T, active: bool) -> WidgetState {
-        self.start(frame, theme).text(label).active(active).wants_mouse(true).finish(frame)
-    }
-
     pub fn gap(&mut self, gap: f32) {
         match self.layout {
             Layout::Horizontal => self.cursor.x += gap,
@@ -181,6 +151,7 @@ pub struct WidgetState {
     pub hovered: bool,
     pub pressed: bool,
     pub clicked: bool,
+    pub dragged: Point,
 }
 
 impl WidgetState {
@@ -190,10 +161,11 @@ impl WidgetState {
             hovered: false,
             pressed: false,
             clicked: false,
+            dragged: Point::default(),
         }
     }
 
-    fn new(anim_state: AnimState, clicked: bool) -> WidgetState {
+    fn new(anim_state: AnimState, clicked: bool, dragged: Point) -> WidgetState {
         let (hovered, pressed) = if anim_state.contains(AnimStateKey::Pressed) {
             (true, true)
         } else if anim_state.contains(AnimStateKey::Hover) {
@@ -207,6 +179,7 @@ impl WidgetState {
             hovered,
             pressed,
             clicked,
+            dragged,
         }
     }
 }
@@ -285,98 +258,165 @@ fn pos(parent: &Widget, pos: Point, self_size: Point, align: Align) -> Point {
         Align::BotRight => Point { x: self_size.x, y: self_size.y },
         Align::TopLeft => Point { x: 0.0, y: 0.0 },
         Align::TopRight => Point { x: self_size.x, y: 0.0 },
-    }
+    }.round()
 }
 
 pub struct WidgetBuilder<'a> {
-    pub parent: &'a mut Widget,
-    pub widget: Widget,
+    pub frame: &'a mut Frame,
+    pub parent: usize,
+    pub widget: usize,
     manual_pos: bool,
     visible: bool,
     enabled: bool,
     active: bool,
+
+    recalc_pos_size: bool,
 }
 
 impl<'a> WidgetBuilder<'a> {
     #[must_use]
-    pub fn new(parent: &'a mut Widget, theme: &WidgetTheme) -> WidgetBuilder<'a> {
-        let align = theme.align.unwrap_or(parent.child_align);
-        let manual_pos = theme.pos.is_some() || align != parent.child_align;
-        let widget = Widget::new(parent, theme);
+    pub fn new(frame: &'a mut Frame, parent: usize, theme_id: String, base_theme: &str) -> WidgetBuilder<'a> {
+        let (manual_pos, index, widget) = {
+            let context = frame.context_internal();
+            let context = context.borrow();
+            let theme = match context.themes.theme(&theme_id) {
+                None => {
+                    match context.themes.theme(base_theme) {
+                        None => {
+                            // TODO remove unwrap
+                            println!("Unable to locate theme either at {} or {}", theme_id, base_theme);
+                            panic!();
+                        }, Some(theme) => theme,
+                    }
+                }, Some(theme) => theme,
+            };
+
+            let index = frame.next_index();
+            let parent_widget = frame.widget(parent);
+            let align = theme.align.unwrap_or(parent_widget.child_align);
+            let manual_pos = theme.pos.is_some() || align != parent_widget.child_align;
+            
+            (manual_pos, index, Widget::new(parent_widget, theme))
+        };
+
+        frame.push_widget(widget);
+
         WidgetBuilder {
+            frame,
             parent,
-            widget,
+            widget: index,
             manual_pos,
             visible: true,
             enabled: true,
             active: false,
+            recalc_pos_size: true,
         }
+    }
+
+    fn recalculate_pos_size(&mut self, state: PersistentState) {
+        {
+            let parent = self.frame.widget(self.parent);
+            let widget = self.frame.widget(self.widget);
+            let size = size (
+                parent,
+                widget.raw_size,
+                widget.border,
+                widget.font,
+                widget.width_from,
+                widget.height_from
+            );
+
+            self.widget().size = size;
+        }
+
+        {
+            let parent = self.frame.widget(self.parent);
+            let widget = self.frame.widget(self.widget);
+            let pos = pos(parent, widget.raw_pos, widget.size, widget.align);
+            self.widget().pos = pos + state.moved;
+        }
+
+        self.widget().size = self.widget().size + state.resize;
+
+        self.recalc_pos_size = false;
+    }
+
+    fn parent(&self) -> &Widget {
+        self.frame.widget(self.parent)
+    }
+
+    fn widget(&mut self) -> &mut Widget {
+        self.frame.widget_mut(self.widget)
     }
 
     #[must_use]
     pub fn wants_mouse(mut self, wants_mouse: bool) -> WidgetBuilder<'a> {
-        self.widget.wants_mouse = wants_mouse;
+        self.widget().wants_mouse = wants_mouse;
         self
     }
 
     #[must_use]
     pub fn id<T: Into<String>>(mut self, id: T) -> WidgetBuilder<'a> {
-        self.widget.id = Some(id.into());
+        self.widget().id = id.into();
+        self.recalc_pos_size = true;
         self
     }
 
     #[must_use]
     pub fn text_color(mut self, color: Color) -> WidgetBuilder<'a> {
-        self.widget.text_color = color;
+        self.widget().text_color = color;
         self
     }
 
     #[must_use]
     pub fn text_align(mut self, align: Align) -> WidgetBuilder<'a> {
-        self.widget.text_align = align;
+        self.widget().text_align = align;
         self
     }
 
     #[must_use]
     pub fn text<T: Into<String>>(mut self, text: T) -> WidgetBuilder<'a> {
-        self.widget.text = Some(text.into());
+        self.widget().text = Some(text.into());
         self
     }
 
     #[must_use]
     pub fn font(mut self, frame: &mut Frame, font: &str) -> WidgetBuilder<'a> {
-        let font = match frame.context().themes.find_font(Some(font)) {
+        let context = frame.context_internal();
+        let context = context.borrow();
+        let font = match context.themes.find_font(Some(font)) {
             None => {
-                log::warn!("Invalid font '{}' specified for widget '{:?}'", font, self.widget.id);
+                log::warn!("Invalid font '{}' specified for widget '{:?}'", font, self.widget().id);
                 return self;
             }
             Some(font) => font,
         };
-        self.widget.font = Some(font);
+        self.widget().font = Some(font);
+        self.recalc_pos_size = true;
         self
     }
 
     #[must_use]
     pub fn foreground<T: Into<String>>(mut self, fg: T) -> WidgetBuilder<'a> {
-        self.widget.foreground = Some(fg.into());
+        self.widget().foreground = Some(fg.into());
         self
     }
 
     #[must_use]
     pub fn background<T: Into<String>>(mut self, bg: T) -> WidgetBuilder<'a> {
-        self.widget.background = Some(bg.into());
+        self.widget().background = Some(bg.into());
         self
     }
 
     #[must_use]
     pub fn child_align(mut self, align: Align) -> WidgetBuilder<'a> {
-        self.widget.child_align = align;
+        self.widget().child_align = align;
         self
     }
 
     #[must_use]
     pub fn layout_spacing(mut self, spacing: Point) -> WidgetBuilder<'a> {
-        self.widget.layout_spacing = spacing;
+        self.widget().layout_spacing = spacing;
         self
     }
 
@@ -392,86 +432,61 @@ impl<'a> WidgetBuilder<'a> {
 
     #[must_use]
     pub fn layout(mut self, layout: Layout) -> WidgetBuilder<'a> {
-        self.widget.layout = layout;
+        self.widget().layout = layout;
         self
     }
 
     #[must_use]
     pub fn screen_pos(mut self, x: f32, y: f32) -> WidgetBuilder<'a> {
-        self.widget.raw_pos = Point { x, y };
-        self.widget.pos = Point { x, y };
-        self.widget.align = Align::TopLeft;
+        self.widget().raw_pos = Point { x, y };
+        self.widget().pos = Point { x, y };
+        self.widget().align = Align::TopLeft;
         self.manual_pos = true;
+        self.recalc_pos_size = false;
         self
     }
 
     #[must_use]
     pub fn pos(mut self, x: f32, y: f32) -> WidgetBuilder<'a> {
-        let p = Point { x, y };
-        self.widget.raw_pos = p;
-        self.widget.pos = pos(self.parent, self.widget.raw_pos, self.widget.size, self.widget.align);
+        self.widget().raw_pos = Point { x, y };
         self.manual_pos = true;
+        self.recalc_pos_size = true;
         self
     }
 
     #[must_use]
     pub fn align(mut self, align: Align) -> WidgetBuilder<'a> {
-        self.widget.align = align;
-        self.widget.pos = pos(self.parent, self.widget.raw_pos, self.widget.size, self.widget.align);
+        self.widget().align = align;
         self.manual_pos = true;
+        self.recalc_pos_size = true;
         self
     }
     
     #[must_use]
     pub fn border(mut self, border: Border) -> WidgetBuilder<'a> {
-        self.widget.border = border;
-        self.widget.pos = pos(self.parent, self.widget.raw_pos, self.widget.size, self.widget.align);
+        self.widget().border = border;
+        self.recalc_pos_size = true;
         self
     }
 
     #[must_use]
     pub fn size(mut self, x: f32, y: f32) -> WidgetBuilder<'a> {
-        let s = Point { x, y };
-        self.widget.raw_size = s;
-        self.widget.size = size(
-            self.parent,
-            self.widget.raw_size,
-            self.widget.border,
-            self.widget.font,
-            self.widget.width_from,
-            self.widget.height_from
-        );
-        self.widget.pos = pos(self.parent, self.widget.raw_pos, self.widget.size, self.widget.align);
+        self.widget().raw_size = Point { x, y };
+        self.recalc_pos_size = true;
         self
     }
 
     #[must_use]
     pub fn width_from(mut self, from: WidthRelative) -> WidgetBuilder<'a> {
-        self.widget.width_from = from;
-        self.widget.size = size(
-            self.parent,
-            self.widget.raw_size,
-            self.widget.border,
-            self.widget.font,
-            self.widget.width_from,
-            self.widget.height_from
-        );
-        self.widget.pos = pos(self.parent, self.widget.raw_pos, self.widget.size, self.widget.align);
+        self.widget().width_from = from;
+        self.recalc_pos_size = true;
         self
     }
 
     #[must_use]
     pub fn height_from(mut self, from: HeightRelative) -> WidgetBuilder<'a> {
-        self.widget.height_from = from;
-        self.widget.size = size(
-            self.parent,
-            self.widget.raw_size,
-            self.widget.border,
-            self.widget.font,
-            self.widget.width_from,
-            self.widget.height_from
-        );
-        self.widget.pos = pos(self.parent, self.widget.raw_pos, self.widget.size, self.widget.align);
+        self.widget().height_from = from;
+        self.recalc_pos_size = true;
         self
     }
 
@@ -494,35 +509,56 @@ impl<'a> WidgetBuilder<'a> {
     }
 
     #[must_use]
-    pub fn children<F: FnOnce(&mut Widget)>(mut self, f: F) -> WidgetBuilder<'a> {
-        (f)(&mut self.widget);
+    pub fn children<F: FnOnce(&mut Frame)>(mut self, f: F) -> WidgetBuilder<'a> {
+        let state = self.frame.state(self.widget);
+        if !state.is_open {
+            self.widget().hidden = true;
+            return self;
+        }
+
+        let old_parent_index = self.frame.parent_index();
+
+        self.frame.set_parent_index(self.widget);
+        if self.recalc_pos_size {
+            self.recalculate_pos_size(state);
+        }
+        (f)(self.frame);
+        self.frame.set_parent_index(old_parent_index);
+
         self
     }
 
-    pub fn finish(mut self, frame: &mut Frame) -> WidgetState {
+    pub fn finish(mut self) -> WidgetState {
         if !self.visible { return WidgetState::hidden(); }
 
-        if let Some(id) = &self.widget.id {
-            if !frame.is_open(id) { return WidgetState::hidden(); }
+        let state = self.frame.state(self.widget);
+
+        if !state.is_open {
+            self.widget().hidden = true;
+            return WidgetState::hidden();
         }
 
-        let (clicked, mut anim_state) = if self.enabled && self.widget.wants_mouse {
-            frame.check_mouse_taken(self.widget.pos, self.widget.size)
+        if self.recalc_pos_size {
+            self.recalculate_pos_size(state);
+        }
+
+        let (clicked, mut anim_state, dragged) = if self.enabled && self.widget().wants_mouse {
+            self.frame.check_mouse_taken(self.widget)
         } else {
-            (false, AnimState::disabled())
+            (false, AnimState::disabled(), Point::default())
         };
 
         if self.active {
             anim_state.add(AnimStateKey::Active);
         }
 
-        self.widget.anim_state = anim_state;
+        self.widget().anim_state = anim_state;
 
-        let state = WidgetState::new(anim_state, clicked);
-        let size = self.widget.size;
+        let state = WidgetState::new(anim_state, clicked, dragged);
+        let size = self.widget().size;
         if !self.manual_pos {
             use Align::*;
-            let (x, y) = match self.parent.child_align {
+            let (x, y) = match self.parent().child_align {
                 Left => (size.x, 0.0),
                 Right => (-size.x, 0.0),
                 Bot => (0.0, -size.y),
@@ -534,14 +570,14 @@ impl<'a> WidgetBuilder<'a> {
                 TopRight => (-size.x, size.y),
             };
 
+            let parent = self.frame.widget_mut(self.parent);
             use Layout::*;
-            match self.parent.layout {
-                Horizontal => self.parent.cursor.x += x + self.parent.layout_spacing.x,
-                Vertical => self.parent.cursor.y += y + self.parent.layout_spacing.y,
+            match parent.layout {
+                Horizontal => parent.cursor.x += x + parent.layout_spacing.x,
+                Vertical => parent.cursor.y += y + parent.layout_spacing.y,
                 Free => (),
             }
         }
-        self.parent.children.push(self.widget);
         
         state
     }

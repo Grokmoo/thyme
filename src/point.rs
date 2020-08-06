@@ -68,6 +68,19 @@ pub struct Point {
     pub y: f32,
 }
 
+impl Point {
+    pub fn new(x: f32, y: f32) -> Point {
+        Point { x, y }
+    }
+
+    pub fn round(self) -> Point {
+        Point {
+            x: self.x.round(),
+            y: self.y.round(),
+        }
+    }
+}
+
 impl From<[f32; 2]> for Point {
     fn from(t: [f32; 2]) -> Self {
         Point { x: t[0], y: t[1] }
