@@ -80,6 +80,7 @@ fn build_ui(ui: &mut Frame) {
 
     ui.start("window")
     .id("window2")
+    .initially_open(false)
     .size(200.0, 200.0)
     .align(Align::Bot)
     .children(|ui| {

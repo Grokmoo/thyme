@@ -70,6 +70,12 @@ impl Frame {
         )
     }
 
+    pub(crate) fn init_state(&mut self, index: usize, open: bool) {
+        let mut context = self.context.internal.borrow_mut();
+        let widget = &self.widgets[index];
+        context.init_state(widget.id(), open);
+    }
+
     pub(crate) fn state(&self, index: usize) -> PersistentState {
         let context = self.context.internal.borrow();
         let widget = &self.widgets[index];

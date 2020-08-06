@@ -363,6 +363,12 @@ impl<'a> WidgetBuilder<'a> {
     }
 
     #[must_use]
+    pub fn initially_open(self, open: bool) -> WidgetBuilder<'a> {
+        self.frame.init_state(self.widget, open);
+        self
+    }
+
+    #[must_use]
     pub fn text_color(mut self, color: Color) -> WidgetBuilder<'a> {
         self.widget().text_color = color;
         self

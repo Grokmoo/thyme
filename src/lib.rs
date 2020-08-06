@@ -134,6 +134,15 @@ pub(crate) struct ContextInternal {
 }
 
 impl ContextInternal {
+    fn init_state<T: Into<String>>(&mut self, id: T, open: bool) {
+        self.persistent_state.entry(id.into()).or_insert(
+            PersistentState {
+                is_open: open,
+                ..Default::default()
+            }
+        );
+    }
+
     fn state(&self, id: &str) -> PersistentState {
         self.persistent_state.get(id).copied().unwrap_or_default()
     }
