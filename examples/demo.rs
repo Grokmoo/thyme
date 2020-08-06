@@ -64,11 +64,10 @@ fn build_ui(ui: &mut Frame) {
     ui.window("window", "main_window", Point::new(300.0, 300.0), |ui| {
         ui.gap(20.0);
 
-        ui.start("label")
-        .text("This is some smaller text")
+        ui.start("textbox")
+        .text(SAMPLE_TEXT)
         .text_color(Color::cyan())
         .finish();
-
         let label = if ui.is_open("window2") {
             "Close Window"
         } else {
@@ -108,3 +107,9 @@ fn build_ui(ui: &mut Frame) {
         }
     }).finish();
 }
+
+const SAMPLE_TEXT: &str = r#"
+This is some longer multiline text.
+It has explicit line breaks as well as automatic text wrapping.  It also has a different color and a different size than the other text in the window.
+Thisisanextremelylonglinewithnospacingtotestoutwhathappenswhenyoudon'thaveanyspacesinyourword.
+"#;

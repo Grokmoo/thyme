@@ -95,11 +95,18 @@ image_sets:
           Disabled: window_handle_disabled
 widgets:
   root: {}
+  textbox:
+    font: small
+    border: { left: 5, right: 5}
+    text_align: Left
+    size: [0, 150]
+    width_from: Parent
   label:
     font: small
     border: { left: 5, right: 5 }
     text_align: Center
     height_from: FontLine
+    width_from: Parent
   window_handle:
     wants_mouse: true
     background: gui/window_handle

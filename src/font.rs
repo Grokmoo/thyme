@@ -75,99 +75,167 @@ impl Font {
         align: Align,
         color: Color,
     ) {
-        let mut y_pos = pos[1];
-        let mut x_pos = pos[0];
-        let mut width = 0.0;
-        let mut height = 0.0;
+        let renderer = FontRenderer::new(&self, draw_list, area_size, pos.into(), align, color);
+        renderer.render(text);
+    }
+}
 
+struct FontRenderer<'a> {
+    font: &'a Font,
+    draw_list: &'a mut DrawList,
+    initial_index: usize,
+
+    align: Align,
+    color: Color,
+
+    area_size: Point,
+    initial_pos: Point,
+
+    pos: Point,
+    size: Point,
+    cur_line_index: usize,
+
+    cur_word: Vec<&'a FontChar>,
+    cur_word_width: f32,
+}
+
+impl<'a> FontRenderer<'a> {
+    fn new(
+        font: &'a Font,
+        draw_list: &'a mut DrawList,
+        area_size: Point,
+        pos: Point,
+        align: Align,
+        color: Color,
+    ) -> FontRenderer<'a> {
         let initial_index = draw_list.vertices.len();
-        let mut line_index = draw_list.vertices.len();
-        let mut had_char_on_cur_line = false;
 
+        FontRenderer {
+            font,
+            draw_list,
+            initial_index,
+            align,
+            color,
+            area_size,
+            initial_pos: pos,
+            pos,
+            size: Point::default(),
+            cur_line_index: initial_index,
+            cur_word: Vec::new(),
+            cur_word_width: 0.0,
+        }
+    }
+
+    fn render(mut self, text: &str) {
         for c in text.chars() {
-            if c == '\n' {
-                y_pos += self.line_height;
-                height += self.line_height;
-                x_pos = pos[0];
-
-                adjust_line_x(draw_list, line_index, area_size.x, width, align);
-                line_index = draw_list.vertices.len();
-                width = 0.0;
-                had_char_on_cur_line = false;
-
-                continue;
-            }
-
-            had_char_on_cur_line = true;
-
-            let font_char = match self.char(c) {
+            let font_char = match self.font.char(c) {
                 None => continue, // TODO draw a special character here?
                 Some(char) => char,
             };
 
-            draw_list.push_quad(
+            if c == '\n' {
+                self.draw_cur_word();
+                self.next_line();
+            } else if c.is_whitespace() {
+                self.draw_cur_word();
+
+                // don't draw whitespace at the start of a line
+                if self.cur_line_index != self.draw_list.vertices.len() {
+                    self.pos.x += font_char.x_advance;
+                    self.size.x += font_char.x_advance;
+                }
+
+                continue;
+            }
+
+            self.cur_word_width += font_char.x_advance;
+            self.cur_word.push(font_char);
+
+            if self.size.x + self.cur_word_width > self.area_size.x {
+                // if the word was so long that we drew nothing at all
+                if self.cur_line_index == self.draw_list.vertices.len() {
+                    self.draw_cur_word();
+                    self.next_line();
+                } else {
+                    self.next_line();
+                    self.draw_cur_word();
+                }
+            }
+        }
+
+        if self.cur_line_index < self.draw_list.vertices.len() {
+            // adjust characters on the last line
+            self.adjust_line_x();
+            self.size.y += self.font.line_height;
+        }
+
+        self.adjust_all_y();
+    }
+
+    fn draw_cur_word(&mut self) {
+        for font_char in self.cur_word.drain(..) {
+            self.draw_list.push_quad(
                 Vertex {
-                    position: [x_pos, y_pos + font_char.y_offset + self.ascent],
+                    position: [self.pos.x, self.pos.y + font_char.y_offset + self.font.ascent],
                     tex_coords: font_char.tex_coords[0].into(),
-                    color: color.into()
+                    color: self.color.into()
                 }, Vertex {
-                    position: [x_pos + font_char.size.x, y_pos + font_char.size.y + font_char.y_offset + self.ascent],
+                    position: [self.pos.x + font_char.size.x, self.pos.y + font_char.size.y + font_char.y_offset + self.font.ascent],
                     tex_coords: font_char.tex_coords[1].into(),
-                    color: color.into()
+                    color: self.color.into()
                 },
             );
-
-            x_pos += font_char.x_advance;
-            width += font_char.x_advance;
+            self.pos.x += font_char.x_advance;
+            self.size.x += font_char.x_advance;
         }
+        self.cur_word_width = 0.0;
+    }
 
-        if had_char_on_cur_line {
-            // adjust characters on the last line
-            adjust_line_x(draw_list, line_index, area_size.x, width, align);
-            height += self.line_height;
-        }
+    fn next_line(&mut self) {
+        self.pos.y += self.font.line_height;
+        self.size.y += self.font.line_height;
+        self.pos.x = self.initial_pos.x;
 
-        // adjust y coordinate based on text alignment for all lines
+        self.adjust_line_x();
+        self.cur_line_index = self.draw_list.vertices.len();
+        self.size.x = 0.0;
+    }
+
+    fn adjust_all_y(&mut self) {
         use Align::*;
-        let y_offset = match align {
+        let y_offset = match self.align {
             TopLeft =>  0.0,
             TopRight => 0.0,
-            BotLeft =>  area_size.y - height,
-            BotRight => area_size.y - height,
-            Left =>     (area_size.y - height) / 2.0,
-            Right =>    (area_size.y - height) / 2.0,
-            Bot =>      area_size.y - height,
+            BotLeft =>  self.area_size.y - self.size.y,
+            BotRight => self.area_size.y - self.size.y,
+            Left =>     (self.area_size.y - self.size.y) / 2.0,
+            Right =>    (self.area_size.y - self.size.y) / 2.0,
+            Bot =>      self.area_size.y - self.size.y,
             Top =>      0.0,
-            Center =>   (area_size.y - height) / 2.0,
+            Center =>   (self.area_size.y - self.size.y) / 2.0,
         };
 
-        for vert in draw_list.vertices.iter_mut().skip(initial_index) {
+        for vert in self.draw_list.vertices.iter_mut().skip(self.initial_index) {
             vert.position[1] += y_offset;
         }
     }
-}
 
-fn adjust_line_x(
-    draw_list: &mut DrawList,
-    initial_index: usize,
-    area_width: f32,
-    width: f32,
-    align: Align
-) {
-    use Align::*;
-    let x_offset = match align {
-        TopLeft =>  0.0,
-        TopRight => area_width - width,
-        BotLeft =>  0.0,
-        BotRight => area_width - width,
-        Left =>     0.0,
-        Right =>    area_width - width,
-        Bot =>      (area_width - width) / 2.0,
-        Top =>      (area_width - width) / 2.0,
-        Center =>   (area_width - width) / 2.0,
-    };
-
-    for vert in draw_list.vertices.iter_mut().skip(initial_index) {
-        vert.position[0] += x_offset;
+    fn adjust_line_x(&mut self) {
+        use Align::*;
+        let x_offset = match self.align {
+            TopLeft =>  0.0,
+            TopRight => self.area_size.x - self.size.x,
+            BotLeft =>  0.0,
+            BotRight => self.area_size.x - self.size.x,
+            Left =>     0.0,
+            Right =>    self.area_size.x - self.size.x,
+            Bot =>      (self.area_size.x - self.size.x) / 2.0,
+            Top =>      (self.area_size.x - self.size.x) / 2.0,
+            Center =>   (self.area_size.x - self.size.x) / 2.0,
+        };
+    
+        for vert in self.draw_list.vertices.iter_mut().skip(self.cur_line_index) {
+            vert.position[0] += x_offset;
+        }
     }
 }
