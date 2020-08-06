@@ -16,11 +16,24 @@ pub(crate) fn render(
 
     let mut cur_draw: Option<DrawList> = None;
 
-    for widget in widgets {
+    // render backgrounds
+    for widget in &widgets {
         if widget.hidden() { continue; }
-        render_widget(themes, &mut draw_data, &mut cur_draw, widget);
+        render_if_present(
+            themes.image(widget.background()),
+            &mut draw_data,
+            &mut cur_draw,
+            widget.pos(),
+            widget.size(),
+            widget.anim_state()
+        );
     }
 
+    for widget in &widgets {
+        if widget.hidden() { continue; }
+        render_widget_foreground(themes, &mut draw_data, &mut cur_draw, widget);
+    }
+    
     if let Some(draw) = cur_draw {
         draw_data.draw_lists.push(draw);
     }
@@ -28,21 +41,12 @@ pub(crate) fn render(
     draw_data
 }
 
-fn render_widget(
+fn render_widget_foreground(
     themes: &ThemeSet,
     draw_data: &mut DrawData,
     cur_draw: &mut Option<DrawList>,
-    widget: Widget,
+    widget: &Widget,
 ) {
-    render_if_present(
-        themes.image(widget.background()),
-        draw_data,
-        cur_draw,
-        widget.pos(),
-        widget.size(),
-        widget.anim_state()
-    );
-
     let border = widget.border();
     let fg_pos = widget.pos() + border.tl();
     let fg_size = widget.inner_size();
