@@ -9,7 +9,7 @@ use glium::uniforms::{MagnifySamplerFilter, MinifySamplerFilter, Sampler, Sample
 use glium::texture::{Texture2d, RawImage2d, SrgbTexture2d};
 use glium::index::PrimitiveType;
 
-use crate::{DrawData, DrawMode, Renderer, TextureHandle, TextureData, TexCoord, Vertex, Font, FontSource, FontHandle, theme::{FontChar}};
+use crate::{DrawData, DrawMode, Renderer, TextureHandle, TextureData, TexCoord, Vertex, Font, FontSource, FontHandle, FontChar};
 
 const FONT_TEX_SIZE: u32 = 512;
 
@@ -49,7 +49,7 @@ impl GliumRenderer {
     }
 
     fn font(&self, font: FontHandle) -> &GliumFont {
-        &self.fonts[font.id]
+        &self.fonts[font.id()]
     }
 
     fn texture(&self, texture: TextureHandle) -> &GliumTexture {
@@ -109,10 +109,10 @@ impl Renderer for GliumRenderer {
     fn register_texture(
         &mut self,
         handle: TextureHandle,
-        image: image::ImageBuffer<image::Rgba<u8>, Vec<u8>>
+        image_data: &[u8],
+        dimensions: (u32, u32),
     ) -> Result<TextureData, crate::Error> {
-        let dims = image.dimensions();
-        let image = RawImage2d::from_raw_rgba_reversed(&image.into_raw(), dims);
+        let image = RawImage2d::from_raw_rgba_reversed(image_data, dimensions);
         let texture = SrgbTexture2d::new(&self.context, image).unwrap();
 
         let sampler = SamplerBehavior {
@@ -129,7 +129,7 @@ impl Renderer for GliumRenderer {
         assert!(handle.id == self.textures.len());
         self.textures.push(GliumTexture { texture, sampler });
 
-        Ok(TextureData { handle, size: [dims.0, dims.1] })
+        Ok(TextureData { handle, size: [dimensions.0, dimensions.1] })
     }
 
     fn register_font(
@@ -196,7 +196,7 @@ impl Renderer for GliumRenderer {
             ..Default::default()
         };
 
-        assert!(handle.id == self.fonts.len());
+        assert!(handle.id() == self.fonts.len());
         self.fonts.push(GliumFont {
             texture: font_tex,
             sampler,

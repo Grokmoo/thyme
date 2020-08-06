@@ -2,14 +2,20 @@ use std::collections::{HashMap};
 use std::rc::Rc;
 use std::cell::RefCell;
 
+mod font;
+pub use font::{Font, FontChar, FontSummary, FontSource, FontHandle};
+
 mod frame;
 pub use frame::{Frame};
 
 mod glium_backend;
 pub use glium_backend::GliumRenderer;
 
+mod image;
+pub use crate::image::{Image};
+
 mod theme;
-pub use theme::{ThemeSet, Image, FontChar, Font, FontSummary};
+pub use theme::{ThemeSet};
 
 mod theme_definition;
 pub use theme_definition::{ThemeDefinition, AnimStateKey, AnimState, Align, Color, Layout, WidthRelative, HeightRelative};
@@ -41,7 +47,8 @@ pub trait Renderer {
     fn register_texture(
         &mut self,
         handle: TextureHandle,
-        image: image::ImageBuffer<image::Rgba<u8>, Vec<u8>>
+        image_data: &[u8],
+        dimensions: (u32, u32),
     ) -> Result<TextureData, Error>;
 }
 
@@ -68,6 +75,9 @@ impl<'a, R: Renderer, I: IO> Builder<'a, R, I> {
         })
     }
 
+    /// Registers the font data for use with Thyme via the specified `id`.  The `data` must consist
+    /// of the full binary for a valid TTF or OTF file.
+    /// Once the font has been registered, it can be accessed in your theme file via the font `source`.
     pub fn register_font_source<T: Into<String>>(&mut self, id: T, data: Vec<u8>) -> Result<(), Error> {
         let font = match rusttype::Font::try_from_vec(data) {
             Some(font) => font,
@@ -80,13 +90,19 @@ impl<'a, R: Renderer, I: IO> Builder<'a, R, I> {
         Ok(())
     }
 
+    /// Registers the image data for use with Thyme via the specified `id`.  The `data` must consist of
+    /// raw binary image data in RGBA format, with 4 bytes per pixel.  The data must start at the
+    /// bottom-left hand corner pixel and progress left-to-right and bottom-to-top.  `data.len()` must
+    /// equal `dimensions.0 * dimensions.1 * 4`
+    /// Once the image has been registered, it can be accessed in your theme file via the image `source`.
     pub fn register_texture<T: Into<String>>(
         &mut self,
         id: T,
-        image: image::ImageBuffer<image::Rgba<u8>, Vec<u8>>
+        data: &[u8],
+        dimensions: (u32, u32),
     ) -> Result<(), Error> {
         let handle = self.next_texture_handle;
-        let data = self.renderer.register_texture(handle, image)?;
+        let data = self.renderer.register_texture(handle, data, dimensions)?;
         self.textures.insert(id.into(), data);
         self.next_texture_handle.id += 1;
 
@@ -256,15 +272,6 @@ impl std::error::Error for Error {
             FontSource(..) => None,
         }
     }
-}
-
-pub struct FontSource {
-    font: rusttype::Font<'static>,
-}
-
-#[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Hash)]
-pub struct FontHandle {
-    id: usize,
 }
 
 pub struct TextureData {
