@@ -163,7 +163,9 @@ impl<'a> FontRenderer<'a> {
             }
         }
 
-        if self.cur_line_index < self.draw_list.vertices.len() {
+        self.draw_cur_word();
+
+        if self.cur_line_index < self.draw_list.vertices.len() {    
             // adjust characters on the last line
             self.adjust_line_x();
             self.size.y += self.font.line_height;
