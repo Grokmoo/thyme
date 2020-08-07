@@ -13,19 +13,19 @@ image_sets:
         position: [0, 0]
         grid_size: [32, 32]
       button_normal:
-        position: [96, 0]
+        position: [97, 0]
         grid_size: [32, 12]
       button_hover:
-        position: [96, 36]
+        position: [97, 36]
         grid_size: [32, 12]
       button_pressed:
-        position: [96, 72]
+        position: [97, 72]
         grid_size: [32, 12]
       button_disabled:
-        position: [96, 108]
+        position: [97, 108]
         grid_size: [32, 12]
       button_active:
-        position: [96, 144]
+        position: [97, 144]
         grid_size: [32, 12]
       button:
         states:
@@ -37,19 +37,19 @@ image_sets:
           Active + Hover: button_active
           Active + Pressed: button_pressed
       small_button_normal:
-        position: [204, 0]
+        position: [207, 0]
         grid_size: [5, 5]
       small_button_hover:
-        position: [204, 15]
+        position: [207, 15]
         grid_size: [5, 5]
       small_button_pressed:
-        position: [204, 30]
+        position: [207, 30]
         grid_size: [5, 5]
       small_button_disabled:
-        position: [204, 45]
+        position: [207, 45]
         grid_size: [5, 5]
       small_button_active:
-        position: [204, 60]
+        position: [207, 60]
         grid_size: [5, 5]
       small_button:
         states:
@@ -61,13 +61,13 @@ image_sets:
           Active + Hover: small_button_active
           Active + Pressed: small_button_pressed
       close_icon_normal:
-        position: [219, 0]
+        position: [223, 0]
         size: [12, 12]
       close_icon_pressed:
-        position: [219, 12]
+        position: [223, 12]
         size: [12, 12]
       close_icon_disabled:
-        position: [219, 24]
+        position: [223, 24]
         size: [12, 12]
       close_icon:
         states:
@@ -76,16 +76,16 @@ image_sets:
           Pressed: close_icon_pressed
           Disabled: close_icon_disabled
       window_handle_normal:
-        position: [192, 0]
+        position: [194, 0]
         size: [12, 12]
       window_handle_hover:
-        position: [192, 12]
+        position: [194, 12]
         size: [12, 12]
       window_handle_pressed:
-        position: [192, 24]
+        position: [194, 24]
         size: [12, 12]
       window_handle_disabled:
-        position: [192, 36]
+        position: [194, 36]
         size: [12, 12]
       window_handle:
         states:
@@ -97,13 +97,13 @@ widgets:
   root: {}
   textbox:
     font: small
-    border: { left: 5, right: 5}
+    border: { width: 5 }
     text_align: Left
     size: [0, 150]
     width_from: Parent
   label:
     font: small
-    border: { left: 5, right: 5 }
+    border: { width: 5 }
     text_align: Center
     height_from: FontLine
     width_from: Parent
@@ -117,14 +117,14 @@ widgets:
     background: gui/button
     text_align: Center
     size: [150, 24]
-    border: [5, 5, 5, 5]
+    border: { all: 5 }
   window:
     font: small
     background: gui/window_bg
     wants_mouse: true
     layout: Vertical
     layout_spacing: [5, 5]
-    border: { top: 5, bot: 5, right: 5, left: 5 }
+    border: { all: 5 }
     child_align: Top
     children:
       titlebar:
@@ -142,7 +142,7 @@ widgets:
             background: gui/small_button
             foreground: gui/close_icon
             size: [20, 20]
-            border: [4, 4, 4, 4]
+            border: { all: 4 }
             align: TopRight
       handle:
         from: window_handle

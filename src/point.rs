@@ -1,19 +1,13 @@
 use std::ops::*;
+use std::fmt;
 
-use serde::{Serialize, Deserialize};
+use serde::{Serialize, Deserialize, Deserializer, de::{self, Error, Visitor, MapAccess}};
 
-#[derive(Serialize, Deserialize, Copy, Clone, Default, Debug, PartialEq)]
+#[derive(Serialize, Copy, Clone, Default, Debug, PartialEq)]
 pub struct Border {
-    #[serde(default)]
     pub top: f32,
-
-    #[serde(default)]
     pub bot: f32,
-
-    #[serde(default)]
     pub left: f32,
-
-    #[serde(default)]
     pub right: f32,
 }
 
@@ -40,6 +34,108 @@ impl Border {
 
     pub fn br(&self) -> Point {
         Point { x: self.right, y: self.bot }
+    }
+}
+
+struct BorderVisitor;
+
+impl<'de> Visitor<'de> for BorderVisitor {
+    type Value = Border;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("Map")
+    }
+
+    fn visit_map<M: MapAccess<'de>>(self, mut map: M) -> Result<Self::Value, M::Error> {
+        const ERROR_MSG: &str =
+            "Unable to parse border from map. Must specify values for: \
+            all OR width, height, OR top, bot, left, right \
+            Unspecified values are set to 0";
+
+        let mut data = [f32::MIN; 4];
+        #[derive(Copy, Clone, PartialEq)]
+        enum Mode {
+            One,
+            Two,
+            Four,
+        };
+        let mut mode: Option<Mode> = None;
+        fn check_mode<E: de::Error>(mode: &mut Option<Mode>, must_eq: Mode) -> Result<(), E> {
+            match mode {
+                None => {
+                    *mode = Some(must_eq);
+                    Ok(())
+                },
+                Some(mode) => if *mode == must_eq {
+                    Ok(())
+                } else {
+                    Err(E::custom(ERROR_MSG))
+                }
+            }
+        }
+
+        loop {
+            let (kind, value) = match map.next_entry::<String, f32>()? {
+                None => break,
+                Some(data) => data,
+            };
+
+            match &*kind {
+                "all" => {
+                    check_mode(&mut mode, Mode::One)?;
+                    data[0] = value;
+                },
+                "width" => {
+                    check_mode(&mut mode, Mode::Two)?;
+                    data[0] = value;
+                },
+                "height" => {
+                    check_mode(&mut mode, Mode::Two)?;
+                    data[1] = value;
+                },
+                "top" => {
+                    check_mode(&mut mode, Mode::Four)?;
+                    data[0] = value;
+                },
+                "bot" => {
+                    check_mode(&mut mode, Mode::Four)?;
+                    data[1] = value;
+                },
+                "left" => {
+                    check_mode(&mut mode, Mode::Four)?;
+                    data[2] = value;
+                },
+                "right" => {
+                    check_mode(&mut mode, Mode::Four)?;
+                    data[3] = value;
+                },
+                _ => return Err(M::Error::custom(ERROR_MSG))
+            }
+        }
+
+        // fill in the default values at this point if needed
+        for val in &mut data {
+            if *val == f32::MIN {
+                *val = 0.0;
+            }
+        }
+
+        match mode {
+            Some(Mode::One) =>
+                Ok(Border { top: data[0], bot: data[0], left: data[0], right: data[0] }),
+            Some(Mode::Two) =>
+                Ok(Border { top: data[1], bot: data[1], left: data[0], right: data[0] }),
+            Some(Mode::Four) =>
+                Ok(Border { top: data[0], bot: data[1], left: data[2], right: data[3] }),
+            None =>
+                Err(M::Error::custom(ERROR_MSG)),
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for Border {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Border, D::Error> {
+        deserializer.deserialize_map(BorderVisitor)
     }
 }
 
