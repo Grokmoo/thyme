@@ -1,19 +1,8 @@
-use crate::render::{TexCoord, DrawList};
+use crate::render::{TexCoord, DrawList, FontHandle};
 use crate::{Point, Clip, Align, Color};
 
 pub struct FontSource {
     pub(crate) font: rusttype::Font<'static>,
-}
-
-#[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Hash)]
-pub struct FontHandle {
-    id: usize,
-}
-
-impl FontHandle {
-    pub(crate) fn id(self) -> usize { self.id }
-
-    pub(crate) fn next(self) -> FontHandle { FontHandle { id: self.id + 1 } }
 }
 
 pub struct FontChar {
@@ -192,7 +181,7 @@ impl<'a, D: DrawList> FontRenderer<'a, D> {
         for font_char in self.cur_word.drain(..) {
             self.draw_list.push_rect(
                 [self.pos.x, self.pos.y + font_char.y_offset + self.font.ascent],
-                [self.pos.x + font_char.size.x, self.pos.y + font_char.size.y + font_char.y_offset + self.font.ascent],
+                [font_char.size.x, font_char.size.y],
                 font_char.tex_coords,
                 self.color,
                 self.clip,

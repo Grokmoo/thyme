@@ -282,33 +282,31 @@ impl Default for HeightRelative {
     fn default() -> Self { HeightRelative::Normal }
 }
 
-#[derive(Serialize, Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct Color {
-    pub r: f32,
-    pub g: f32,
-    pub b: f32,
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
 }
 
 impl Color {
-    pub fn white() -> Self { Color { r: 1.0, g: 1.0, b: 1.0 }}
-    pub fn black() -> Self { Color { r: 0.0, g: 0.0, b: 0.0 }}
-    pub fn red() -> Self { Color { r: 1.0, g: 0.0, b: 0.0 }}
-    pub fn green() -> Self { Color { r: 0.0, g: 1.0, b: 1.0 }}
-    pub fn blue() -> Self { Color { r: 0.0, g: 0.0, b: 1.0 }}
-    pub fn cyan() -> Self { Color { r: 0.0, g: 1.0, b: 1.0 }}
-    pub fn yellow() -> Self { Color { r: 1.0, g: 1.0, b: 0.0 }}
-    pub fn magenta() -> Self { Color { r: 1.0, g: 1.0, b: 1.0 }}
+    pub fn white() -> Self { Color { r: 255, g: 255, b: 255 }}
+    pub fn black() -> Self { Color { r: 0, g: 0, b: 0 }}
+    pub fn red() -> Self { Color { r: 255, g: 0, b: 0 }}
+    pub fn green() -> Self { Color { r: 0, g: 255, b: 255 }}
+    pub fn blue() -> Self { Color { r: 0, g: 0, b: 255 }}
+    pub fn cyan() -> Self { Color { r: 0, g: 255, b: 255 }}
+    pub fn yellow() -> Self { Color { r: 255, g: 255, b: 0 }}
+    pub fn magenta() -> Self { Color { r: 255, g: 255, b: 255 }}
 }
 
 impl Default for Color {
-    fn default() -> Self {
-        Color { r: 1.0, g: 1.0, b: 1.0 }
-    }
+    fn default() -> Self { Color::white() }
 }
 
 impl Into<[f32; 3]> for Color {
     fn into(self) -> [f32; 3] {
-        [self.r, self.g, self.b]
+        [self.r as f32 / 255.0, self.g as f32 / 255.0, self.b as f32 / 255.0]
     }
 }
 
@@ -331,15 +329,15 @@ impl<'de> Visitor<'de> for ColorVisitor {
             }
             match count {
                 4 => {
-                    let r = hex_str_to_color_component(&value[1..2])? / 16.0;
-                    let g = hex_str_to_color_component(&value[2..3])? / 16.0;
-                    let b = hex_str_to_color_component(&value[3..4])? / 16.0;
+                    let r = hex_str_to_color_component(&value[1..2])? * 17;
+                    let g = hex_str_to_color_component(&value[2..3])? * 17;
+                    let b = hex_str_to_color_component(&value[3..4])? * 17;
                     Ok(Color { r, g, b })
                 },
                 7 => {
-                    let r = hex_str_to_color_component(&value[1..3])? / 255.0;
-                    let g = hex_str_to_color_component(&value[3..5])? / 255.0;
-                    let b = hex_str_to_color_component(&value[5..7])? / 255.0;
+                    let r = hex_str_to_color_component(&value[1..3])?;
+                    let g = hex_str_to_color_component(&value[3..5])?;
+                    let b = hex_str_to_color_component(&value[5..7])?;
                     Ok(Color { r, g, b })
                 },
                 _ => Err(E::custom(format!("{} is not a valid 3 or 6 character hex code", value)))
@@ -362,16 +360,22 @@ impl<'de> Visitor<'de> for ColorVisitor {
     }
 }
 
-fn hex_str_to_color_component<E: de::Error>(input: &str) -> Result<f32, E> {
+fn hex_str_to_color_component<E: de::Error>(input: &str) -> Result<u8, E> {
     let c = u8::from_str_radix(input, 16).map_err(|_| {
         E::custom(format!("Unable to parse color component from {}", input))
     })?;
 
-    Ok(c as f32)
+    Ok(c)
 }
 
 impl<'de> Deserialize<'de> for Color {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Color, D::Error> {
         deserializer.deserialize_str(ColorVisitor)
     }
+}
+
+impl Serialize for Color {
+        fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+            serializer.serialize_str(&format!("#{:x?}{:x?}{:x?}", self.r, self.g, self.b))
+        }
 }

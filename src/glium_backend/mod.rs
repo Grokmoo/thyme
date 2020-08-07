@@ -9,8 +9,8 @@ use glium::uniforms::{MagnifySamplerFilter, MinifySamplerFilter, Sampler, Sample
 use glium::texture::{Texture2d, RawImage2d, SrgbTexture2d};
 use glium::index::PrimitiveType;
 
-use crate::render::{TexCoord, DrawList, DrawMode, Renderer, TextureHandle, TextureData};
-use crate::font::{Font, FontSource, FontHandle, FontChar};
+use crate::render::{TexCoord, DrawList, DrawMode, Renderer, TextureHandle, TextureData, FontHandle};
+use crate::font::{Font, FontSource, FontChar};
 use crate::{Frame, Point, Color, Clip};
 
 struct GliumDrawList {
@@ -42,16 +42,27 @@ impl DrawList for GliumDrawList {
         }
     }
 
+    // fn push_rect(
+    //     &mut self,
+    //     p0: [f32; 2],
+    //     p1: [f32; 2],
+    //     tex: [TexCoord; 2],
+    //     color: Color,
+    //     clip: Clip,
+    // ) {
+        
+    // }
+
     fn push_rect(
         &mut self,
-        p0: [f32; 2],
-        p1: [f32; 2],
+        pos: [f32; 2],
+        size: [f32; 2],
         tex: [TexCoord; 2],
         color: Color,
         clip: Clip,
     ) {
-        let ul = GliumVertex::new(p0, tex[0].into(), color, clip);
-        let lr = GliumVertex::new(p1, tex[1].into(), color, clip);
+        let ul = GliumVertex::new(pos, tex[0].into(), color, clip);
+        let lr = GliumVertex::new([pos[0] + size[0], pos[1] + size[1]], tex[1].into(), color, clip);
 
         let idx = self.vertices.len() as u32;
         self.indices.extend_from_slice(&[idx, idx + 1, idx + 2, idx, idx + 2, idx + 3]);
@@ -75,8 +86,20 @@ impl DrawList for GliumDrawList {
     }
 }
 
+// #[derive(Copy, Clone)]
+// struct GliumVertex {
+//     pub position: [f32; 2],
+//     pub size: [f32; 2],
+//     pub tex0: [f32; 2],
+//     pub tex1: [f32; 2],
+//     pub color: [f32; 2],
+//     pub clip_pos: [f32; 2],
+//     pub clip_size: [f32; 2],
+// }
+// implement_vertex!(GliumVertex, position, size, tex0, tex1, color, clip_pos, clip_size);
+
 #[derive(Copy, Clone)]
-pub struct GliumVertex {
+struct GliumVertex {
     pub position: [f32; 2],
     pub tex_coords: [f32; 2],
     pub clip_pos: [f32; 2],

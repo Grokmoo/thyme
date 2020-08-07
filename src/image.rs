@@ -132,7 +132,7 @@ impl Image {
     ) {
         draw_list.push_rect(
             [pos[0], pos[1]],
-            [pos[0] + size[0], pos[1] + size[1]],
+            [size[0], size[1]],
             *tex,
             self.color,
             clip
@@ -150,7 +150,7 @@ impl Image {
     ) {
         draw_list.push_rect(
             pos,
-            [pos[0] + grid_size[0], pos[1] + grid_size[1]],
+            grid_size,
             [tex[0][0], tex[1][1]],
             self.color,
             clip,
@@ -159,7 +159,7 @@ impl Image {
         if size[0] > 2.0 * grid_size[0] {
             draw_list.push_rect(
                 [pos[0] + grid_size[0], pos[1]],
-                [pos[0] + size[0] - grid_size[0], pos[1] + grid_size[1]],
+                [size[0] - 2.0 * grid_size[0], grid_size[1]],
                 [tex[1][0], tex[2][1]],
                 self.color,
                 clip,
@@ -168,7 +168,7 @@ impl Image {
 
         draw_list.push_rect(
             [pos[0] + size[0] - grid_size[0], pos[1]],
-            [pos[0] + size[0], pos[1] + grid_size[1]],
+            grid_size,
             [tex[2][0], tex[3][1]],
             self.color,
             clip,
@@ -177,7 +177,7 @@ impl Image {
         if size[1] > 2.0 * grid_size[1] {
             draw_list.push_rect(
                 [pos[0], pos[1] + grid_size[1]],
-                [pos[0] + grid_size[0], pos[1] + size[1] - grid_size[1]],
+                [grid_size[0], size[1] - 2.0 * grid_size[1]],
                 [tex[0][1], tex[1][2]],
                 self.color,
                 clip,
@@ -186,7 +186,7 @@ impl Image {
             if size[0] > 2.0 * grid_size[0] {
                 draw_list.push_rect(
                     [pos[0] + grid_size[0], pos[1] + grid_size[1]],
-                    [pos[0] + size[0] - grid_size[0], pos[1] + size[1] - grid_size[1]],
+                    [size[0] - 2.0 * grid_size[0], size[1] - 2.0 * grid_size[1]],
                     [tex[1][1], tex[2][2]],
                     self.color,
                     clip,
@@ -195,7 +195,7 @@ impl Image {
 
             draw_list.push_rect(
                 [pos[0] + size[0] - grid_size[0], pos[1] + grid_size[1]],
-                [pos[0] + size[0], pos[1] + size[1] - grid_size[1]],
+                [grid_size[0], size[1] - 2.0 * grid_size[1]],
                 [tex[2][1], tex[3][2]],
                 self.color,
                 clip,
@@ -204,7 +204,7 @@ impl Image {
 
         draw_list.push_rect(
             [pos[0], pos[1] + size[1] - grid_size[1]],
-            [pos[0] + grid_size[0], pos[1] + size[1]],
+            grid_size,
             [tex[0][2], tex[1][3]],
             self.color,
             clip,
@@ -213,7 +213,7 @@ impl Image {
         if size[0] > 2.0 * grid_size[0] {
             draw_list.push_rect(
                 [pos[0] + grid_size[0], pos[1] + size[1] - grid_size[1]],
-                [pos[0] + size[0] - grid_size[0], pos[1] + size[1]],
+                [size[0] - 2.0 * grid_size[0], grid_size[1]],
                 [tex[1][2], tex[2][3]],
                 self.color,
                 clip,
@@ -222,7 +222,7 @@ impl Image {
 
         draw_list.push_rect(
             [pos[0] + size[0] - grid_size[0], pos[1] + size[1] - grid_size[1]],
-            [pos[0] + size[0], pos[1] + size[1]],
+            grid_size,
             [tex[2][2], tex[3][3]],
             self.color,
             clip,

@@ -3,9 +3,9 @@ use std::collections::{HashMap};
 use crate::theme_definition::{
     ThemeDefinition, ImageDefinition, ImageDefinitionKind, WidgetThemeDefinition,
 };
-use crate::font::{Font, FontSummary, FontHandle, FontSource};
+use crate::font::{Font, FontSummary, FontSource};
 use crate::image::{Image, ImageHandle};
-use crate::render::{TextureData, Renderer};
+use crate::render::{TextureData, Renderer, FontHandle};
 use crate::{Color, Error, Point, Border, Align, Layout, WidthRelative, HeightRelative};
 
 pub struct ThemeSet {

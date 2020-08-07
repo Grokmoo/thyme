@@ -1,5 +1,7 @@
+use std::num::NonZeroU16;
+
 use crate::{Color, Clip, Point, Error};
-use crate::font::{FontHandle, FontSource, Font};
+use crate::font::{FontSource, Font};
 
 pub trait IO {}
 
@@ -28,8 +30,8 @@ pub enum DrawMode {
 pub trait DrawList {
     fn push_rect(
         &mut self,
-        p0: [f32; 2],
-        p1: [f32; 2],
+        pos: [f32; 2],
+        size: [f32; 2],
         tex: [TexCoord; 2],
         color: Color,
         clip: Clip,
@@ -86,15 +88,51 @@ impl From<TexCoord> for [f32; 2] {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct TextureHandle {
-    id: usize,
+    id: NonZeroU16,
+}
+
+impl Default for TextureHandle {
+    fn default() -> Self {
+        TextureHandle { id: NonZeroU16::new(1).unwrap() }
+    }
 }
 
 impl TextureHandle {
-    pub fn id(self) -> usize { self.id }
+    pub fn id(self) -> usize { (self.id.get() - 1).into() }
 
     pub fn next(self) -> TextureHandle {
-        TextureHandle { id: self.id + 1 }
+        if self.id.get() == u16::MAX {
+            panic!("Cannot allocate more than {} textures", u16::MAX);
+        }
+
+        TextureHandle {
+            id: NonZeroU16::new(self.id.get() + 1).unwrap()
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct FontHandle {
+    id: NonZeroU16,
+}
+
+impl Default for FontHandle {
+    fn default() -> Self {
+        FontHandle { id: NonZeroU16::new(1).unwrap() }
+    }
+}
+
+impl FontHandle {
+    pub fn id(self) -> usize { (self.id.get() - 1).into() }
+
+    pub fn next(self) -> FontHandle {
+        if self.id.get() == u16::MAX {
+            panic!("Cannot allocate more than {} fonts", u16::MAX);
+        }
+        FontHandle {
+            id: NonZeroU16::new(self.id.get() + 1).unwrap()
+        }
     }
 }
