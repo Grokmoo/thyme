@@ -23,7 +23,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // create thyme backend
     let mut io = thyme::WinitIo::new();
     let mut renderer = thyme::GliumRenderer::new(&display)?;
-    let mut context_builder = thyme::Builder::new(theme, &mut renderer, &mut io)?;
+    let mut context_builder = thyme::ContextBuilder::new(theme, &mut renderer, &mut io)?;
 
     // register resources in thyme and create the context
     let image_dims = image.dimensions();
@@ -45,8 +45,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             build_ui(&mut frame);
 
-            let draw_data = frame.render();
-            renderer.draw(&mut target, &draw_data).unwrap();
+            renderer.draw_frame(&mut target, frame).unwrap();
 
             target.finish().unwrap();
         }

@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
 use crate::{Error};
-use crate::{Clip, TexCoord, TextureHandle, TextureData, Color, AnimState, DrawList};
+use crate::render::{TexCoord, DrawList, TextureHandle, TextureData};
+use crate::{Clip, Color, AnimState};
 use crate::theme_definition::{ImageDefinition, ImageDefinitionKind};
 
 #[derive(Copy, Clone)]
@@ -34,9 +35,9 @@ pub struct Image {
 impl Image {
     pub fn texture(&self) -> TextureHandle { self.texture }
 
-    pub fn draw(
+    pub(crate) fn draw<D: DrawList>(
         &self,
-        draw_list: &mut DrawList,
+        draw_list: &mut D,
         pos: [f32; 2],
         size: [f32; 2],
         anim_state: AnimState,
@@ -99,14 +100,14 @@ impl Image {
 
         Ok(Image {
             color: def.color,
-            texture: texture.handle,
+            texture: texture.handle(),
             kind
         })
     }
 
-    fn draw_animated(
+    fn draw_animated<D: DrawList>(
         &self,
-        draw_list: &mut DrawList,
+        draw_list: &mut D,
         pos: [f32; 2],
         size: [f32; 2],
         to_find: AnimState,
@@ -121,15 +122,15 @@ impl Image {
         }
     }
 
-    fn draw_simple(
+    fn draw_simple<D: DrawList>(
         &self,
-        draw_list: &mut DrawList,
+        draw_list: &mut D,
         tex: &[TexCoord; 2],
         pos: [f32; 2],
         size: [f32; 2],
         clip: Clip,
     ) {
-        draw_list.push_quad_components(
+        draw_list.push_rect(
             [pos[0], pos[1]],
             [pos[0] + size[0], pos[1] + size[1]],
             *tex,
@@ -138,16 +139,16 @@ impl Image {
         );
     }
 
-    fn draw_composed(
+    fn draw_composed<D: DrawList>(
         &self,
-        draw_list: &mut DrawList,
+        draw_list: &mut D,
         tex: &[[TexCoord; 4]; 4],
         grid_size: [f32; 2],
         pos: [f32; 2],
         size: [f32; 2],
         clip: Clip,
     ) {
-        draw_list.push_quad_components(
+        draw_list.push_rect(
             pos,
             [pos[0] + grid_size[0], pos[1] + grid_size[1]],
             [tex[0][0], tex[1][1]],
@@ -156,7 +157,7 @@ impl Image {
         );
 
         if size[0] > 2.0 * grid_size[0] {
-            draw_list.push_quad_components(
+            draw_list.push_rect(
                 [pos[0] + grid_size[0], pos[1]],
                 [pos[0] + size[0] - grid_size[0], pos[1] + grid_size[1]],
                 [tex[1][0], tex[2][1]],
@@ -165,7 +166,7 @@ impl Image {
             );
         }
 
-        draw_list.push_quad_components(
+        draw_list.push_rect(
             [pos[0] + size[0] - grid_size[0], pos[1]],
             [pos[0] + size[0], pos[1] + grid_size[1]],
             [tex[2][0], tex[3][1]],
@@ -174,7 +175,7 @@ impl Image {
         );
 
         if size[1] > 2.0 * grid_size[1] {
-            draw_list.push_quad_components(
+            draw_list.push_rect(
                 [pos[0], pos[1] + grid_size[1]],
                 [pos[0] + grid_size[0], pos[1] + size[1] - grid_size[1]],
                 [tex[0][1], tex[1][2]],
@@ -183,7 +184,7 @@ impl Image {
             );
 
             if size[0] > 2.0 * grid_size[0] {
-                draw_list.push_quad_components(
+                draw_list.push_rect(
                     [pos[0] + grid_size[0], pos[1] + grid_size[1]],
                     [pos[0] + size[0] - grid_size[0], pos[1] + size[1] - grid_size[1]],
                     [tex[1][1], tex[2][2]],
@@ -192,7 +193,7 @@ impl Image {
                 );
             }
 
-            draw_list.push_quad_components(
+            draw_list.push_rect(
                 [pos[0] + size[0] - grid_size[0], pos[1] + grid_size[1]],
                 [pos[0] + size[0], pos[1] + size[1] - grid_size[1]],
                 [tex[2][1], tex[3][2]],
@@ -201,7 +202,7 @@ impl Image {
             );
         }
 
-        draw_list.push_quad_components(
+        draw_list.push_rect(
             [pos[0], pos[1] + size[1] - grid_size[1]],
             [pos[0] + grid_size[0], pos[1] + size[1]],
             [tex[0][2], tex[1][3]],
@@ -210,7 +211,7 @@ impl Image {
         );
 
         if size[0] > 2.0 * grid_size[0] {
-            draw_list.push_quad_components(
+            draw_list.push_rect(
                 [pos[0] + grid_size[0], pos[1] + size[1] - grid_size[1]],
                 [pos[0] + size[0] - grid_size[0], pos[1] + size[1]],
                 [tex[1][2], tex[2][3]],
@@ -219,7 +220,7 @@ impl Image {
             );
         }
 
-        draw_list.push_quad_components(
+        draw_list.push_rect(
             [pos[0] + size[0] - grid_size[0], pos[1] + size[1] - grid_size[1]],
             [pos[0] + size[0], pos[1] + size[1]],
             [tex[2][2], tex[3][3]],

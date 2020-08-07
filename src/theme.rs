@@ -1,14 +1,12 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap};
 
 use crate::theme_definition::{
     ThemeDefinition, ImageDefinition, ImageDefinitionKind, WidgetThemeDefinition,
 };
-use crate::{Font, FontSummary};
-use crate::{Image, ImageHandle};
-use crate::{
-    Color, Error, TextureData, FontHandle, FontSource,
-    Point, Border, Align, Layout, WidthRelative, HeightRelative, Renderer,
-};
+use crate::font::{Font, FontSummary, FontHandle, FontSource};
+use crate::image::{Image, ImageHandle};
+use crate::render::{TextureData, Renderer};
+use crate::{Color, Error, Point, Border, Align, Layout, WidthRelative, HeightRelative};
 
 pub struct ThemeSet {
     fonts: Vec<Font>,
@@ -161,14 +159,6 @@ impl ThemeSet {
             theme_handles,
             themes,
         })
-    }
-
-    pub fn get(&self, handle: WidgetThemeHandle) -> &WidgetTheme {
-        &self.themes[handle.id as usize]
-    }
-
-    pub fn child_set(&self, handle: WidgetThemeHandle) -> HashSet<WidgetThemeHandle> {
-        self.themes[handle.id as usize].children.iter().copied().collect()
     }
 
     pub fn theme(&self, id: &str) -> Option<&WidgetTheme> {

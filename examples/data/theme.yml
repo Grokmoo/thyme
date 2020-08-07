@@ -94,7 +94,6 @@ image_sets:
           Pressed: window_handle_pressed
           Disabled: window_handle_disabled
 widgets:
-  root: {}
   textbox:
     font: small
     border: { width: 5 }

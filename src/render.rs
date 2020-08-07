@@ -1,246 +1,100 @@
-use crate::{
-    Align, Color, Point, Image, AnimState, Clip, TexCoord,
-    ThemeSet, Font, FontHandle, TextureHandle, Widget
-};
+use crate::{Color, Clip, Point, Error};
+use crate::font::{FontHandle, FontSource, Font};
 
-pub(crate) fn render(
-    themes: &ThemeSet,
-    widgets: Vec<Widget>,
-    display_size: Point,
-) -> DrawData {
-    let mut draw_data = DrawData {
-        display_size: display_size.into(),
-        display_pos: [0.0, 0.0],
-        draw_lists: Vec::new(),
-    };
+pub trait IO {}
 
-    let mut cur_draw: Option<DrawList> = None;
+pub trait Renderer {
+    fn register_font(
+        &mut self,
+        handle: FontHandle,
+        source: &FontSource,
+        size: f32,
+    ) -> Result<Font, Error>;
 
-    // render backgrounds
-    for widget in &widgets {
-        if widget.hidden() { continue; }
-        let image_handle = match widget.background() {
-            None => continue,
-            Some(handle) => handle,
-        };
-
-        render_image(
-            themes.image(image_handle),
-            &mut draw_data,
-            &mut cur_draw,
-            widget.pos(),
-            widget.size(),
-            widget.anim_state(),
-            widget.clip(),
-        );
-    }
-
-    for widget in &widgets {
-        if widget.hidden() { continue; }
-        render_widget_foreground(themes, &mut draw_data, &mut cur_draw, widget);
-    }
-    
-    if let Some(draw) = cur_draw {
-        draw_data.draw_lists.push(draw);
-    }
-
-    draw_data
-}
-
-fn render_widget_foreground(
-    themes: &ThemeSet,
-    draw_data: &mut DrawData,
-    cur_draw: &mut Option<DrawList>,
-    widget: &Widget,
-) {
-    let border = widget.border();
-    let fg_pos = widget.pos() + border.tl();
-    let fg_size = widget.inner_size();
-
-    if let Some(handle) = widget.foreground() {
-        render_image(
-            themes.image(handle),
-            draw_data,
-            cur_draw,
-            fg_pos,
-            fg_size,
-            widget.anim_state(),
-            widget.clip(),
-        );
-    }
-
-    if let Some(text) = widget.text() {
-        if let Some(font_summary) = widget.font() {
-            render_text(
-                themes.font(font_summary.handle),
-                widget.text_align(),
-                widget.text_color(),
-                fg_size,
-                draw_data,
-                cur_draw,
-                fg_pos,
-                text,
-                widget.clip(),
-            )
-        }
-    }
-}
-
-#[allow(clippy::too_many_arguments)]
-fn render_text(
-    font: &Font,
-    align: Align,
-    color: Color,
-    area_size: Point,
-    draw_data: &mut DrawData,
-    cur_draw: &mut Option<DrawList>,
-    pos: Point,
-    text: &str,
-    clip: Clip,
-) {
-    let create_draw = match cur_draw {
-        None => true,
-        Some(draw) => draw.mode != DrawMode::Font(font.handle()),
-    };
-
-    if create_draw {
-        if let Some(draw) = cur_draw.take() {
-            draw_data.draw_lists.push(draw);
-        }
-
-        *cur_draw = Some(DrawList::font(font.handle()));
-    }
-
-    font.draw(
-        cur_draw.as_mut().unwrap(),
-        area_size,
-        pos.into(),
-        text,
-        align,
-        color,
-        clip,
-    )
-}
-
-fn render_image(
-    image: &Image,
-    draw_data: &mut DrawData,
-    cur_draw: &mut Option<DrawList>,
-    pos: Point,
-    size: Point,
-    anim_state: AnimState,
-    clip: Clip,
-) {
-    let create_draw = match cur_draw {
-        None => true,
-        Some(draw) => draw.mode != DrawMode::Base(image.texture()),
-    };
-
-    if create_draw {
-        if let Some(draw) = cur_draw.take() {
-            draw_data.draw_lists.push(draw);
-        }
-
-        *cur_draw = Some(DrawList::new(image.texture()));
-    }
-
-    image.draw(
-        cur_draw.as_mut().unwrap(),
-        pos.into(),
-        size.into(),
-        anim_state,
-        clip,
-    );
-}
-
-#[derive(Copy, Clone)]
-pub struct Vertex {
-    pub position: [f32; 2],
-    pub tex_coords: [f32; 2],
-    pub clip_pos: [f32; 2],
-    pub clip_size: [f32; 2],
-    pub color: [f32; 3],
-}
-
-impl Vertex {
-    pub fn new(position: [f32; 2], tex_coords: [f32; 2], color: Color, clip: Clip) -> Vertex {
-        Vertex {
-            position,
-            tex_coords,
-            color: color.into(),
-            clip_pos: clip.pos.into(),
-            clip_size: clip.size.into(),
-        }
-    }
+    fn register_texture(
+        &mut self,
+        handle: TextureHandle,
+        image_data: &[u8],
+        dimensions: (u32, u32),
+    ) -> Result<TextureData, Error>;
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum DrawMode {
-    Base(TextureHandle),
+    Image(TextureHandle),
     Font(FontHandle),
 }
 
-pub struct DrawList {
-    pub vertices: Vec<Vertex>,
-    pub indices: Vec<u32>,
-    pub mode: DrawMode,
-}
-
-impl DrawList {
-    pub fn new(texture: TextureHandle) -> DrawList {
-        DrawList {
-            vertices: Vec::new(),
-            indices: Vec::new(),
-            mode: DrawMode::Base(texture),
-        }
-    }
-
-    pub fn font(font: FontHandle) -> DrawList {
-        DrawList {
-            vertices: Vec::new(),
-            indices: Vec::new(),
-            mode: DrawMode::Font(font),
-        }
-    }
-
-    pub(crate) fn push_quad_components(
+pub trait DrawList {
+    fn push_rect(
         &mut self,
         p0: [f32; 2],
         p1: [f32; 2],
         tex: [TexCoord; 2],
         color: Color,
         clip: Clip,
-    ) {
-        let ul = Vertex::new(p0, tex[0].into(), color, clip);
-        let lr = Vertex::new(p1, tex[1].into(), color, clip);
-        self.push_quad(ul, lr);
+    );
+
+    /// the number of vertices currently contained in this list
+    fn len(&self) -> usize;
+
+    /// adjust the positions of all vertices from the last one in the list
+    /// to the one at the specified `since_index`, by the specified `amount`
+    fn back_adjust_positions(&mut self, since_index: usize, amount: Point);
+}
+
+pub struct TextureData {
+    handle: TextureHandle,
+    size: [u32; 2],
+}
+
+impl TextureData {
+    pub fn new(handle: TextureHandle, width: u32, height: u32) -> TextureData {
+        TextureData {
+            handle,
+            size: [width, height],
+        }
     }
 
-    fn push_quad(&mut self, ul: Vertex, lr: Vertex) {
-        let idx = self.vertices.len() as u32;
-        self.indices.extend_from_slice(&[idx, idx + 1, idx + 2, idx, idx + 2, idx + 3]);
+    pub fn tex_coord(&self, x: u32, y: u32) -> TexCoord {
+        let x = x as f32 / self.size[0] as f32;
+        let y = 1.0 - y as f32 / self.size[1] as f32;
+        TexCoord([x, y])
+    }
 
-        self.vertices.push(ul);
-        self.vertices.push(Vertex {
-            position: [ul.position[0], lr.position[1]],
-            tex_coords: [ul.tex_coords[0], lr.tex_coords[1]],
-            clip_pos: ul.clip_pos,
-            clip_size: ul.clip_size,
-            color: ul.color,
-        });
-        self.vertices.push(lr);
-        self.vertices.push(Vertex {
-            position: [lr.position[0], ul.position[1]],
-            tex_coords: [lr.tex_coords[0], ul.tex_coords[1]],
-            clip_pos: lr.clip_pos,
-            clip_size: lr.clip_size,
-            color: lr.color,
-        });
+    pub fn handle(&self) -> TextureHandle { self.handle }
+}
+
+#[derive(Copy, Clone)]
+pub struct TexCoord([f32; 2]);
+
+impl TexCoord {
+    pub fn new(x: f32, y: f32) -> TexCoord {
+        TexCoord([x, y])
     }
 }
 
-pub struct DrawData {
-    pub display_size: [f32; 2],
-    pub display_pos: [f32; 2],
-    pub draw_lists: Vec<DrawList>,
+impl Default for TexCoord {
+    fn default() -> TexCoord {
+        TexCoord([0.0, 0.0])
+    }
+}
+
+impl From<TexCoord> for [f32; 2] {
+    fn from(coord: TexCoord) -> Self {
+        coord.0
+    }
+}
+
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash)]
+pub struct TextureHandle {
+    id: usize,
+}
+
+impl TextureHandle {
+    pub fn id(self) -> usize { self.id }
+
+    pub fn next(self) -> TextureHandle {
+        TextureHandle { id: self.id + 1 }
+    }
 }

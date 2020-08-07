@@ -1,6 +1,7 @@
 use winit::event::{Event, WindowEvent, MouseButton, ElementState};
 
-use crate::{Context, IO};
+use crate::context::Context;
+use crate::render::IO;
 
 pub struct WinitIo {}
 

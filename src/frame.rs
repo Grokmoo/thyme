@@ -1,11 +1,12 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use crate::context::{Context, ContextInternal};
+
 use crate::{
-    AnimState, AnimStateKey, Context, DrawData,
-    Rect, Point, Widget, WidgetBuilder,
-    WidgetState, ContextInternal, PersistentState,
+    AnimState, AnimStateKey, Rect, Point, WidgetBuilder, WidgetState, PersistentState,
 };
+use crate::widget::Widget;
 
 const MOUSE_NOT_TAKEN: (bool, AnimState, Point) =
     (false, AnimState::normal(), Point { x: 0.0, y: 0.0 });
@@ -28,27 +29,27 @@ impl Frame {
     }
 
     pub(crate) fn context_internal(&self) -> &Rc<RefCell<ContextInternal>> {
-        &self.context.internal
+        &self.context.internal()
     }
 
     pub(crate) fn check_mouse_taken(&mut self, index: usize) -> (bool, AnimState, Point) {
         let widget = &self.widgets[index];
 
-        let context = self.context.internal.borrow_mut();
+        let context = self.context.internal().borrow_mut();
 
         if context.mouse_pressed_outside() || self.mouse_taken.is_some() {
             return MOUSE_NOT_TAKEN;
         }
 
-        let was_taken_last = context.mouse_taken_last_frame.as_deref() == Some(widget.id());
+        let was_taken_last = context.mouse_taken_last_frame() == Some(widget.id());
 
         // check if we are dragging on this widget
-        if context.mouse_pressed[0] {
+        if context.mouse_pressed(0) {
             if was_taken_last {
                 self.mouse_taken = Some(widget.id().to_string());
-                let dragged = context.mouse_pos - context.last_mouse_pos;
+                let dragged = context.mouse_pos() - context.last_mouse_pos();
                 return (
-                    context.mouse_clicked[0],
+                    context.mouse_clicked(0),
                     AnimState::new(AnimStateKey::Pressed),
                     dragged
                 );
@@ -58,26 +59,26 @@ impl Frame {
         }
 
         let bounds = Rect::new(widget.pos(), widget.size());
-        if !bounds.inside(context.mouse_pos) {
+        if !bounds.inside(context.mouse_pos()) {
             return MOUSE_NOT_TAKEN;
         }
 
         self.mouse_taken = Some(widget.id().to_string());
         (
-            was_taken_last && context.mouse_clicked[0],
+            was_taken_last && context.mouse_clicked(0),
             AnimState::new(AnimStateKey::Hover),
             Point::default()
         )
     }
 
     pub(crate) fn init_state(&mut self, index: usize, open: bool) {
-        let mut context = self.context.internal.borrow_mut();
+        let mut context = self.context.internal().borrow_mut();
         let widget = &self.widgets[index];
         context.init_state(widget.id(), open);
     }
 
     pub(crate) fn state(&self, index: usize) -> PersistentState {
-        let context = self.context.internal.borrow();
+        let context = self.context.internal().borrow();
         let widget = &self.widgets[index];
         context.state(widget.id())
     }
@@ -102,10 +103,15 @@ impl Frame {
     }
 
     // ui builder methods
-
     pub fn gap(&mut self, gap: f32) {
         self.widgets[self.parent_index].gap(gap);
     }
+
+    pub fn set_cursor(&mut self, x: f32, y: f32) {
+        self.widgets[self.parent_index].set_cursor(x, y);
+    }
+
+    pub fn cursor(&self) -> Point { self.widgets[self.parent_index].cursor() }
 
     #[must_use]
     pub fn start(&mut self, theme: &str) -> WidgetBuilder {
@@ -139,39 +145,35 @@ impl Frame {
 
     // internal state modifiers
     pub fn toggle_open<T: Into<String>>(&mut self, id: T) {
-        let mut context = self.context.internal.borrow_mut();
+        let mut context = self.context.internal().borrow_mut();
         let state = context.state_mut(id);
         state.is_open = !state.is_open;
     }
 
     pub fn is_open(&self, id: &str) -> bool {
-        let context = self.context.internal.borrow();
+        let context = self.context.internal().borrow();
         context.state(id).is_open
     }
 
     pub fn set_open<T: Into<String>>(&mut self, id: T, open: bool) {
-        let mut context = self.context.internal.borrow_mut();
+        let mut context = self.context.internal().borrow_mut();
         context.state_mut(id).is_open = open;
     }
 
     pub fn set_parent_open(&mut self, open: bool) {
-        let mut context = self.context.internal.borrow_mut();
+        let mut context = self.context.internal().borrow_mut();
         let id = self.widgets[self.parent_index].id();
         context.state_mut(id).is_open = open;
     }
 
     pub fn modify<T: Into<String>, F: Fn(&mut PersistentState)>(&mut self, id: T, f: F) {
-        let mut context = self.context.internal.borrow_mut();
+        let mut context = self.context.internal().borrow_mut();
         (f)(context.state_mut(id));
     }
 
-    pub fn render(self) -> DrawData {
-        let mut context = self.context.internal.borrow_mut();
-        context.mouse_clicked = [false; 3];
-        context.mouse_taken_last_frame = self.mouse_taken;
-        context.last_mouse_pos = context.mouse_pos;
+    pub(crate) fn finish_frame(self) -> (Context, Vec<Widget>) {
+        self.context.internal().borrow_mut().next_frame(self.mouse_taken);
 
-        let themes = &context.themes;
-        crate::render::render(themes, self.widgets, context.display_size)
+        (self.context, self.widgets)
     }
 }

@@ -1,4 +1,5 @@
-use crate::{Point, Clip, Align, TexCoord, DrawList, Color};
+use crate::render::{TexCoord, DrawList};
+use crate::{Point, Clip, Align, Color};
 
 pub struct FontSource {
     pub(crate) font: rusttype::Font<'static>,
@@ -26,7 +27,7 @@ impl Default for FontChar {
     fn default() -> Self {
         FontChar {
             size: Point::default(),
-            tex_coords: [TexCoord([0.0, 0.0]), TexCoord([0.0, 0.0])],
+            tex_coords: [TexCoord::new(0.0, 0.0), TexCoord::new(0.0, 0.0)],
             x_advance: 0.0,
             y_offset: 0.0,
         }
@@ -67,9 +68,9 @@ impl Font {
     pub fn handle(&self) -> FontHandle { self.handle }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn draw(
+    pub(crate) fn draw<D: DrawList>(
         &self,
-        draw_list: &mut DrawList,
+        draw_list: &mut D,
         area_size: Point,
         pos: [f32; 2],
         text: &str,
@@ -90,9 +91,9 @@ impl Font {
     }
 }
 
-struct FontRenderer<'a> {
+struct FontRenderer<'a, D> {
     font: &'a Font,
-    draw_list: &'a mut DrawList,
+    draw_list: &'a mut D,
     initial_index: usize,
 
     clip: Clip,
@@ -110,17 +111,17 @@ struct FontRenderer<'a> {
     cur_word_width: f32,
 }
 
-impl<'a> FontRenderer<'a> {
+impl<'a, D: DrawList> FontRenderer<'a, D> {
     fn new(
         font: &'a Font,
-        draw_list: &'a mut DrawList,
+        draw_list: &'a mut D,
         area_size: Point,
         pos: Point,
         align: Align,
         color: Color,
         clip: Clip,
-    ) -> FontRenderer<'a> {
-        let initial_index = draw_list.vertices.len();
+    ) -> FontRenderer<'a, D> {
+        let initial_index = draw_list.len();
 
         FontRenderer {
             font,
@@ -153,7 +154,7 @@ impl<'a> FontRenderer<'a> {
                 self.draw_cur_word();
 
                 // don't draw whitespace at the start of a line
-                if self.cur_line_index != self.draw_list.vertices.len() {
+                if self.cur_line_index != self.draw_list.len() {
                     self.pos.x += font_char.x_advance;
                     self.size.x += font_char.x_advance;
                 }
@@ -166,7 +167,7 @@ impl<'a> FontRenderer<'a> {
 
             if self.size.x + self.cur_word_width > self.area_size.x {
                 // if the word was so long that we drew nothing at all
-                if self.cur_line_index == self.draw_list.vertices.len() {
+                if self.cur_line_index == self.draw_list.len() {
                     self.draw_cur_word();
                     self.next_line();
                 } else {
@@ -178,7 +179,7 @@ impl<'a> FontRenderer<'a> {
 
         self.draw_cur_word();
 
-        if self.cur_line_index < self.draw_list.vertices.len() {    
+        if self.cur_line_index < self.draw_list.len() {    
             // adjust characters on the last line
             self.adjust_line_x();
             self.size.y += self.font.line_height;
@@ -189,7 +190,7 @@ impl<'a> FontRenderer<'a> {
 
     fn draw_cur_word(&mut self) {
         for font_char in self.cur_word.drain(..) {
-            self.draw_list.push_quad_components(
+            self.draw_list.push_rect(
                 [self.pos.x, self.pos.y + font_char.y_offset + self.font.ascent],
                 [self.pos.x + font_char.size.x, self.pos.y + font_char.size.y + font_char.y_offset + self.font.ascent],
                 font_char.tex_coords,
@@ -208,7 +209,7 @@ impl<'a> FontRenderer<'a> {
         self.pos.x = self.initial_pos.x;
 
         self.adjust_line_x();
-        self.cur_line_index = self.draw_list.vertices.len();
+        self.cur_line_index = self.draw_list.len();
         self.size.x = 0.0;
     }
 
@@ -226,9 +227,10 @@ impl<'a> FontRenderer<'a> {
             Center =>   (self.area_size.y - self.size.y) / 2.0,
         };
 
-        for vert in self.draw_list.vertices.iter_mut().skip(self.initial_index) {
-            vert.position[1] += y_offset;
-        }
+        self.draw_list.back_adjust_positions(
+            self.initial_index,
+            Point { x: 0.0, y: y_offset }
+        );
     }
 
     fn adjust_line_x(&mut self) {
@@ -245,8 +247,9 @@ impl<'a> FontRenderer<'a> {
             Center =>   (self.area_size.x - self.size.x) / 2.0,
         };
     
-        for vert in self.draw_list.vertices.iter_mut().skip(self.cur_line_index) {
-            vert.position[0] += x_offset;
-        }
+        self.draw_list.back_adjust_positions(
+            self.cur_line_index,
+            Point { x: x_offset, y: 0.0 }
+        );
     }
 }

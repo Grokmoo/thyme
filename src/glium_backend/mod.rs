@@ -9,7 +9,94 @@ use glium::uniforms::{MagnifySamplerFilter, MinifySamplerFilter, Sampler, Sample
 use glium::texture::{Texture2d, RawImage2d, SrgbTexture2d};
 use glium::index::PrimitiveType;
 
-use crate::{DrawData, DrawMode, Renderer, TextureHandle, TextureData, TexCoord, Vertex, Font, FontSource, FontHandle, FontChar};
+use crate::render::{TexCoord, DrawList, DrawMode, Renderer, TextureHandle, TextureData};
+use crate::font::{Font, FontSource, FontHandle, FontChar};
+use crate::{Frame, Point, Color, Clip};
+
+struct GliumDrawList {
+    vertices: Vec<GliumVertex>,
+    indices: Vec<u32>,
+}
+
+impl GliumDrawList {
+    fn new() -> Self {
+        GliumDrawList {
+            vertices: Vec::new(),
+            indices: Vec::new(),
+        }
+    }
+
+    fn clear(&mut self) {
+        self.vertices.clear();
+        self.indices.clear();
+    }
+}
+
+impl DrawList for GliumDrawList {
+    fn len(&self) -> usize { self.vertices.len() }
+
+    fn back_adjust_positions(&mut self, since_index: usize, amount: Point) {
+        for vert in self.vertices.iter_mut().skip(since_index) {
+            vert.position[0] += amount.x;
+            vert.position[1] += amount.y;
+        }
+    }
+
+    fn push_rect(
+        &mut self,
+        p0: [f32; 2],
+        p1: [f32; 2],
+        tex: [TexCoord; 2],
+        color: Color,
+        clip: Clip,
+    ) {
+        let ul = GliumVertex::new(p0, tex[0].into(), color, clip);
+        let lr = GliumVertex::new(p1, tex[1].into(), color, clip);
+
+        let idx = self.vertices.len() as u32;
+        self.indices.extend_from_slice(&[idx, idx + 1, idx + 2, idx, idx + 2, idx + 3]);
+
+        self.vertices.push(ul);
+        self.vertices.push(GliumVertex {
+            position: [ul.position[0], lr.position[1]],
+            tex_coords: [ul.tex_coords[0], lr.tex_coords[1]],
+            clip_pos: ul.clip_pos,
+            clip_size: ul.clip_size,
+            color: ul.color,
+        });
+        self.vertices.push(lr);
+        self.vertices.push(GliumVertex {
+            position: [lr.position[0], ul.position[1]],
+            tex_coords: [lr.tex_coords[0], ul.tex_coords[1]],
+            clip_pos: lr.clip_pos,
+            clip_size: lr.clip_size,
+            color: lr.color,
+        });
+    }
+}
+
+#[derive(Copy, Clone)]
+pub struct GliumVertex {
+    pub position: [f32; 2],
+    pub tex_coords: [f32; 2],
+    pub clip_pos: [f32; 2],
+    pub clip_size: [f32; 2],
+    pub color: [f32; 3],
+}
+
+impl GliumVertex {
+    fn new(position: [f32; 2], tex_coords: [f32; 2], color: Color, clip: Clip) -> GliumVertex {
+        GliumVertex {
+            position,
+            tex_coords,
+            color: color.into(),
+            clip_pos: clip.pos.into(),
+            clip_size: clip.size.into(),
+        }
+    }
+}
+
+implement_vertex!(GliumVertex, position, tex_coords, color, clip_pos, clip_size);
 
 const FONT_TEX_SIZE: u32 = 512;
 
@@ -19,6 +106,25 @@ pub struct GliumRenderer {
     font_program: Program,
     textures: Vec<GliumTexture>,
     fonts: Vec<GliumFont>,
+
+    // keep the draw list so we don't need to re-allocate every frame
+    draw_list: GliumDrawList,
+}
+
+// implement_vertex!(Vertex, position, tex_coords, color, clip_pos, clip_size);
+
+fn matrix(display_pos: Point, display_size: Point) -> [[f32; 4]; 4] {
+    let left = display_pos.x;
+    let right = display_pos.x + display_size.x;
+    let top = display_pos.y;
+    let bot = display_pos.y + display_size.y;
+
+    [
+        [         (2.0 / (right - left)),                             0.0,  0.0, 0.0],
+        [                            0.0,          (2.0 / (top - bot)),  0.0, 0.0],
+        [                            0.0,                             0.0, -1.0, 0.0],
+        [(right + left) / (left - right), (top + bot) / (bot - top),  0.0, 1.0],
+    ]
 }
 
 impl GliumRenderer {
@@ -45,6 +151,7 @@ impl GliumRenderer {
             font_program,
             fonts: Vec::new(),
             textures: Vec::new(),
+            draw_list: GliumDrawList::new(),
         })
     }
 
@@ -53,52 +160,144 @@ impl GliumRenderer {
     }
 
     fn texture(&self, texture: TextureHandle) -> &GliumTexture {
-        &self.textures[texture.id]
+        &self.textures[texture.id()]
     }
 
-    pub fn draw<T: Surface>(&mut self, target: &mut T, data: &DrawData) -> Result<(), GliumError> {
-        let left = data.display_pos[0];
-        let right = data.display_pos[0] + data.display_size[0];
-        let top = data.display_pos[1];
-        let bottom = data.display_pos[1] + data.display_size[1];
+    pub fn draw_frame<T: Surface>(&mut self, target: &mut T, frame: Frame) -> Result<(), GliumError> {
+        let (context, widgets) = frame.finish_frame();
+        let context = context.internal().borrow();
 
-        let matrix = [
-            [         (2.0 / (right - left)),                             0.0,  0.0, 0.0],
-            [                            0.0,          (2.0 / (top - bottom)),  0.0, 0.0],
-            [                            0.0,                             0.0, -1.0, 0.0],
-            [(right + left) / (left - right), (top + bottom) / (bottom - top),  0.0, 1.0],
-        ];
+        let display_pos = Point::default();
+        let display_size = context.display_size();
+        let matrix = matrix(display_pos, display_size);
+        let params = DrawParameters {
+            blend: glium::Blend::alpha_blending(),
+            clip_planes_bitmask: 0b1111, //enable the first 4 clip planes
+            ..DrawParameters::default()
+        };
 
-        for list in &data.draw_lists {
-            let vertices = glium::VertexBuffer::immutable(&self.context, &list.vertices)?;
-            let indices = glium::IndexBuffer::immutable(&self.context, PrimitiveType::TrianglesList, &list.indices)?;
+        // render backgrounds
+        let mut draw_mode = None;
+        self.draw_list.clear();
 
-            let params = DrawParameters {
-                blend: glium::Blend::alpha_blending(),
-                clip_planes_bitmask: 0b1111, //enable the first 4 clip planes
-                ..DrawParameters::default()
+        for widget in &widgets {
+            if widget.hidden() { continue; }
+            let image_handle = match widget.background() {
+                None => continue,
+                Some(handle) => handle,
             };
+            let image = context.themes().image(image_handle);
 
-            match list.mode {
-                DrawMode::Base(texture) => {
-                    let texture = self.texture(texture);
-                    let uniforms = uniform! {
-                        tex: Sampler(&texture.texture, texture.sampler),
-                        matrix: matrix,
-                    };
-                    target.draw(&vertices, &indices, &self.base_program, &uniforms, &params)?;
-                }, DrawMode::Font(font) => {
-                    let font = self.font(font);
-                    let tex = Sampler(&font.texture, font.sampler);
-                    let uniforms = uniform! {
-                        tex: tex,
-                        matrix: matrix,
-                    };
-                    target.draw(&vertices, &indices, &self.font_program, &uniforms, &params)?;
-                }
-            }            
+            self.render_if_changed(target, &mut draw_mode, DrawMode::Image(image.texture()), matrix, &params)?;
+            
+            image.draw(
+                &mut self.draw_list,
+                widget.pos().into(),
+                widget.size().into(),
+                widget.anim_state(),
+                widget.clip()
+            );
         }
 
+        // render foregrounds
+        for widget in &widgets {
+            if widget.hidden() { continue; }
+
+            let border = widget.border();
+            let fg_pos = widget.pos() + border.tl();
+            let fg_size = widget.inner_size();
+
+            if let Some(image_handle) = widget.foreground() {
+                let image = context.themes().image(image_handle);
+                self.render_if_changed(target, &mut draw_mode, DrawMode::Image(image.texture()), matrix, &params)?;
+
+                image.draw(
+                    &mut self.draw_list,
+                    fg_pos.into(),
+                    fg_size.into(),
+                    widget.anim_state(),
+                    widget.clip()
+                );
+            }
+
+            if let Some(text) = widget.text() {
+                if let Some(font_sum) = widget.font() {
+                    self.render_if_changed(target, &mut draw_mode, DrawMode::Font(font_sum.handle), matrix, &params)?;
+                    let font = context.themes().font(font_sum.handle);
+
+                    font.draw(
+                        &mut self.draw_list,
+                        fg_size,
+                        fg_pos.into(),
+                        text,
+                        widget.text_align(),
+                        widget.text_color(),
+                        widget.clip(),
+                    )
+                }
+            }
+        }
+
+        // render anything from the final draw calls
+        if let Some(mode) = draw_mode {
+            self.render(target, mode, matrix, &params)?;
+        }
+
+        Ok(())
+    }
+
+    fn render_if_changed<T: Surface>(
+        &mut self,
+        target: &mut T,
+        mode: &mut Option<DrawMode>,
+        desired_mode: DrawMode,
+        matrix: [[f32; 4]; 4],
+        params: &DrawParameters,
+    ) -> Result<(), GliumError> {
+        match mode {
+            None => *mode = Some(desired_mode),
+            Some(cur_mode) => if *cur_mode != desired_mode {
+                self.render(target, *cur_mode, matrix, params)?;
+                *mode = Some(desired_mode);
+            }
+        }
+
+        Ok(())
+    }
+
+    fn render<T: Surface>(
+        &mut self,
+        target: &mut T,
+        mode: DrawMode,
+        matrix: [[f32; 4]; 4],
+        params: &DrawParameters,
+    ) -> Result<(), GliumError> {
+        let vertices = glium::VertexBuffer::immutable(
+            &self.context, &self.draw_list.vertices
+        )?;
+        let indices = glium::IndexBuffer::immutable(
+            &self.context, PrimitiveType::TrianglesList, &self.draw_list.indices
+        )?;
+        match mode {
+            DrawMode::Font(font_handle) => {
+                let font = self.font(font_handle);
+                let uniforms = uniform! {
+                    tex: Sampler(&font.texture, font.sampler),
+                    matrix: matrix,
+                };
+                target.draw(&vertices, &indices, &self.font_program, &uniforms, params)?;
+            },
+            DrawMode::Image(tex_handle) => {
+                let texture = self.texture(tex_handle);
+                let uniforms = uniform! {
+                    tex: Sampler(&texture.texture, texture.sampler),
+                    matrix: matrix,
+                };
+                target.draw(&vertices, &indices, &self.base_program, &uniforms, params)?;
+            }
+        };
+
+        self.draw_list.clear();
         Ok(())
     }
 }
@@ -124,10 +323,10 @@ impl Renderer for GliumRenderer {
             ..Default::default()
         };
 
-        assert!(handle.id == self.textures.len());
+        assert!(handle.id() == self.textures.len());
         self.textures.push(GliumTexture { texture, sampler });
 
-        Ok(TextureData { handle, size: [dimensions.0, dimensions.1] })
+        Ok(TextureData::new(handle, dimensions.0, dimensions.1))
     }
 
     fn register_font(
@@ -254,14 +453,14 @@ impl<'a> FontTextureWriter<'a> {
         });
 
         let tex_coords = [
-            TexCoord([
+            TexCoord::new(
                 self.tex_x as f32 / FONT_TEX_SIZE as f32,
                 self.tex_y as f32 / FONT_TEX_SIZE as f32
-            ]),
-            TexCoord([
+            ),
+            TexCoord::new(
                 (self.tex_x + bounding_box.0) as f32 / FONT_TEX_SIZE as f32,
                 (self.tex_y + bounding_box.1) as f32 / FONT_TEX_SIZE as f32
-            ]),
+            ),
         ];
 
         self.tex_x += bounding_box.0 + 1;
@@ -274,7 +473,6 @@ impl<'a> FontTextureWriter<'a> {
         }
     }
 }
-implement_vertex!(Vertex, position, tex_coords, color, clip_pos, clip_size);
 
 struct GliumFont {
     texture: Texture2d,

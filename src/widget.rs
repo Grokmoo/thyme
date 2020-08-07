@@ -1,9 +1,10 @@
 use crate::{
-    AnimState, AnimStateKey, Color, FontSummary, Frame, Point, Border,
-    Align, Layout, WidthRelative, HeightRelative, PersistentState,
-    Clip, ImageHandle,
+    AnimState, AnimStateKey, Color, Frame, Point, Border, Align, 
+    Layout, WidthRelative, HeightRelative, PersistentState, Clip,
 };
-use crate::theme::{WidgetThemeHandle, WidgetTheme};
+use crate::font::FontSummary;
+use crate::image::ImageHandle;
+use crate::theme::{WidgetTheme};
 
 pub struct Widget {
     raw_pos: Point,
@@ -11,7 +12,6 @@ pub struct Widget {
     clip: Clip,
 
     theme_id: String,
-    theme: WidgetThemeHandle,
     text: Option<String>,
     text_color: Color,
     wants_mouse: bool,
@@ -36,10 +36,9 @@ pub struct Widget {
 }
 
 impl Widget {
-    pub(crate) fn root(theme: WidgetThemeHandle, size: Point) -> Widget {
+    pub(crate) fn root(size: Point) -> Widget {
         Widget {
             theme_id: String::new(),
-            theme,
             text: None,
             text_align: Align::default(),
             text_color: Color::default(),
@@ -94,7 +93,6 @@ impl Widget {
             font,
             background: theme.background,
             foreground: theme.foreground,
-            theme: theme.handle,
             raw_size,
             raw_pos,
             pos,
@@ -124,7 +122,6 @@ impl Widget {
     pub fn background(&self) -> Option<ImageHandle> { self.background }
     pub fn border(&self) -> Border { self.border }
     pub fn id(&self) -> &str { &self.id }
-    pub fn theme(&self) -> WidgetThemeHandle { self.theme }
     pub fn theme_id(&self) -> &str { &self.theme_id }
     pub fn anim_state(&self) -> AnimState { self.anim_state }
     pub fn size(&self) -> Point { self.size }
@@ -284,9 +281,9 @@ impl<'a> WidgetBuilder<'a> {
         let (manual_pos, index, widget) = {
             let context = frame.context_internal();
             let context = context.borrow();
-            let theme = match context.themes.theme(&theme_id) {
+            let theme = match context.themes().theme(&theme_id) {
                 None => {
-                    match context.themes.theme(base_theme) {
+                    match context.themes().theme(base_theme) {
                         None => {
                             // TODO remove unwrap
                             println!("Unable to locate theme either at {} or {}", theme_id, base_theme);
@@ -396,7 +393,7 @@ impl<'a> WidgetBuilder<'a> {
         let font = {
             let context = self.frame.context_internal();
             let context = context.borrow();
-            context.themes.find_font(Some(font))
+            context.themes().find_font(Some(font))
         };
 
         self.widget().font = font;
@@ -409,7 +406,7 @@ impl<'a> WidgetBuilder<'a> {
         let fg = {
             let context = self.frame.context_internal();
             let context = context.borrow();
-            context.themes.find_image(Some(fg))
+            context.themes().find_image(Some(fg))
         };
 
         self.widget().foreground = fg;
@@ -421,7 +418,7 @@ impl<'a> WidgetBuilder<'a> {
         let bg = {
             let context = self.frame.context_internal();
             let context = context.borrow();
-            context.themes.find_image(Some(bg))
+            context.themes().find_image(Some(bg))
         };
 
         self.widget().background = bg;
