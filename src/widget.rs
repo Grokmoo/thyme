@@ -1,12 +1,14 @@
 use crate::{
     AnimState, AnimStateKey, Color, FontSummary, Frame, Point, Border,
     Align, Layout, WidthRelative, HeightRelative, PersistentState,
+    Clip,
 };
 use crate::theme::{WidgetThemeHandle, WidgetTheme};
 
 pub struct Widget {
     raw_pos: Point,
     raw_size: Point,
+    clip: Clip,
 
     theme_id: String,
     theme: WidgetThemeHandle,
@@ -60,6 +62,7 @@ impl Widget {
             id: String::new(),
             anim_state: AnimState::normal(),
             hidden: false,
+            clip: Clip { pos: Point::default(), size },
         }
     }
 
@@ -107,9 +110,11 @@ impl Widget {
             id,
             anim_state: AnimState::normal(),
             hidden: false,
+            clip: parent.clip,
         }
     }
 
+    pub fn clip(&self) -> Clip { self.clip }
     pub fn hidden(&self) -> bool { self.hidden }
     pub fn text_color(&self) -> Color { self.text_color }
     pub fn text_align(&self) -> Align { self.text_align }

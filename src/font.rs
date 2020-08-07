@@ -1,4 +1,4 @@
-use crate::{Point, Align, TexCoord, DrawList, Color, Vertex};
+use crate::{Point, Clip, Align, TexCoord, DrawList, Color};
 
 pub struct FontSource {
     pub(crate) font: rusttype::Font<'static>,
@@ -66,6 +66,7 @@ impl Font {
 
     pub fn handle(&self) -> FontHandle { self.handle }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn draw(
         &self,
         draw_list: &mut DrawList,
@@ -74,8 +75,17 @@ impl Font {
         text: &str,
         align: Align,
         color: Color,
+        clip: Clip,
     ) {
-        let renderer = FontRenderer::new(&self, draw_list, area_size, pos.into(), align, color);
+        let renderer = FontRenderer::new(
+            &self,
+            draw_list,
+            area_size,
+            pos.into(),
+            align,
+            color,
+            clip
+        );
         renderer.render(text);
     }
 }
@@ -85,6 +95,7 @@ struct FontRenderer<'a> {
     draw_list: &'a mut DrawList,
     initial_index: usize,
 
+    clip: Clip,
     align: Align,
     color: Color,
 
@@ -107,6 +118,7 @@ impl<'a> FontRenderer<'a> {
         pos: Point,
         align: Align,
         color: Color,
+        clip: Clip,
     ) -> FontRenderer<'a> {
         let initial_index = draw_list.vertices.len();
 
@@ -116,6 +128,7 @@ impl<'a> FontRenderer<'a> {
             initial_index,
             align,
             color,
+            clip,
             area_size,
             initial_pos: pos,
             pos,
@@ -176,16 +189,12 @@ impl<'a> FontRenderer<'a> {
 
     fn draw_cur_word(&mut self) {
         for font_char in self.cur_word.drain(..) {
-            self.draw_list.push_quad(
-                Vertex {
-                    position: [self.pos.x, self.pos.y + font_char.y_offset + self.font.ascent],
-                    tex_coords: font_char.tex_coords[0].into(),
-                    color: self.color.into()
-                }, Vertex {
-                    position: [self.pos.x + font_char.size.x, self.pos.y + font_char.size.y + font_char.y_offset + self.font.ascent],
-                    tex_coords: font_char.tex_coords[1].into(),
-                    color: self.color.into()
-                },
+            self.draw_list.push_quad_components(
+                [self.pos.x, self.pos.y + font_char.y_offset + self.font.ascent],
+                [self.pos.x + font_char.size.x, self.pos.y + font_char.size.y + font_char.y_offset + self.font.ascent],
+                font_char.tex_coords,
+                self.color,
+                self.clip,
             );
             self.pos.x += font_char.x_advance;
             self.size.x += font_char.x_advance;

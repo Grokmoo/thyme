@@ -78,6 +78,7 @@ impl GliumRenderer {
 
             let params = DrawParameters {
                 blend: glium::Blend::alpha_blending(),
+                clip_planes_bitmask: 0b1111, //enable the first 4 clip planes
                 ..DrawParameters::default()
             };
 
@@ -276,7 +277,7 @@ impl<'a> FontTextureWriter<'a> {
         }
     }
 }
-implement_vertex!(Vertex, position, tex_coords, color);
+implement_vertex!(Vertex, position, tex_coords, color, clip_pos, clip_size);
 
 struct GliumFont {
     texture: Texture2d,
@@ -360,6 +361,8 @@ const VERTEX_SHADER_SRC: &str = r#"
   in vec2 position;
   in vec2 tex_coords;
   in vec3 color;
+  in vec2 clip_pos;
+  in vec2 clip_size;
 
   out vec2 v_tex_coords;
   out vec3 v_color;
@@ -369,6 +372,12 @@ const VERTEX_SHADER_SRC: &str = r#"
   void main() {
     v_tex_coords = tex_coords;
     v_color = color;
+
+    gl_ClipDistance[0] = position.x - clip_pos.x;
+    gl_ClipDistance[1] = clip_pos.x + clip_size.x - position.x;
+    gl_ClipDistance[2] = position.y - clip_pos.y;
+    gl_ClipDistance[3] = clip_pos.y + clip_size.y - position.y;
+
     gl_Position = matrix * vec4(position, 0.0, 1.0);
   }
 "#;

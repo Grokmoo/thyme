@@ -4,7 +4,7 @@ Thyme is a Graphical User Interface (GUI) library written in pure, safe, Rust.  
 
 Thyme produces a set of Draw Lists which are sent to a swappable graphics backend - currently [Glium](https://github.com/glium/glium) is supported.  The I/O backend is also swappable - currently [winit](https://github.com/rust-windowing/winit) is supported.  Fonts are rendered to a texture on the GPU using [rusttype](https://github.com/redox-os/rusttype).  
 
-Performance is already acceptable for most use cases, with the complete cycle of generating the widget tree, creating the draw data, and rendering taking less than 1 ms for moderately complex UIs.  This is without any significant effort made towards optimization.
+Performance is already acceptable for most use cases, with the complete cycle of generating the widget tree, creating the draw data, and rendering taking between 0.1 to 1.0 ms for moderately complex UIs.  This is without any significant effort made towards optimization.
 
 ## License
 [License]: #license

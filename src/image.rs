@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{Error};
-use crate::{TexCoord, TextureHandle, TextureData, Color, AnimState, DrawList, Vertex};
+use crate::{Clip, TexCoord, TextureHandle, TextureData, Color, AnimState, DrawList};
 use crate::theme_definition::{ImageDefinition, ImageDefinitionKind};
 
 #[derive(Clone)]
@@ -29,20 +29,27 @@ pub struct Image {
 impl Image {
     pub fn texture(&self) -> TextureHandle { self.texture }
 
-    pub fn draw(&self, draw_list: &mut DrawList, pos: [f32; 2], size: [f32; 2], anim_state: AnimState) {
+    pub fn draw(
+        &self,
+        draw_list: &mut DrawList,
+        pos: [f32; 2],
+        size: [f32; 2],
+        anim_state: AnimState,
+        clip: Clip,
+    ) {
         match &self.kind {
             ImageKind::Composed { tex_coords, grid_size } => {
-                self.draw_composed(draw_list, tex_coords, *grid_size, pos, size);
+                self.draw_composed(draw_list, tex_coords, *grid_size, pos, size, clip);
             },
             ImageKind::Simple { tex_coords, fixed_size } => {
                 if let Some(size) = fixed_size {
-                    self.draw_simple(draw_list, tex_coords, pos, *size);
+                    self.draw_simple(draw_list, tex_coords, pos, *size, clip);
                 } else {
-                    self.draw_simple(draw_list, tex_coords, pos, size);
+                    self.draw_simple(draw_list, tex_coords, pos, size, clip);
                 }
             },
             ImageKind::Animated { states } => {
-                self.draw_animated(draw_list, pos, size, anim_state, states);
+                self.draw_animated(draw_list, pos, size, anim_state, states, clip);
             }
         }
     }
@@ -99,10 +106,11 @@ impl Image {
         size: [f32; 2],
         to_find: AnimState,
         states: &[(AnimState, Image)],
+        clip: Clip,
     ) {
         for (state, image) in states {
             if state == &to_find {
-                image.draw(draw_list, pos, size, to_find);
+                image.draw(draw_list, pos, size, to_find, clip);
                 break;
             }
         }
@@ -114,18 +122,14 @@ impl Image {
         tex: &[TexCoord; 2],
         pos: [f32; 2],
         size: [f32; 2],
+        clip: Clip,
     ) {
-        draw_list.push_quad(
-            Vertex {
-                position: [pos[0], pos[1]],
-                tex_coords: tex[0].into(),
-                color: self.color.into(),
-            },
-            Vertex {
-                position: [pos[0] + size[0], pos[1] + size[1]],
-                tex_coords: tex[1].into(),
-                color: self.color.into(),
-            }
+        draw_list.push_quad_components(
+            [pos[0], pos[1]],
+            [pos[0] + size[0], pos[1] + size[1]],
+            *tex,
+            self.color,
+            clip
         );
     }
 
@@ -135,131 +139,87 @@ impl Image {
         tex: &[[TexCoord; 4]; 4],
         grid_size: [f32; 2],
         pos: [f32; 2],
-        size: [f32; 2]
+        size: [f32; 2],
+        clip: Clip,
     ) {
-        draw_list.push_quad(
-            Vertex {
-                position: pos,
-                tex_coords: tex[0][0].into(),
-                color: self.color.into(),
-            },
-            Vertex {
-                position: [pos[0] + grid_size[0], pos[1] + grid_size[1]],
-                tex_coords: tex[1][1].into(),
-                color: self.color.into(),
-            },
+        draw_list.push_quad_components(
+            pos,
+            [pos[0] + grid_size[0], pos[1] + grid_size[1]],
+            [tex[0][0], tex[1][1]],
+            self.color,
+            clip,
         );
 
         if size[0] > 2.0 * grid_size[0] {
-            draw_list.push_quad(
-                Vertex {
-                    position: [pos[0] + grid_size[0], pos[1]],
-                    tex_coords: tex[1][0].into(),
-                    color: self.color.into(),
-                },
-                Vertex {
-                    position: [pos[0] + size[0] - grid_size[0], pos[1] + grid_size[1]],
-                    tex_coords: tex[2][1].into(),
-                    color: self.color.into(),
-                }
+            draw_list.push_quad_components(
+                [pos[0] + grid_size[0], pos[1]],
+                [pos[0] + size[0] - grid_size[0], pos[1] + grid_size[1]],
+                [tex[1][0], tex[2][1]],
+                self.color,
+                clip,
             );
         }
 
-        draw_list.push_quad(
-            Vertex {
-                position: [pos[0] + size[0] - grid_size[0], pos[1]],
-                tex_coords: tex[2][0].into(),
-                color: self.color.into(),
-            },
-            Vertex {
-                position: [pos[0] + size[0], pos[1] + grid_size[1]],
-                tex_coords: tex[3][1].into(),
-                color: self.color.into(),
-            },
+        draw_list.push_quad_components(
+            [pos[0] + size[0] - grid_size[0], pos[1]],
+            [pos[0] + size[0], pos[1] + grid_size[1]],
+            [tex[2][0], tex[3][1]],
+            self.color,
+            clip,
         );
 
         if size[1] > 2.0 * grid_size[1] {
-            draw_list.push_quad(
-                Vertex {
-                    position: [pos[0], pos[1] + grid_size[1]],
-                    tex_coords: tex[0][1].into(),
-                    color: self.color.into(),
-                },
-                Vertex {
-                    position: [pos[0] + grid_size[0], pos[1] + size[1] - grid_size[1]],
-                    tex_coords: tex[1][2].into(),
-                    color: self.color.into(),
-                },
+            draw_list.push_quad_components(
+                [pos[0], pos[1] + grid_size[1]],
+                [pos[0] + grid_size[0], pos[1] + size[1] - grid_size[1]],
+                [tex[0][1], tex[1][2]],
+                self.color,
+                clip,
             );
 
             if size[0] > 2.0 * grid_size[0] {
-                draw_list.push_quad(
-                    Vertex {
-                        position: [pos[0] + grid_size[0], pos[1] + grid_size[1]],
-                        tex_coords: tex[1][1].into(),
-                        color: self.color.into(),
-                    },
-                    Vertex {
-                        position: [pos[0] + size[0] - grid_size[0], pos[1] + size[1] - grid_size[1]],
-                        tex_coords: tex[2][2].into(),
-                        color: self.color.into(),
-                    },
+                draw_list.push_quad_components(
+                    [pos[0] + grid_size[0], pos[1] + grid_size[1]],
+                    [pos[0] + size[0] - grid_size[0], pos[1] + size[1] - grid_size[1]],
+                    [tex[1][1], tex[2][2]],
+                    self.color,
+                    clip,
                 );
             }
 
-            draw_list.push_quad(
-                Vertex {
-                    position: [pos[0] + size[0] - grid_size[0], pos[1] + grid_size[1]],
-                    tex_coords: tex[2][1].into(),
-                    color: self.color.into(),
-                },
-                Vertex {
-                    position: [pos[0] + size[0], pos[1] + size[1] - grid_size[1]],
-                    tex_coords: tex[3][2].into(),
-                    color: self.color.into(),
-                }
+            draw_list.push_quad_components(
+                [pos[0] + size[0] - grid_size[0], pos[1] + grid_size[1]],
+                [pos[0] + size[0], pos[1] + size[1] - grid_size[1]],
+                [tex[2][1], tex[3][2]],
+                self.color,
+                clip,
             );
         }
 
-        draw_list.push_quad(
-            Vertex {
-                position: [pos[0], pos[1] + size[1] - grid_size[1]],
-                tex_coords: tex[0][2].into(),
-                color: self.color.into(),
-            },
-            Vertex {
-                position: [pos[0] + grid_size[0], pos[1] + size[1]],
-                tex_coords: tex[1][3].into(),
-                color: self.color.into(),
-            }
+        draw_list.push_quad_components(
+            [pos[0], pos[1] + size[1] - grid_size[1]],
+            [pos[0] + grid_size[0], pos[1] + size[1]],
+            [tex[0][2], tex[1][3]],
+            self.color,
+            clip,
         );
 
         if size[0] > 2.0 * grid_size[0] {
-            draw_list.push_quad(
-                Vertex {
-                    position: [pos[0] + grid_size[0], pos[1] + size[1] - grid_size[1]],
-                    tex_coords: tex[1][2].into(),
-                    color: self.color.into(),
-                },
-                Vertex {
-                    position: [pos[0] + size[0] - grid_size[0], pos[1] + size[1]],
-                    tex_coords: tex[2][3].into(),
-                    color: self.color.into(),
-                }
+            draw_list.push_quad_components(
+                [pos[0] + grid_size[0], pos[1] + size[1] - grid_size[1]],
+                [pos[0] + size[0] - grid_size[0], pos[1] + size[1]],
+                [tex[1][2], tex[2][3]],
+                self.color,
+                clip,
             );
         }
 
-        draw_list.push_quad(
-            Vertex {
-                position: [pos[0] + size[0] - grid_size[0], pos[1] + size[1] - grid_size[1]],
-                tex_coords: tex[2][2].into(),
-                color: self.color.into(),
-            },
-            Vertex {
-                position: [pos[0] + size[0], pos[1] + size[1]],
-                tex_coords: tex[3][3].into(),
-                color: self.color.into(),
-            }
+        draw_list.push_quad_components(
+            [pos[0] + size[0] - grid_size[0], pos[1] + size[1] - grid_size[1]],
+            [pos[0] + size[0], pos[1] + size[1]],
+            [tex[2][2], tex[3][3]],
+            self.color,
+            clip,
         );
     }
 }

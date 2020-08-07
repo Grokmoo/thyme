@@ -1,5 +1,5 @@
 use crate::{
-    Align, Color, Point, Image, AnimState,
+    Align, Color, Point, Image, AnimState, Clip, TexCoord,
     ThemeSet, Font, FontHandle, TextureHandle, Widget
 };
 
@@ -25,7 +25,8 @@ pub(crate) fn render(
             &mut cur_draw,
             widget.pos(),
             widget.size(),
-            widget.anim_state()
+            widget.anim_state(),
+            widget.clip(),
         );
     }
 
@@ -57,7 +58,8 @@ fn render_widget_foreground(
         cur_draw,
         fg_pos,
         fg_size,
-        widget.anim_state()
+        widget.anim_state(),
+        widget.clip(),
     );
 
     if let Some(text) = widget.text() {
@@ -70,7 +72,8 @@ fn render_widget_foreground(
                 draw_data,
                 cur_draw,
                 fg_pos,
-                text
+                text,
+                widget.clip(),
             )
         }
     }
@@ -86,6 +89,7 @@ fn render_text(
     cur_draw: &mut Option<DrawList>,
     pos: Point,
     text: &str,
+    clip: Clip,
 ) {
     let create_draw = match cur_draw {
         None => true,
@@ -107,6 +111,7 @@ fn render_text(
         text,
         align,
         color,
+        clip,
     )
 }
 
@@ -117,6 +122,7 @@ fn render_if_present(
     pos: Point,
     size: Point,
     anim_state: AnimState,
+    clip: Clip,
 ) {
     let image = match image {
         None => return,
@@ -141,6 +147,7 @@ fn render_if_present(
         pos.into(),
         size.into(),
         anim_state,
+        clip,
     );
 }
 
@@ -148,7 +155,21 @@ fn render_if_present(
 pub struct Vertex {
     pub position: [f32; 2],
     pub tex_coords: [f32; 2],
+    pub clip_pos: [f32; 2],
+    pub clip_size: [f32; 2],
     pub color: [f32; 3],
+}
+
+impl Vertex {
+    pub fn new(position: [f32; 2], tex_coords: [f32; 2], color: Color, clip: Clip) -> Vertex {
+        Vertex {
+            position,
+            tex_coords,
+            color: color.into(),
+            clip_pos: clip.pos.into(),
+            clip_size: clip.size.into(),
+        }
+    }
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]
@@ -180,7 +201,20 @@ impl DrawList {
         }
     }
 
-    pub fn push_quad(&mut self, ul: Vertex, lr: Vertex) {
+    pub(crate) fn push_quad_components(
+        &mut self,
+        p0: [f32; 2],
+        p1: [f32; 2],
+        tex: [TexCoord; 2],
+        color: Color,
+        clip: Clip,
+    ) {
+        let ul = Vertex::new(p0, tex[0].into(), color, clip);
+        let lr = Vertex::new(p1, tex[1].into(), color, clip);
+        self.push_quad(ul, lr);
+    }
+
+    fn push_quad(&mut self, ul: Vertex, lr: Vertex) {
         let idx = self.vertices.len() as u32;
         self.indices.extend_from_slice(&[idx, idx + 1, idx + 2, idx, idx + 2, idx + 3]);
 
@@ -188,12 +222,16 @@ impl DrawList {
         self.vertices.push(Vertex {
             position: [ul.position[0], lr.position[1]],
             tex_coords: [ul.tex_coords[0], lr.tex_coords[1]],
+            clip_pos: ul.clip_pos,
+            clip_size: ul.clip_size,
             color: ul.color,
         });
         self.vertices.push(lr);
         self.vertices.push(Vertex {
             position: [lr.position[0], ul.position[1]],
             tex_coords: [lr.tex_coords[0], ul.tex_coords[1]],
+            clip_pos: lr.clip_pos,
+            clip_size: lr.clip_size,
             color: lr.color,
         });
     }

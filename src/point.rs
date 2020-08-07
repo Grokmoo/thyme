@@ -138,6 +138,11 @@ impl<'de> Deserialize<'de> for Border {
         deserializer.deserialize_map(BorderVisitor)
     }
 }
+#[derive(Serialize, Deserialize, Copy, Clone, Default, Debug, PartialEq)]
+pub struct Clip {
+    pub pos: Point,
+    pub size: Point
+}
 
 #[derive(Serialize, Deserialize, Copy, Clone, Default, Debug, PartialEq)]
 pub struct Rect {
