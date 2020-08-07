@@ -57,9 +57,6 @@ impl GliumRenderer {
     }
 
     pub fn draw<T: Surface>(&mut self, target: &mut T, data: &DrawData) -> Result<(), GliumError> {
-        //let width = data.display_size[0];
-        //let height = data.display_size[1];
-
         let left = data.display_pos[0];
         let right = data.display_pos[0] + data.display_size[0];
         let top = data.display_pos[1];
@@ -73,8 +70,8 @@ impl GliumRenderer {
         ];
 
         for list in &data.draw_lists {
-            let vertices = glium::VertexBuffer::new(&self.context, &list.vertices)?;
-            let indices = glium::IndexBuffer::new(&self.context, PrimitiveType::TrianglesList, &list.indices)?;
+            let vertices = glium::VertexBuffer::immutable(&self.context, &list.vertices)?;
+            let indices = glium::IndexBuffer::immutable(&self.context, PrimitiveType::TrianglesList, &list.indices)?;
 
             let params = DrawParameters {
                 blend: glium::Blend::alpha_blending(),

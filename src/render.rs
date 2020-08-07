@@ -19,8 +19,13 @@ pub(crate) fn render(
     // render backgrounds
     for widget in &widgets {
         if widget.hidden() { continue; }
-        render_if_present(
-            themes.image(widget.background()),
+        let image_handle = match widget.background() {
+            None => continue,
+            Some(handle) => handle,
+        };
+
+        render_image(
+            themes.image(image_handle),
             &mut draw_data,
             &mut cur_draw,
             widget.pos(),
@@ -52,15 +57,17 @@ fn render_widget_foreground(
     let fg_pos = widget.pos() + border.tl();
     let fg_size = widget.inner_size();
 
-    render_if_present(
-        themes.image(widget.foreground()),
-        draw_data,
-        cur_draw,
-        fg_pos,
-        fg_size,
-        widget.anim_state(),
-        widget.clip(),
-    );
+    if let Some(handle) = widget.foreground() {
+        render_image(
+            themes.image(handle),
+            draw_data,
+            cur_draw,
+            fg_pos,
+            fg_size,
+            widget.anim_state(),
+            widget.clip(),
+        );
+    }
 
     if let Some(text) = widget.text() {
         if let Some(font_summary) = widget.font() {
@@ -115,8 +122,8 @@ fn render_text(
     )
 }
 
-fn render_if_present(
-    image: Option<&Image>,
+fn render_image(
+    image: &Image,
     draw_data: &mut DrawData,
     cur_draw: &mut Option<DrawList>,
     pos: Point,
@@ -124,11 +131,6 @@ fn render_if_present(
     anim_state: AnimState,
     clip: Clip,
 ) {
-    let image = match image {
-        None => return,
-        Some(image) => image,
-    };
-
     let create_draw = match cur_draw {
         None => true,
         Some(draw) => draw.mode != DrawMode::Base(image.texture()),

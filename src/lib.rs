@@ -12,7 +12,7 @@ mod glium_backend;
 pub use glium_backend::GliumRenderer;
 
 mod image;
-pub use crate::image::{Image};
+pub use crate::image::{Image, ImageHandle};
 
 mod theme;
 pub use theme::{ThemeSet};

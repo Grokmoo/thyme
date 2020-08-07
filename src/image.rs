@@ -4,6 +4,11 @@ use crate::{Error};
 use crate::{Clip, TexCoord, TextureHandle, TextureData, Color, AnimState, DrawList};
 use crate::theme_definition::{ImageDefinition, ImageDefinitionKind};
 
+#[derive(Copy, Clone)]
+pub struct ImageHandle {
+    pub(crate) id: usize,
+}
+
 #[derive(Clone)]
 enum ImageKind {
     Composed {

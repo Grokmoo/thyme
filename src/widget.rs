@@ -1,7 +1,7 @@
 use crate::{
     AnimState, AnimStateKey, Color, FontSummary, Frame, Point, Border,
     Align, Layout, WidthRelative, HeightRelative, PersistentState,
-    Clip,
+    Clip, ImageHandle,
 };
 use crate::theme::{WidgetThemeHandle, WidgetTheme};
 
@@ -17,8 +17,8 @@ pub struct Widget {
     wants_mouse: bool,
     text_align: Align,
     font: Option<FontSummary>,
-    background: Option<String>,
-    foreground: Option<String>,
+    background: Option<ImageHandle>,
+    foreground: Option<ImageHandle>,
     pos: Point,
     size: Point,
     width_from: WidthRelative,
@@ -92,8 +92,8 @@ impl Widget {
             text_align: theme.text_align.unwrap_or_default(),
             wants_mouse: theme.wants_mouse.unwrap_or_default(),
             font,
-            background: theme.background.clone(),
-            foreground: theme.foreground.clone(),
+            background: theme.background,
+            foreground: theme.foreground,
             theme: theme.handle,
             raw_size,
             raw_pos,
@@ -120,8 +120,8 @@ impl Widget {
     pub fn text_align(&self) -> Align { self.text_align }
     pub fn text(&self) -> Option<&str> { self.text.as_deref() }
     pub fn font(&self) -> Option<FontSummary> { self.font }
-    pub fn foreground(&self) -> Option<&str> { self.foreground.as_deref() }
-    pub fn background(&self) -> Option<&str> { self.background.as_deref() }
+    pub fn foreground(&self) -> Option<ImageHandle> { self.foreground }
+    pub fn background(&self) -> Option<ImageHandle> { self.background }
     pub fn border(&self) -> Border { self.border }
     pub fn id(&self) -> &str { &self.id }
     pub fn theme(&self) -> WidgetThemeHandle { self.theme }
@@ -392,30 +392,39 @@ impl<'a> WidgetBuilder<'a> {
     }
 
     #[must_use]
-    pub fn font(mut self, frame: &mut Frame, font: &str) -> WidgetBuilder<'a> {
-        let context = frame.context_internal();
-        let context = context.borrow();
-        let font = match context.themes.find_font(Some(font)) {
-            None => {
-                log::warn!("Invalid font '{}' specified for widget '{:?}'", font, self.widget().id);
-                return self;
-            }
-            Some(font) => font,
+    pub fn font(mut self, font: &str) -> WidgetBuilder<'a> {
+        let font = {
+            let context = self.frame.context_internal();
+            let context = context.borrow();
+            context.themes.find_font(Some(font))
         };
-        self.widget().font = Some(font);
+
+        self.widget().font = font;
         self.recalc_pos_size = true;
         self
     }
 
     #[must_use]
-    pub fn foreground<T: Into<String>>(mut self, fg: T) -> WidgetBuilder<'a> {
-        self.widget().foreground = Some(fg.into());
+    pub fn foreground(mut self, fg: &str) -> WidgetBuilder<'a> {
+        let fg = {
+            let context = self.frame.context_internal();
+            let context = context.borrow();
+            context.themes.find_image(Some(fg))
+        };
+
+        self.widget().foreground = fg;
         self
     }
 
     #[must_use]
-    pub fn background<T: Into<String>>(mut self, bg: T) -> WidgetBuilder<'a> {
-        self.widget().background = Some(bg.into());
+    pub fn background(mut self, bg: &str) -> WidgetBuilder<'a> {
+        let bg = {
+            let context = self.frame.context_internal();
+            let context = context.borrow();
+            context.themes.find_image(Some(bg))
+        };
+
+        self.widget().background = bg;
         self
     }
 

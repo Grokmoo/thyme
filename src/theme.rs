@@ -4,16 +4,19 @@ use crate::theme_definition::{
     ThemeDefinition, ImageDefinition, ImageDefinitionKind, WidgetThemeDefinition,
 };
 use crate::{Font, FontSummary};
-use crate::{Image};
+use crate::{Image, ImageHandle};
 use crate::{
     Color, Error, TextureData, FontHandle, FontSource,
     Point, Border, Align, Layout, WidthRelative, HeightRelative, Renderer,
 };
 
 pub struct ThemeSet {
-    fonts: HashMap<FontHandle, Font>,
+    fonts: Vec<Font>,
     font_handles: HashMap<String, FontSummary>,
-    images: HashMap<String, Image>,
+
+    images: Vec<Image>,
+    image_handles: HashMap<String, ImageHandle>,
+
     theme_handles: HashMap<String, WidgetThemeHandle>,
     themes: Vec<WidgetTheme>,
 }
@@ -27,7 +30,7 @@ impl ThemeSet {
     ) -> Result<ThemeSet, Error> {
         let mut font_handles = HashMap::new();
         let mut font_handle = FontHandle::default();
-        let mut fonts = HashMap::new();
+        let mut fonts = Vec::new();
         for (font_id, font) in definition.fonts {
             let source = font_sources.get(&font.source).ok_or_else(||
                 Error::Theme(format!("Unable to locate font handle {}", font.source))
@@ -38,7 +41,8 @@ impl ThemeSet {
 
             let line_height = font.line_height();
             let handle = font.handle();
-            fonts.insert(handle, font);
+            assert!(handle.id() == fonts.len());
+            fonts.push(font);
             font_handles.insert(font_id, FontSummary { handle, line_height });
         }
 
@@ -74,6 +78,14 @@ impl ThemeSet {
             }
         }
 
+        let mut images_out = Vec::new();
+        let mut image_handles = HashMap::new();
+        for (index, (id, image)) in images.into_iter().enumerate() {
+            let handle = ImageHandle { id: index };
+            images_out.push(image);
+            image_handles.insert(id, handle);
+        }
+
         // build the set of themes
         let mut theme_handles = HashMap::new();
         let mut themes = Vec::new();
@@ -87,7 +99,7 @@ impl ThemeSet {
                 &mut theme_handles, 
                 &mut themes, 
                 theme, 
-                &images,
+                &image_handles,
                 &font_handles,
             )?;
         }
@@ -142,9 +154,10 @@ impl ThemeSet {
         }
 
         Ok(ThemeSet {
-            fonts,
             font_handles,
-            images,
+            fonts,
+            image_handles,
+            images: images_out,
             theme_handles,
             themes,
         })
@@ -163,7 +176,7 @@ impl ThemeSet {
     }
 
     pub fn font(&self, handle: FontHandle) -> &Font {
-        &self.fonts[&handle]
+        &self.fonts[handle.id()]
     }
 
     pub fn find_font(&self, id: Option<&str>) -> Option<FontSummary> {
@@ -183,16 +196,20 @@ impl ThemeSet {
         }
     }
 
-    pub fn image(&self, id: Option<&str>) -> Option<&Image> {
+    pub fn image(&self, handle: ImageHandle) -> &Image {
+        &self.images[handle.id]
+    }
+
+    pub fn find_image(&self, id: Option<&str>) -> Option<ImageHandle> {
         match id {
             None => None,
             Some(id) => {
-                match self.images.get(id) {
+                match self.image_handles.get(id) {
                     None => {
                         // TODO warn earlier and only once instead of every frame like this will
                         log::warn!("Invalid image when drawing: '{}'", id);
                         None
-                    }, Some(image) => Some(image),
+                    }, Some(image) => Some(*image),
                 }
             }
         }
@@ -220,8 +237,8 @@ pub struct WidgetTheme {
     pub text: Option<String>,
     pub text_color: Option<Color>,
     pub font: Option<FontSummary>,
-    pub background: Option<String>,
-    pub foreground: Option<String>,
+    pub background: Option<ImageHandle>,
+    pub foreground: Option<ImageHandle>,
 
     // all fields are options instead of using default so
     // we can detect when to override them
@@ -249,7 +266,7 @@ impl WidgetTheme {
         handles: &mut HashMap<String, WidgetThemeHandle>,
         themes: &mut Vec<WidgetTheme>,
         def: WidgetThemeDefinition,
-        images: &HashMap<String, Image>,
+        images: &HashMap<String, ImageHandle>,
         fonts: &HashMap<String, FontSummary>,
     ) -> Result<WidgetThemeHandle, Error> {
         if id.contains('/') {
@@ -266,19 +283,17 @@ impl WidgetTheme {
         };
 
         let background = if let Some(bg) = def.background {
-            images.get(&bg).ok_or_else(||
+            Some(*images.get(&bg).ok_or_else(||
                 Error::Theme(format!("Unable to locate image '{}' as background for widget '{}'", bg, parent_id))
-            )?;
-            Some(bg)
+            )?)
         } else {
             None
         };
 
         let foreground = if let Some(fg) = def.foreground {
-            images.get(&fg).ok_or_else(||
+            Some(*images.get(&fg).ok_or_else(||
                 Error::Theme(format!("Unable to locate image '{}' as foreground for widget '{}'", fg, parent_id))
-            )?;
-            Some(fg)
+            )?)
         } else {
             None
         };
@@ -363,8 +378,8 @@ fn merge_from(
 
     if to.wants_mouse.is_none() { to.wants_mouse = from.wants_mouse; }
     if to.font.is_none() { to.font = from.font; }
-    if to.background.is_none() { to.background = from.background.clone(); }
-    if to.foreground.is_none() { to.foreground = from.foreground.clone(); }
+    if to.background.is_none() { to.background = from.background; }
+    if to.foreground.is_none() { to.foreground = from.foreground; }
     if to.text_align.is_none() { to.text_align = from.text_align; }
     if to.pos.is_none() { to.pos = from.pos; }
     if to.size.is_none() { to.size = from.size; }
