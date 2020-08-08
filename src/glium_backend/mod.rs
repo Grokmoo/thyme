@@ -9,9 +9,10 @@ use glium::uniforms::{MagnifySamplerFilter, MinifySamplerFilter, Sampler, Sample
 use glium::texture::{Texture2d, RawImage2d, SrgbTexture2d};
 use glium::index::PrimitiveType;
 
+use crate::image::ImageDrawParams;
 use crate::render::{TexCoord, DrawList, DrawMode, Renderer, TextureHandle, TextureData, FontHandle};
 use crate::font::{Font, FontSource, FontChar};
-use crate::{Frame, Point, Color, Clip};
+use crate::{Frame, Point, Color, Rect};
 
 const FONT_TEX_SIZE: u32 = 512;
 
@@ -75,6 +76,7 @@ impl GliumRenderer {
         let (context, widgets) = frame.finish_frame();
         let context = context.internal().borrow();
 
+        let time_millis = context.time_millis();
         let display_pos = Point::default();
         let display_size = context.display_size();
         self.matrix = matrix(display_pos, display_size);
@@ -89,16 +91,20 @@ impl GliumRenderer {
                 None => continue,
                 Some(handle) => handle,
             };
+            let time_millis = time_millis - context.base_time_millis_for(widget.id());
             let image = context.themes().image(image_handle);
 
             self.render_if_changed(target, &mut draw_mode, DrawMode::Image(image.texture()))?;
             
             image.draw(
                 &mut self.draw_list,
-                widget.pos().into(),
-                widget.size().into(),
-                widget.anim_state(),
-                widget.clip()
+                ImageDrawParams {
+                    pos: widget.pos().into(),
+                    size: widget.size().into(),
+                    anim_state: widget.anim_state(),
+                    clip: widget.clip(),
+                    time_millis,
+                }
             );
         }
 
@@ -111,15 +117,19 @@ impl GliumRenderer {
             let fg_size = widget.inner_size();
 
             if let Some(image_handle) = widget.foreground() {
+                let time_millis = time_millis - context.base_time_millis_for(widget.id());
                 let image = context.themes().image(image_handle);
                 self.render_if_changed(target, &mut draw_mode, DrawMode::Image(image.texture()))?;
 
                 image.draw(
                     &mut self.draw_list,
-                    fg_pos.into(),
-                    fg_size.into(),
-                    widget.anim_state(),
-                    widget.clip()
+                    ImageDrawParams {
+                        pos: fg_pos.into(),
+                        size: fg_size.into(),
+                        anim_state: widget.anim_state(),
+                        clip: widget.clip(),
+                        time_millis,
+                    }
                 );
             }
 
@@ -628,7 +638,7 @@ impl DrawList for GliumDrawList {
         size: [f32; 2],
         tex: [TexCoord; 2],
         color: Color,
-        clip: Clip,
+        clip: Rect,
     ) {
         let vert = GliumVertex {
             position: pos,

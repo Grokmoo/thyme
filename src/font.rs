@@ -1,5 +1,5 @@
 use crate::render::{TexCoord, DrawList, FontHandle};
-use crate::{Point, Clip, Align, Color};
+use crate::{Point, Rect, Align, Color};
 
 pub struct FontSource {
     pub(crate) font: rusttype::Font<'static>,
@@ -65,7 +65,7 @@ impl Font {
         text: &str,
         align: Align,
         color: Color,
-        clip: Clip,
+        clip: Rect,
     ) {
         let renderer = FontRenderer::new(
             &self,
@@ -85,7 +85,7 @@ struct FontRenderer<'a, D> {
     draw_list: &'a mut D,
     initial_index: usize,
 
-    clip: Clip,
+    clip: Rect,
     align: Align,
     color: Color,
 
@@ -108,7 +108,7 @@ impl<'a, D: DrawList> FontRenderer<'a, D> {
         pos: Point,
         align: Align,
         color: Color,
-        clip: Clip,
+        clip: Rect,
     ) -> FontRenderer<'a, D> {
         let initial_index = draw_list.len();
 

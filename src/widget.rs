@@ -1,6 +1,6 @@
 use crate::{
     AnimState, AnimStateKey, Color, Frame, Point, Border, Align, 
-    Layout, WidthRelative, HeightRelative, PersistentState, Clip,
+    Layout, WidthRelative, HeightRelative, PersistentState, Rect,
 };
 use crate::font::FontSummary;
 use crate::image::ImageHandle;
@@ -20,7 +20,7 @@ pub struct Widget {
     layout_spacing: Point,
 
     // stored in the widget for drawing purposes
-    clip: Clip,
+    clip: Rect,
     text: Option<String>,
     text_color: Color,
     text_align: Align,
@@ -54,7 +54,7 @@ impl Widget {
             id: String::new(),
             anim_state: AnimState::normal(),
             visible: true,
-            clip: Clip { pos: Point::default(), size },
+            clip: Rect { pos: Point::default(), size },
         }
     }
 
@@ -112,7 +112,7 @@ impl Widget {
         (data, widget)
     }
 
-    pub fn clip(&self) -> Clip { self.clip }
+    pub fn clip(&self) -> Rect { self.clip }
     pub fn visible(&self) -> bool { self.visible }
     pub fn text_color(&self) -> Color { self.text_color }
     pub fn text_align(&self) -> Align { self.text_align }
@@ -518,6 +518,12 @@ impl<'a> WidgetBuilder<'a> {
     }
 
     #[must_use]
+    pub fn clip(mut self, clip: Rect) -> WidgetBuilder<'a> {
+        self.widget().clip = clip;
+        self
+    }
+
+    #[must_use]
     pub fn active(mut self, active: bool) -> WidgetBuilder<'a> {
         self.active = active;
         self
@@ -610,5 +616,20 @@ impl<'a> WidgetBuilder<'a> {
         }
         
         state
+    }
+
+    /// Force the widget to layout its `size` and `position` immediately.
+    /// Assuming these attributes are not changed after this method is
+    /// called, these attributes will have their final values after this
+    /// method returns.  Note that this method does not follow the usual
+    /// builder pattern, instead mutating the `WidgetBuilder` in place
+    /// and returning the size and pos.
+    pub fn trigger_layout(&mut self) -> Rect {
+        let state = self.frame.state(self.widget);
+        if self.recalc_pos_size {
+            self.recalculate_pos_size(state);
+        }
+
+        Rect::new(self.widget().pos, self.widget().size)
     }
 }

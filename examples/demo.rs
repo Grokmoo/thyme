@@ -75,11 +75,18 @@ fn build_ui(ui: &mut Frame) {
         if ui.button("button", label).clicked {
             ui.toggle_open("window2");
         }
+
+        let frac = (ui.offset_time_millis("pbar") as f32 / 1_000.0).min(1.0);
+
+        ui.progress_bar("progress_bar", frac);
+
+        if ui.button("button", "Start!").clicked {
+            ui.set_base_time_now("pbar");
+        }
     });
 
     ui.start("window")
     .id("window2")
-    .initially_open(false)
     .size(200.0, 200.0)
     .align(Align::Bot)
     .children(|ui| {
@@ -104,6 +111,8 @@ fn build_ui(ui: &mut Frame) {
                 state.resize = state.resize + result.dragged;
             });
         }
+
+        ui.button("flashing_button", "Flash");
     }).finish();
 }
 

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::time::Instant;
 
 use crate::{Point, Error, Frame};
 use crate::widget::Widget;
@@ -79,6 +80,7 @@ pub struct PersistentState {
     pub is_open: bool,
     pub resize: Point,
     pub moved: Point,
+    pub base_time_millis: u32,
 }
 
 impl Default for PersistentState {
@@ -87,6 +89,7 @@ impl Default for PersistentState {
             is_open: true,
             resize: Point::default(),
             moved: Point::default(),
+            base_time_millis: 0,
         }
     }
 }
@@ -104,9 +107,17 @@ pub struct ContextInternal {
     mouse_pressed: [bool; 3],
     mouse_clicked: [bool; 3],
     display_size: Point,
+
+    start_instant: Instant,
+    time_millis: u32,
 }
 
 impl ContextInternal {
+    pub(crate) fn base_time_millis_for(&self, id: &str) -> u32 {
+        self.persistent_state.get(id).map_or(0, |state| state.base_time_millis)
+    }
+
+    pub(crate) fn time_millis(&self) -> u32 { self.time_millis }
     pub(crate) fn mouse_pos(&self) -> Point { self.mouse_pos }
     pub(crate) fn last_mouse_pos(&self) -> Point { self.last_mouse_pos }
     pub(crate) fn mouse_pressed(&self, index: usize) -> bool { self.mouse_pressed[index] }
@@ -167,6 +178,8 @@ impl Context {
             mouse_clicked: [false; 3],
             mouse_taken_last_frame: None,
             mouse_pressed_outside: [false; 3],
+            time_millis: 0,
+            start_instant: Instant::now(),
         };
 
         Context {
@@ -217,7 +230,17 @@ impl Context {
     }
 
     pub fn create_frame(&mut self) -> Frame {
-        let display_size = self.internal.borrow().display_size();
+        let now = Instant::now();
+
+        let display_size = {
+            let mut context = self.internal.borrow_mut();
+
+            let elapsed = (now - context.start_instant).as_millis() as u32;
+            context.time_millis = elapsed;
+
+            context.display_size()
+        };
+
         let context = Context { internal: Rc::clone(&self.internal) };
 
         let root = Widget::root(display_size);

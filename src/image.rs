@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{Error};
 use crate::render::{TexCoord, DrawList, TextureHandle, TextureData};
-use crate::{Clip, Color, AnimState};
+use crate::{Rect, Color, AnimState};
 use crate::theme_definition::{ImageDefinition, ImageDefinitionKind};
 
 #[derive(Copy, Clone)]
@@ -20,9 +20,22 @@ enum ImageKind {
         tex_coords: [TexCoord; 2],
         fixed_size: Option<[f32; 2]>,
     },
+    Timed {
+        frame_time_millis: u32,
+        frames: Vec<Image>,
+        once: bool,
+    },
     Animated {
         states: Vec<(AnimState, Image)>
     }
+}
+
+pub(crate) struct ImageDrawParams {
+    pub pos: [f32; 2],
+    pub size: [f32; 2],
+    pub anim_state: AnimState,
+    pub clip: Rect,
+    pub time_millis: u32,
 }
 
 #[derive(Clone)]
@@ -38,24 +51,30 @@ impl Image {
     pub(crate) fn draw<D: DrawList>(
         &self,
         draw_list: &mut D,
-        pos: [f32; 2],
-        size: [f32; 2],
-        anim_state: AnimState,
-        clip: Clip,
+        params: ImageDrawParams,
     ) {
         match &self.kind {
             ImageKind::Composed { tex_coords, grid_size } => {
-                self.draw_composed(draw_list, tex_coords, *grid_size, pos, size, clip);
+                self.draw_composed(draw_list, tex_coords, *grid_size, params.pos, params.size, params.clip);
             },
             ImageKind::Simple { tex_coords, fixed_size } => {
                 if let Some(size) = fixed_size {
-                    self.draw_simple(draw_list, tex_coords, pos, *size, clip);
+                    self.draw_simple(draw_list, tex_coords, params.pos, *size, params.clip);
                 } else {
-                    self.draw_simple(draw_list, tex_coords, pos, size, clip);
+                    self.draw_simple(draw_list, tex_coords, params.pos, params.size, params.clip);
+                }
+            },
+            ImageKind::Timed { frame_time_millis, frames, once } => {
+                let total_time_millis = frame_time_millis * frames.len() as u32;
+                if *once && params.time_millis > total_time_millis {
+                    frames[frames.len() - 1].draw(draw_list, params);
+                } else {
+                    let frame_index = ((params.time_millis % total_time_millis) / frame_time_millis) as usize;
+                    frames[frame_index].draw(draw_list, params);
                 }
             },
             ImageKind::Animated { states } => {
-                self.draw_animated(draw_list, pos, size, anim_state, states, clip);
+                self.draw_animated(draw_list, states, params);
             }
         }
     }
@@ -87,6 +106,21 @@ impl Image {
                 let fixed_size = if !stretch { Some([size[0] as f32, size[1] as f32]) } else { None };
                 ImageKind::Simple { tex_coords: [tex1, tex2], fixed_size }
             },
+            ImageDefinitionKind::Timed { frame_time_millis, frames, once } => {
+                let mut frames_out = Vec::new();
+                for id in frames {
+                    let image = find_image_in_set(image_id, others, &id)?;
+                    frames_out.push(image);
+                }
+                
+                if frames_out.is_empty() {
+                    return Err(
+                        Error::Theme(format!("No frames specified for image: {}", image_id))
+                    );
+                }
+
+                ImageKind::Timed { frame_time_millis, frames: frames_out, once }
+            },
             ImageDefinitionKind::Animated { states } => {
                 let mut states_out: Vec<(AnimState, Image)> = Vec::new();
                 for (state, id) in states {
@@ -108,15 +142,12 @@ impl Image {
     fn draw_animated<D: DrawList>(
         &self,
         draw_list: &mut D,
-        pos: [f32; 2],
-        size: [f32; 2],
-        to_find: AnimState,
         states: &[(AnimState, Image)],
-        clip: Clip,
+        params: ImageDrawParams,
     ) {
         for (state, image) in states {
-            if state == &to_find {
-                image.draw(draw_list, pos, size, to_find, clip);
+            if state == &params.anim_state {
+                image.draw(draw_list, params);
                 break;
             }
         }
@@ -128,7 +159,7 @@ impl Image {
         tex: &[TexCoord; 2],
         pos: [f32; 2],
         size: [f32; 2],
-        clip: Clip,
+        clip: Rect,
     ) {
         draw_list.push_rect(
             [pos[0], pos[1]],
@@ -146,7 +177,7 @@ impl Image {
         grid_size: [f32; 2],
         pos: [f32; 2],
         size: [f32; 2],
-        clip: Clip,
+        clip: Rect,
     ) {
         draw_list.push_rect(
             pos,

@@ -1,6 +1,6 @@
 use std::num::NonZeroU16;
 
-use crate::{Color, Clip, Point, Error};
+use crate::{Color, Rect, Point, Error};
 use crate::font::{FontSource, Font};
 
 pub trait IO {}
@@ -34,7 +34,7 @@ pub trait DrawList {
         size: [f32; 2],
         tex: [TexCoord; 2],
         color: Color,
-        clip: Clip,
+        clip: Rect,
     );
 
     /// the number of vertices currently contained in this list

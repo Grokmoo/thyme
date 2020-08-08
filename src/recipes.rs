@@ -17,6 +17,18 @@ impl Frame {
         self.start(theme).text(label).active(active).wants_mouse(true).finish()
     }
 
+    pub fn progress_bar(&mut self, theme: &str, frac: f32) {
+        self.start(theme)
+        .children(|ui| {
+            let mut builder = ui.start("bar");
+
+            let mut rect = builder.trigger_layout();
+            rect.size.x *= frac;
+
+            builder.clip(rect).finish();
+        }).finish();
+    }
+
     pub fn window<F: Fn(&mut Frame)>(&mut self, theme: &str, id: &str, size: Point, children: F) {
         self
         .start(theme)

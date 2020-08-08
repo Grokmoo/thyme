@@ -4,7 +4,7 @@ use std::rc::Rc;
 use crate::context::{Context, ContextInternal};
 
 use crate::{
-    AnimState, AnimStateKey, Clip, Point, WidgetBuilder, PersistentState,
+    AnimState, AnimStateKey, Rect, Point, WidgetBuilder, PersistentState,
 };
 use crate::widget::Widget;
 
@@ -58,7 +58,7 @@ impl Frame {
             }
         }
 
-        let bounds = Clip::new(widget.pos(), widget.size());
+        let bounds = Rect::new(widget.pos(), widget.size());
         if !bounds.is_inside(context.mouse_pos()) {
             return MOUSE_NOT_TAKEN;
         }
@@ -127,6 +127,37 @@ impl Frame {
     }
 
     // internal state modifiers
+    pub fn cur_time_millis(&self) -> u32 {
+        let context = self.context.internal().borrow();
+        context.time_millis()
+    }
+
+    pub fn set_base_time_millis<T: Into<String>>(&mut self, id: T, time: u32) {
+        let mut context = self.context.internal().borrow_mut();
+        let state = context.state_mut(id);
+        state.base_time_millis = time;
+    }
+
+    pub fn set_base_time_now<T: Into<String>>(&mut self, id: T) {
+        let mut context = self.context.internal().borrow_mut();
+        let cur_time = context.time_millis();
+        let state = context.state_mut(id);
+        state.base_time_millis = cur_time;
+    }
+
+    pub fn base_time_millis(&self, id: &str) -> u32 {
+        let context = self.context.internal().borrow();
+        context.state(id).base_time_millis
+    }
+
+    /// Returns the current time in millis minus the base time millis for the
+    /// widget with the specified ID.  If the base time millis has not been set,
+    /// will return the current time millis
+    pub fn offset_time_millis(&self, id: &str) -> i32 {
+        let context = self.context.internal().borrow();
+        context.time_millis() as i32 - context.state(id).base_time_millis as i32
+    }
+
     pub fn toggle_open<T: Into<String>>(&mut self, id: T) {
         let mut context = self.context.internal().borrow_mut();
         let state = context.state_mut(id);

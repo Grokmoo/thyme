@@ -27,9 +27,31 @@ image_sets:
       button_active:
         position: [97, 144]
         grid_size: [32, 12]
+      button_flash1:
+        position: [97, 180]
+        grid_size: [32, 12]
+      button_flash2:
+        position: [97, 216]
+        grid_size: [32, 12]
       button:
         states:
           Normal: button_normal
+          Hover: button_hover
+          Pressed: button_pressed
+          Disabled: button_disabled
+          Active: button_active
+          Active + Hover: button_active
+          Active + Pressed: button_pressed
+      button_normal_flash:
+        frame_time_millis: 200
+        frames:
+          - button_flash1
+          - button_flash2
+          - button_flash1
+          - button_normal
+      button_flashing:
+        states:
+          Normal: button_normal_flash
           Hover: button_hover
           Pressed: button_pressed
           Disabled: button_disabled
@@ -75,6 +97,9 @@ image_sets:
           Hover: close_icon_normal
           Pressed: close_icon_pressed
           Disabled: close_icon_disabled
+      progress_bar:
+        position: [237, 0]
+        grid_size: [5, 12]
       window_handle_normal:
         position: [194, 0]
         size: [12, 12]
@@ -94,6 +119,16 @@ image_sets:
           Pressed: window_handle_pressed
           Disabled: window_handle_disabled
 widgets:
+  progress_bar:
+    size: [100, 24]
+    background: gui/button
+    border: { width: 27 }
+    child_align: TopLeft
+    children:
+      bar:
+        background: gui/progress_bar
+        width_from: Parent
+        height_from: Parent
   textbox:
     font: small
     border: { width: 5 }
@@ -110,6 +145,9 @@ widgets:
     wants_mouse: true
     background: gui/window_handle
     size: [12, 12]
+  flashing_button:
+    from: button
+    background: gui/button_flashing
   button:
     font: small
     wants_mouse: true

@@ -73,6 +73,13 @@ pub enum ImageDefinitionKind {
         #[serde(default)]
         stretch: bool,
     },
+    Timed {
+        frame_time_millis: u32,
+        frames: Vec<String>,
+
+        #[serde(default)]
+        once: bool,
+    },
     Animated {
         states: HashMap<AnimState, String>,
     }

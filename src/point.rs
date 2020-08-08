@@ -139,14 +139,14 @@ impl<'de> Deserialize<'de> for Border {
     }
 }
 #[derive(Serialize, Deserialize, Copy, Clone, Default, Debug, PartialEq)]
-pub struct Clip {
+pub struct Rect {
     pub pos: Point,
     pub size: Point
 }
 
-impl Clip {
-    pub fn new(pos: Point, size: Point) -> Clip {
-        Clip {
+impl Rect {
+    pub fn new(pos: Point, size: Point) -> Rect {
+        Rect {
             pos,
             size,
         }
