@@ -97,7 +97,7 @@ fn build_ui(ui: &mut Frame) {
             if ui.button("close", "").clicked {
                 ui.set_open("window2", false);
             }
-        }).finish();
+        });
 
         if result.pressed {
             ui.modify("window2", |state| {
@@ -113,7 +113,7 @@ fn build_ui(ui: &mut Frame) {
         }
 
         ui.button("flashing_button", "Flash");
-    }).finish();
+    });
 }
 
 const SAMPLE_TEXT: &str = r#"
