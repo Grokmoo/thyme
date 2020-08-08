@@ -74,7 +74,7 @@ impl<'a, R: Renderer, I: IO> ContextBuilder<'a, R, I> {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct PersistentState {
     pub is_open: bool,
     pub resize: Point,
@@ -174,13 +174,13 @@ impl Context {
         }
     }
 
-    pub(crate) fn internal(&self) -> &Rc<RefCell<ContextInternal>> {
-        &self.internal
-    }
-
     pub fn wants_mouse(&self) -> bool {
         let internal = self.internal.borrow();
         internal.mouse_taken_last_frame.is_some()
+    }
+
+    pub(crate) fn internal(&self) -> &Rc<RefCell<ContextInternal>> {
+        &self.internal
     }
 
     pub(crate) fn set_display_size(&mut self, size: Point) {

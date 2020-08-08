@@ -7,9 +7,13 @@ use crate::image::ImageHandle;
 use crate::theme::{WidgetTheme};
 
 pub struct Widget {
+    // identifier for persistent state
+    id: String,
+
+    // TODO potentially move these out and store current parent data
+    // in the frame for a small perf boost
     // stored in the widget for parent ref purposes
     cursor: Point,
-    id: String,
     theme_id: String,
     child_align: Align,
     layout: Layout,
@@ -551,6 +555,9 @@ impl<'a> WidgetBuilder<'a> {
         self
     }
 
+    /// Creates the widget from this builder.  Returns a `WidgetState`, which
+    /// provides information about the animation state and mouse interactions
+    /// of the created widget
     pub fn finish(mut self) -> WidgetState {
         if !self.widget().visible { return WidgetState::hidden(); }
 

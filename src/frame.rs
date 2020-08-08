@@ -4,7 +4,7 @@ use std::rc::Rc;
 use crate::context::{Context, ContextInternal};
 
 use crate::{
-    AnimState, AnimStateKey, Rect, Point, WidgetBuilder, WidgetState, PersistentState,
+    AnimState, AnimStateKey, Clip, Point, WidgetBuilder, PersistentState,
 };
 use crate::widget::Widget;
 
@@ -58,8 +58,8 @@ impl Frame {
             }
         }
 
-        let bounds = Rect::new(widget.pos(), widget.size());
-        if !bounds.inside(context.mouse_pos()) {
+        let bounds = Clip::new(widget.pos(), widget.size());
+        if !bounds.is_inside(context.mouse_pos()) {
             return MOUSE_NOT_TAKEN;
         }
 
@@ -124,23 +124,6 @@ impl Frame {
         };
 
         WidgetBuilder::new(self, self.parent_index, theme_id, theme)
-    }
-
-    // convenience builder methods
-    pub fn child(&mut self, theme: &str) -> WidgetState {
-        self.start(theme).finish()
-    }
-
-    pub fn label<T: Into<String>>(&mut self, theme: &str, text: T) {
-        self.start(theme).text(text).finish();
-    }
-
-    pub fn button<T: Into<String>>(&mut self, theme: &str, label: T) -> WidgetState {
-        self.start(theme).text(label).wants_mouse(true).finish()
-    }
-
-    pub fn toggle_button<T: Into<String>>(&mut self, theme: &str, label: T, active: bool) -> WidgetState {
-        self.start(theme).text(label).active(active).wants_mouse(true).finish()
     }
 
     // internal state modifiers

@@ -12,7 +12,7 @@ mod widget;
 mod winit_io;
 
 pub use frame::Frame;
-pub use point::{Clip, Point, Rect, Border};
+pub use point::{Clip, Point, Border};
 pub use widget::{WidgetBuilder, WidgetState};
 pub use context::{Context, ContextBuilder, PersistentState};
 pub use theme_definition::{AnimStateKey, AnimState, Align, Color, Layout, WidthRelative, HeightRelative};

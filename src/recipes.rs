@@ -1,6 +1,22 @@
-use crate::{Frame, Point};
+use crate::{Frame, Point, WidgetState};
 
 impl Frame {
+    pub fn child(&mut self, theme: &str) -> WidgetState {
+        self.start(theme).finish()
+    }
+
+    pub fn label<T: Into<String>>(&mut self, theme: &str, text: T) {
+        self.start(theme).text(text).finish();
+    }
+
+    pub fn button<T: Into<String>>(&mut self, theme: &str, label: T) -> WidgetState {
+        self.start(theme).text(label).wants_mouse(true).finish()
+    }
+
+    pub fn toggle_button<T: Into<String>>(&mut self, theme: &str, label: T, active: bool) -> WidgetState {
+        self.start(theme).text(label).active(active).wants_mouse(true).finish()
+    }
+
     pub fn window<F: Fn(&mut Frame)>(&mut self, theme: &str, id: &str, size: Point, children: F) {
         self
         .start(theme)

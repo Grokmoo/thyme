@@ -144,22 +144,17 @@ pub struct Clip {
     pub size: Point
 }
 
-#[derive(Serialize, Deserialize, Copy, Clone, Default, Debug, PartialEq)]
-pub struct Rect {
-    pub ul: Point,
-    pub lr: Point,
-}
-
-impl Rect {
-    pub fn new(pos: Point, size: Point) -> Rect {
-        Rect {
-            ul: pos,
-            lr: pos + size,
+impl Clip {
+    pub fn new(pos: Point, size: Point) -> Clip {
+        Clip {
+            pos,
+            size,
         }
     }
 
-    pub fn inside(&self, pos: Point) -> bool {
-        pos.x >= self.ul.x && pos.x <= self.lr.x && pos.y >= self.ul.y && pos.y <= self.lr.y
+    pub fn is_inside(&self, pos: Point) -> bool {
+        pos.x >= self.pos.x && pos.y >= self.pos.y &&
+            pos.x <= self.pos.x + self.size.x && pos.y <= self.pos.y + self.size.y
     }
 }
 

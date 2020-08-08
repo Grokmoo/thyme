@@ -13,66 +13,6 @@ use crate::render::{TexCoord, DrawList, DrawMode, Renderer, TextureHandle, Textu
 use crate::font::{Font, FontSource, FontChar};
 use crate::{Frame, Point, Color, Clip};
 
-struct GliumDrawList {
-    vertices: Vec<GliumVertex>,
-}
-
-impl GliumDrawList {
-    fn new() -> Self {
-        GliumDrawList {
-            vertices: Vec::new(),
-        }
-    }
-
-    fn clear(&mut self) {
-        self.vertices.clear();
-    }
-}
-
-impl DrawList for GliumDrawList {
-    fn len(&self) -> usize { self.vertices.len() }
-
-    fn back_adjust_positions(&mut self, since_index: usize, amount: Point) {
-        for vert in self.vertices.iter_mut().skip(since_index) {
-            vert.position[0] += amount.x;
-            vert.position[1] += amount.y;
-        }
-    }
-
-    fn push_rect(
-        &mut self,
-        pos: [f32; 2],
-        size: [f32; 2],
-        tex: [TexCoord; 2],
-        color: Color,
-        clip: Clip,
-    ) {
-        let vert = GliumVertex {
-            position: pos,
-            size,
-            tex0: tex[0].into(),
-            tex1: tex[1].into(),
-            color: color.into(),
-            clip_pos: clip.pos.into(),
-            clip_size: clip.size.into(),
-        };
-
-        self.vertices.push(vert);
-    }
-}
-
-#[derive(Copy, Clone)]
-struct GliumVertex {
-    pub position: [f32; 2],
-    pub size: [f32; 2],
-    pub tex0: [f32; 2],
-    pub tex1: [f32; 2],
-    pub color: [f32; 3],
-    pub clip_pos: [f32; 2],
-    pub clip_size: [f32; 2],
-}
-implement_vertex!(GliumVertex, position, size, tex0, tex1, color, clip_pos, clip_size);
-
 const FONT_TEX_SIZE: u32 = 512;
 
 pub struct GliumRenderer {
@@ -655,3 +595,64 @@ fn matrix(display_pos: Point, display_size: Point) -> [[f32; 4]; 4] {
         [(right + left) / (left - right), (top + bot) / (bot - top),  0.0, 1.0],
     ]
 }
+
+struct GliumDrawList {
+    vertices: Vec<GliumVertex>,
+}
+
+impl GliumDrawList {
+    fn new() -> Self {
+        GliumDrawList {
+            vertices: Vec::new(),
+        }
+    }
+
+    fn clear(&mut self) {
+        self.vertices.clear();
+    }
+}
+
+impl DrawList for GliumDrawList {
+    fn len(&self) -> usize { self.vertices.len() }
+
+    fn back_adjust_positions(&mut self, since_index: usize, amount: Point) {
+        for vert in self.vertices.iter_mut().skip(since_index) {
+            vert.position[0] += amount.x;
+            vert.position[1] += amount.y;
+        }
+    }
+
+    fn push_rect(
+        &mut self,
+        pos: [f32; 2],
+        size: [f32; 2],
+        tex: [TexCoord; 2],
+        color: Color,
+        clip: Clip,
+    ) {
+        let vert = GliumVertex {
+            position: pos,
+            size,
+            tex0: tex[0].into(),
+            tex1: tex[1].into(),
+            color: color.into(),
+            clip_pos: clip.pos.into(),
+            clip_size: clip.size.into(),
+        };
+
+        self.vertices.push(vert);
+    }
+}
+
+#[derive(Copy, Clone)]
+struct GliumVertex {
+    pub position: [f32; 2],
+    pub size: [f32; 2],
+    pub tex0: [f32; 2],
+    pub tex1: [f32; 2],
+    pub color: [f32; 3],
+    pub clip_pos: [f32; 2],
+    pub clip_size: [f32; 2],
+}
+
+implement_vertex!(GliumVertex, position, size, tex0, tex1, color, clip_pos, clip_size);

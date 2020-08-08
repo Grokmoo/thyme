@@ -222,7 +222,7 @@ pub enum AnimStateKey {
     Active,
 }
 
-#[derive(Serialize, Deserialize, Copy, Clone)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[serde(deny_unknown_fields)]
 pub enum Layout {
     Horizontal,
@@ -234,7 +234,7 @@ impl Default for Layout {
     fn default() -> Self { Layout::Horizontal }
 }
 
-#[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, Hash)]
 #[serde(deny_unknown_fields)]
 pub enum Align {
     Left,
@@ -252,14 +252,14 @@ impl Default for Align {
     fn default() -> Self { Align::TopLeft }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct FontDefinition {
     pub source: String,
     pub size: f32,
 }
 
-#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
 #[serde(deny_unknown_fields)]
 pub enum WidthRelative {
     Normal,
@@ -270,7 +270,7 @@ impl Default for WidthRelative {
     fn default() -> Self { WidthRelative::Normal }
 }
 
-#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
 #[serde(deny_unknown_fields)]
 pub enum HeightRelative {
     Normal,
@@ -282,7 +282,7 @@ impl Default for HeightRelative {
     fn default() -> Self { HeightRelative::Normal }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Color {
     pub r: u8,
     pub g: u8,
