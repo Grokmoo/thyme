@@ -26,7 +26,7 @@ impl Frame {
             rect.size.x *= frac;
 
             builder.clip(rect).finish();
-        }).finish();
+        });
     }
 
     pub fn window<F: Fn(&mut Frame)>(&mut self, theme: &str, id: &str, size: Point, children: F) {
@@ -43,7 +43,7 @@ impl Frame {
                 if ui.button("close", "").clicked {
                     ui.set_open(id, false);
                 }
-            }).finish();
+            });
 
             if result.pressed {
                 ui.modify(id, |state| {
@@ -59,7 +59,6 @@ impl Frame {
             }
 
             (children)(ui);
-        })
-        .finish();
+        });
     }
 }

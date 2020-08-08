@@ -541,30 +541,21 @@ impl<'a> WidgetBuilder<'a> {
         self
     }
 
-    #[must_use]
-    pub fn children<F: FnOnce(&mut Frame)>(mut self, f: F) -> WidgetBuilder<'a> {
-        let state = self.frame.state(self.widget);
-        if !state.is_open {
-            self.widget().visible = false;
-            return self;
-        }
-
-        let old_parent_index = self.frame.parent_index();
-
-        self.frame.set_parent_index(self.widget);
-        if self.recalc_pos_size {
-            self.recalculate_pos_size(state);
-        }
-        (f)(self.frame);
-        self.frame.set_parent_index(old_parent_index);
-
-        self
+    /// Consumes the builder and adds a widget to the current frame.  The
+    /// returned data includes information about the animation state and
+    /// mouse interactions of the created element.
+    /// If you wish this widget to have one or more child widgets, you should
+    /// call `children` instead.
+    pub fn finish(self) -> WidgetState {
+        self.children(|_| {})
     }
 
-    /// Creates the widget from this builder.  Returns a `WidgetState`, which
-    /// provides information about the animation state and mouse interactions
-    /// of the created widget
-    pub fn finish(mut self) -> WidgetState {
+    /// Consumes the builder and adds a widget to the current frame.  The
+    /// returned data includes information about the animation state and
+    /// mouse interactions of the created element.
+    /// The provided closure is called to enable adding children to this widget.
+    /// If you don't want to add children, you can just call `finish` instead.
+    pub fn children<F: FnOnce(&mut Frame)>(mut self, f: F) -> WidgetState {
         if !self.widget().visible { return WidgetState::hidden(); }
 
         let state = self.frame.state(self.widget);
@@ -577,6 +568,11 @@ impl<'a> WidgetBuilder<'a> {
         if self.recalc_pos_size {
             self.recalculate_pos_size(state);
         }
+
+        let old_parent_index = self.frame.parent_index();
+        self.frame.set_parent_index(self.widget);
+        (f)(self.frame);
+        self.frame.set_parent_index(old_parent_index);
 
         let (clicked, mut anim_state, dragged) = if self.enabled && self.data.wants_mouse {
             self.frame.check_mouse_taken(self.widget)
