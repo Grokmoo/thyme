@@ -7,32 +7,27 @@ use crate::image::ImageHandle;
 use crate::theme::{WidgetTheme};
 
 pub struct Widget {
-    raw_pos: Point,
-    raw_size: Point,
-    clip: Clip,
-
+    // stored in the widget for parent ref purposes
+    cursor: Point,
+    id: String,
     theme_id: String,
+    child_align: Align,
+    layout: Layout,
+    layout_spacing: Point,
+
+    // stored in the widget for drawing purposes
+    clip: Clip,
     text: Option<String>,
     text_color: Color,
-    wants_mouse: bool,
     text_align: Align,
     font: Option<FontSummary>,
     background: Option<ImageHandle>,
     foreground: Option<ImageHandle>,
     pos: Point,
     size: Point,
-    width_from: WidthRelative,
-    height_from: HeightRelative,
-    id: String,
-    
     border: Border,
-    layout: Layout,
-    layout_spacing: Point,
-    child_align: Align,
-    align: Align,
-    cursor: Point,
     anim_state: AnimState,
-    hidden: bool,
+    visible: bool,
 }
 
 impl Widget {
@@ -45,27 +40,21 @@ impl Widget {
             font: None,
             background: None,
             foreground: None,
-            raw_pos: Point::default(),
-            pos: Point::default(),
-            raw_size: Point::default(),
-            cursor: Point::default(),
-            border: Border::default(),
             layout: Layout::default(),
             layout_spacing: Point::default(),
             child_align: Align::default(),
-            align: Align::default(),
-            wants_mouse: false,
+            pos: Point::default(),
+            cursor: Point::default(),
+            border: Border::default(),
             size,
-            width_from: WidthRelative::default(),
-            height_from: HeightRelative::default(),
             id: String::new(),
             anim_state: AnimState::normal(),
-            hidden: false,
+            visible: true,
             clip: Clip { pos: Point::default(), size },
         }
     }
 
-    pub (crate) fn new(parent: &Widget, theme: &WidgetTheme) -> Widget {
+    fn create(parent: &Widget, theme: &WidgetTheme) -> (WidgetData, Widget) {
         let font = theme.font;
         let border = theme.border.unwrap_or_default();
         let raw_size = theme.size.unwrap_or_default();
@@ -74,6 +63,7 @@ impl Widget {
         let size = size(parent, raw_size, border, font, width_from, height_from);
 
         let align = theme.align.unwrap_or(parent.child_align);
+        let manual_pos = theme.pos.is_some() || align != parent.child_align;
         let cursor_pos = if align == parent.child_align { parent.cursor } else { Point::default() };
         let raw_pos = theme.pos.unwrap_or(cursor_pos);
         let pos = pos(parent, raw_pos, size, align);
@@ -84,36 +74,42 @@ impl Widget {
             format!("{}/{}", parent.id, theme.id)
         };
 
-        Widget {
+        let data = WidgetData {
+            manual_pos,
+            wants_mouse: theme.wants_mouse.unwrap_or_default(),
+            raw_size,
+            raw_pos,
+            width_from,
+            height_from,
+            align,
+        };
+
+        let widget = Widget {
+            layout: theme.layout.unwrap_or_default(),
+            layout_spacing: theme.layout_spacing.unwrap_or_default(),
+            child_align: theme.child_align.unwrap_or_default(),
             theme_id: theme.full_id.to_string(),
             text: theme.text.clone(),
             text_color: theme.text_color.unwrap_or_default(),
             text_align: theme.text_align.unwrap_or_default(),
-            wants_mouse: theme.wants_mouse.unwrap_or_default(),
             font,
             background: theme.background,
             foreground: theme.foreground,
-            raw_size,
-            raw_pos,
             pos,
             cursor: Point::default(),
             border,
-            layout: theme.layout.unwrap_or_default(),
-            layout_spacing: theme.layout_spacing.unwrap_or_default(),
             size,
-            width_from,
-            height_from,
-            child_align: theme.child_align.unwrap_or_default(),
-            align,
             id,
             anim_state: AnimState::normal(),
-            hidden: false,
+            visible: true,
             clip: parent.clip,
-        }
+        };
+
+        (data, widget)
     }
 
     pub fn clip(&self) -> Clip { self.clip }
-    pub fn hidden(&self) -> bool { self.hidden }
+    pub fn visible(&self) -> bool { self.visible }
     pub fn text_color(&self) -> Color { self.text_color }
     pub fn text_align(&self) -> Align { self.text_align }
     pub fn text(&self) -> Option<&str> { self.text.as_deref() }
@@ -263,12 +259,23 @@ fn pos(parent: &Widget, pos: Point, self_size: Point, align: Align) -> Point {
     }.round()
 }
 
+struct WidgetData {
+    manual_pos: bool,
+    wants_mouse: bool,
+
+    raw_pos: Point,
+    raw_size: Point,
+    width_from: WidthRelative,
+    height_from: HeightRelative,
+    align: Align,
+}
+
 pub struct WidgetBuilder<'a> {
     pub frame: &'a mut Frame,
     pub parent: usize,
     pub widget: usize,
-    manual_pos: bool,
-    visible: bool,
+    data: WidgetData,
+
     enabled: bool,
     active: bool,
 
@@ -278,7 +285,7 @@ pub struct WidgetBuilder<'a> {
 impl<'a> WidgetBuilder<'a> {
     #[must_use]
     pub fn new(frame: &'a mut Frame, parent: usize, theme_id: String, base_theme: &str) -> WidgetBuilder<'a> {
-        let (manual_pos, index, widget) = {
+        let (data, index, widget) = {
             let context = frame.context_internal();
             let context = context.borrow();
             let theme = match context.themes().theme(&theme_id) {
@@ -295,10 +302,10 @@ impl<'a> WidgetBuilder<'a> {
 
             let index = frame.next_index();
             let parent_widget = frame.widget(parent);
-            let align = theme.align.unwrap_or(parent_widget.child_align);
-            let manual_pos = theme.pos.is_some() || align != parent_widget.child_align;
-            
-            (manual_pos, index, Widget::new(parent_widget, theme))
+
+            let (data, widget) = Widget::create(parent_widget, theme);
+
+            (data, index, widget)
         };
 
         frame.push_widget(widget);
@@ -307,8 +314,7 @@ impl<'a> WidgetBuilder<'a> {
             frame,
             parent,
             widget: index,
-            manual_pos,
-            visible: true,
+            data,
             enabled: true,
             active: false,
             recalc_pos_size: true,
@@ -321,11 +327,11 @@ impl<'a> WidgetBuilder<'a> {
             let widget = self.frame.widget(self.widget);
             let size = size (
                 parent,
-                widget.raw_size,
+                self.data.raw_size,
                 widget.border,
                 widget.font,
-                widget.width_from,
-                widget.height_from
+                self.data.width_from,
+                self.data.height_from
             );
 
             self.widget().size = size;
@@ -334,7 +340,7 @@ impl<'a> WidgetBuilder<'a> {
         {
             let parent = self.frame.widget(self.parent);
             let widget = self.frame.widget(self.widget);
-            let pos = pos(parent, widget.raw_pos, widget.size, widget.align);
+            let pos = pos(parent, self.data.raw_pos, widget.size, self.data.align);
             self.widget().pos = pos + state.moved;
         }
 
@@ -353,7 +359,7 @@ impl<'a> WidgetBuilder<'a> {
 
     #[must_use]
     pub fn wants_mouse(mut self, wants_mouse: bool) -> WidgetBuilder<'a> {
-        self.widget().wants_mouse = wants_mouse;
+        self.data.wants_mouse = wants_mouse;
         self
     }
 
@@ -455,26 +461,26 @@ impl<'a> WidgetBuilder<'a> {
 
     #[must_use]
     pub fn screen_pos(mut self, x: f32, y: f32) -> WidgetBuilder<'a> {
-        self.widget().raw_pos = Point { x, y };
+        self.data.raw_pos = Point { x, y };
         self.widget().pos = Point { x, y };
-        self.widget().align = Align::TopLeft;
-        self.manual_pos = true;
+        self.data.align = Align::TopLeft;
+        self.data.manual_pos = true;
         self.recalc_pos_size = false;
         self
     }
 
     #[must_use]
     pub fn pos(mut self, x: f32, y: f32) -> WidgetBuilder<'a> {
-        self.widget().raw_pos = Point { x, y };
-        self.manual_pos = true;
+        self.data.raw_pos = Point { x, y };
+        self.data.manual_pos = true;
         self.recalc_pos_size = true;
         self
     }
 
     #[must_use]
     pub fn align(mut self, align: Align) -> WidgetBuilder<'a> {
-        self.widget().align = align;
-        self.manual_pos = true;
+        self.data.align = align;
+        self.data.manual_pos = true;
         self.recalc_pos_size = true;
         self
     }
@@ -488,21 +494,21 @@ impl<'a> WidgetBuilder<'a> {
 
     #[must_use]
     pub fn size(mut self, x: f32, y: f32) -> WidgetBuilder<'a> {
-        self.widget().raw_size = Point { x, y };
+        self.data.raw_size = Point { x, y };
         self.recalc_pos_size = true;
         self
     }
 
     #[must_use]
     pub fn width_from(mut self, from: WidthRelative) -> WidgetBuilder<'a> {
-        self.widget().width_from = from;
+        self.data.width_from = from;
         self.recalc_pos_size = true;
         self
     }
 
     #[must_use]
     pub fn height_from(mut self, from: HeightRelative) -> WidgetBuilder<'a> {
-        self.widget().height_from = from;
+        self.data.height_from = from;
         self.recalc_pos_size = true;
         self
     }
@@ -515,7 +521,7 @@ impl<'a> WidgetBuilder<'a> {
 
     #[must_use]
     pub fn visible(mut self, visible: bool) -> WidgetBuilder<'a> {
-        self.visible = visible;
+        self.widget().visible = visible;
         self
     }
 
@@ -529,7 +535,7 @@ impl<'a> WidgetBuilder<'a> {
     pub fn children<F: FnOnce(&mut Frame)>(mut self, f: F) -> WidgetBuilder<'a> {
         let state = self.frame.state(self.widget);
         if !state.is_open {
-            self.widget().hidden = true;
+            self.widget().visible = false;
             return self;
         }
 
@@ -546,12 +552,12 @@ impl<'a> WidgetBuilder<'a> {
     }
 
     pub fn finish(mut self) -> WidgetState {
-        if !self.visible { return WidgetState::hidden(); }
+        if !self.widget().visible { return WidgetState::hidden(); }
 
         let state = self.frame.state(self.widget);
 
         if !state.is_open {
-            self.widget().hidden = true;
+            self.widget().visible = false;
             return WidgetState::hidden();
         }
 
@@ -559,7 +565,7 @@ impl<'a> WidgetBuilder<'a> {
             self.recalculate_pos_size(state);
         }
 
-        let (clicked, mut anim_state, dragged) = if self.enabled && self.widget().wants_mouse {
+        let (clicked, mut anim_state, dragged) = if self.enabled && self.data.wants_mouse {
             self.frame.check_mouse_taken(self.widget)
         } else {
             (false, AnimState::disabled(), Point::default())
@@ -573,7 +579,7 @@ impl<'a> WidgetBuilder<'a> {
 
         let state = WidgetState::new(anim_state, clicked, dragged);
         let size = self.widget().size;
-        if !self.manual_pos {
+        if !self.data.manual_pos {
             use Align::*;
             let (x, y) = match self.parent().child_align {
                 Left => (size.x, 0.0),

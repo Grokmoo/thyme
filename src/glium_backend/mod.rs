@@ -144,7 +144,7 @@ impl GliumRenderer {
         self.draw_list.clear();
 
         for widget in &widgets {
-            if widget.hidden() { continue; }
+            if !widget.visible() { continue; }
             let image_handle = match widget.background() {
                 None => continue,
                 Some(handle) => handle,
@@ -164,7 +164,7 @@ impl GliumRenderer {
 
         // render foregrounds
         for widget in &widgets {
-            if widget.hidden() { continue; }
+            if !widget.visible() { continue; }
 
             let border = widget.border();
             let fg_pos = widget.pos() + border.tl();
