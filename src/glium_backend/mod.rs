@@ -15,20 +15,17 @@ use crate::{Frame, Point, Color, Clip};
 
 struct GliumDrawList {
     vertices: Vec<GliumVertex>,
-    indices: Vec<u32>,
 }
 
 impl GliumDrawList {
     fn new() -> Self {
         GliumDrawList {
             vertices: Vec::new(),
-            indices: Vec::new(),
         }
     }
 
     fn clear(&mut self) {
         self.vertices.clear();
-        self.indices.clear();
     }
 }
 
@@ -42,17 +39,6 @@ impl DrawList for GliumDrawList {
         }
     }
 
-    // fn push_rect(
-    //     &mut self,
-    //     p0: [f32; 2],
-    //     p1: [f32; 2],
-    //     tex: [TexCoord; 2],
-    //     color: Color,
-    //     clip: Clip,
-    // ) {
-        
-    // }
-
     fn push_rect(
         &mut self,
         pos: [f32; 2],
@@ -61,65 +47,31 @@ impl DrawList for GliumDrawList {
         color: Color,
         clip: Clip,
     ) {
-        let ul = GliumVertex::new(pos, tex[0].into(), color, clip);
-        let lr = GliumVertex::new([pos[0] + size[0], pos[1] + size[1]], tex[1].into(), color, clip);
+        let vert = GliumVertex {
+            position: pos,
+            size,
+            tex0: tex[0].into(),
+            tex1: tex[1].into(),
+            color: color.into(),
+            clip_pos: clip.pos.into(),
+            clip_size: clip.size.into(),
+        };
 
-        let idx = self.vertices.len() as u32;
-        self.indices.extend_from_slice(&[idx, idx + 1, idx + 2, idx, idx + 2, idx + 3]);
-
-        self.vertices.push(ul);
-        self.vertices.push(GliumVertex {
-            position: [ul.position[0], lr.position[1]],
-            tex_coords: [ul.tex_coords[0], lr.tex_coords[1]],
-            clip_pos: ul.clip_pos,
-            clip_size: ul.clip_size,
-            color: ul.color,
-        });
-        self.vertices.push(lr);
-        self.vertices.push(GliumVertex {
-            position: [lr.position[0], ul.position[1]],
-            tex_coords: [lr.tex_coords[0], ul.tex_coords[1]],
-            clip_pos: lr.clip_pos,
-            clip_size: lr.clip_size,
-            color: lr.color,
-        });
+        self.vertices.push(vert);
     }
 }
-
-// #[derive(Copy, Clone)]
-// struct GliumVertex {
-//     pub position: [f32; 2],
-//     pub size: [f32; 2],
-//     pub tex0: [f32; 2],
-//     pub tex1: [f32; 2],
-//     pub color: [f32; 2],
-//     pub clip_pos: [f32; 2],
-//     pub clip_size: [f32; 2],
-// }
-// implement_vertex!(GliumVertex, position, size, tex0, tex1, color, clip_pos, clip_size);
 
 #[derive(Copy, Clone)]
 struct GliumVertex {
     pub position: [f32; 2],
-    pub tex_coords: [f32; 2],
+    pub size: [f32; 2],
+    pub tex0: [f32; 2],
+    pub tex1: [f32; 2],
+    pub color: [f32; 3],
     pub clip_pos: [f32; 2],
     pub clip_size: [f32; 2],
-    pub color: [f32; 3],
 }
-
-impl GliumVertex {
-    fn new(position: [f32; 2], tex_coords: [f32; 2], color: Color, clip: Clip) -> GliumVertex {
-        GliumVertex {
-            position,
-            tex_coords,
-            color: color.into(),
-            clip_pos: clip.pos.into(),
-            clip_size: clip.size.into(),
-        }
-    }
-}
-
-implement_vertex!(GliumVertex, position, tex_coords, color, clip_pos, clip_size);
+implement_vertex!(GliumVertex, position, size, tex0, tex1, color, clip_pos, clip_size);
 
 const FONT_TEX_SIZE: u32 = 512;
 
@@ -132,22 +84,9 @@ pub struct GliumRenderer {
 
     // keep the draw list so we don't need to re-allocate every frame
     draw_list: GliumDrawList,
-}
 
-// implement_vertex!(Vertex, position, tex_coords, color, clip_pos, clip_size);
-
-fn matrix(display_pos: Point, display_size: Point) -> [[f32; 4]; 4] {
-    let left = display_pos.x;
-    let right = display_pos.x + display_size.x;
-    let top = display_pos.y;
-    let bot = display_pos.y + display_size.y;
-
-    [
-        [         (2.0 / (right - left)),                             0.0,  0.0, 0.0],
-        [                            0.0,          (2.0 / (top - bot)),  0.0, 0.0],
-        [                            0.0,                             0.0, -1.0, 0.0],
-        [(right + left) / (left - right), (top + bot) / (bot - top),  0.0, 1.0],
-    ]
+    matrix: [[f32; 4]; 4],
+    params: DrawParameters<'static>,
 }
 
 impl GliumRenderer {
@@ -156,16 +95,16 @@ impl GliumRenderer {
 
         let base_program = Program::from_source(
             facade,
-            VERTEX_SHADER_SRC,
+            VERT_SHADER_SRC,
             FRAGMENT_SHADER_SRC,
-            None,
+            Some(GEOM_SHADER_SRC),
         )?;
 
         let font_program = Program::from_source(
             facade,
-            VERTEX_SHADER_SRC,
+            VERT_SHADER_SRC,
             FONT_FRAGMENT_SHADER_SRC,
-            None
+            Some(GEOM_SHADER_SRC)
         )?;
 
         Ok(GliumRenderer {
@@ -175,6 +114,12 @@ impl GliumRenderer {
             fonts: Vec::new(),
             textures: Vec::new(),
             draw_list: GliumDrawList::new(),
+            matrix: matrix(Point::default(), Point { x: 100.0, y: 100.0 }),
+            params: DrawParameters {
+                blend: glium::Blend::alpha_blending(),
+                clip_planes_bitmask: 0b1111, //enable the first 4 clip planes
+                ..DrawParameters::default()
+            },
         })
     }
 
@@ -192,12 +137,7 @@ impl GliumRenderer {
 
         let display_pos = Point::default();
         let display_size = context.display_size();
-        let matrix = matrix(display_pos, display_size);
-        let params = DrawParameters {
-            blend: glium::Blend::alpha_blending(),
-            clip_planes_bitmask: 0b1111, //enable the first 4 clip planes
-            ..DrawParameters::default()
-        };
+        self.matrix = matrix(display_pos, display_size);
 
         // render backgrounds
         let mut draw_mode = None;
@@ -211,7 +151,7 @@ impl GliumRenderer {
             };
             let image = context.themes().image(image_handle);
 
-            self.render_if_changed(target, &mut draw_mode, DrawMode::Image(image.texture()), matrix, &params)?;
+            self.render_if_changed(target, &mut draw_mode, DrawMode::Image(image.texture()))?;
             
             image.draw(
                 &mut self.draw_list,
@@ -232,7 +172,7 @@ impl GliumRenderer {
 
             if let Some(image_handle) = widget.foreground() {
                 let image = context.themes().image(image_handle);
-                self.render_if_changed(target, &mut draw_mode, DrawMode::Image(image.texture()), matrix, &params)?;
+                self.render_if_changed(target, &mut draw_mode, DrawMode::Image(image.texture()))?;
 
                 image.draw(
                     &mut self.draw_list,
@@ -245,7 +185,7 @@ impl GliumRenderer {
 
             if let Some(text) = widget.text() {
                 if let Some(font_sum) = widget.font() {
-                    self.render_if_changed(target, &mut draw_mode, DrawMode::Font(font_sum.handle), matrix, &params)?;
+                    self.render_if_changed(target, &mut draw_mode, DrawMode::Font(font_sum.handle))?;
                     let font = context.themes().font(font_sum.handle);
 
                     font.draw(
@@ -263,7 +203,7 @@ impl GliumRenderer {
 
         // render anything from the final draw calls
         if let Some(mode) = draw_mode {
-            self.render(target, mode, matrix, &params)?;
+            self.render(target, mode)?;
         }
 
         Ok(())
@@ -274,13 +214,11 @@ impl GliumRenderer {
         target: &mut T,
         mode: &mut Option<DrawMode>,
         desired_mode: DrawMode,
-        matrix: [[f32; 4]; 4],
-        params: &DrawParameters,
     ) -> Result<(), GliumError> {
         match mode {
             None => *mode = Some(desired_mode),
             Some(cur_mode) => if *cur_mode != desired_mode {
-                self.render(target, *cur_mode, matrix, params)?;
+                self.render(target, *cur_mode)?;
                 *mode = Some(desired_mode);
             }
         }
@@ -292,31 +230,27 @@ impl GliumRenderer {
         &mut self,
         target: &mut T,
         mode: DrawMode,
-        matrix: [[f32; 4]; 4],
-        params: &DrawParameters,
     ) -> Result<(), GliumError> {
         let vertices = glium::VertexBuffer::immutable(
             &self.context, &self.draw_list.vertices
         )?;
-        let indices = glium::IndexBuffer::immutable(
-            &self.context, PrimitiveType::TrianglesList, &self.draw_list.indices
-        )?;
+        let indices = glium::index::NoIndices(PrimitiveType::Points);
         match mode {
             DrawMode::Font(font_handle) => {
                 let font = self.font(font_handle);
                 let uniforms = uniform! {
                     tex: Sampler(&font.texture, font.sampler),
-                    matrix: matrix,
+                    matrix: self.matrix,
                 };
-                target.draw(&vertices, &indices, &self.font_program, &uniforms, params)?;
+                target.draw(&vertices, &indices, &self.font_program, &uniforms, &self.params)?;
             },
             DrawMode::Image(tex_handle) => {
                 let texture = self.texture(tex_handle);
                 let uniforms = uniform! {
                     tex: Sampler(&texture.texture, texture.sampler),
-                    matrix: matrix,
+                    matrix: self.matrix,
                 };
-                target.draw(&vertices, &indices, &self.base_program, &uniforms, params)?;
+                target.draw(&vertices, &indices, &self.base_program, &uniforms, &self.params)?;
             }
         };
 
@@ -573,14 +507,49 @@ impl From<ProgramCreationError> for GliumError {
     }
 }
 
-const VERTEX_SHADER_SRC: &str = r#"
+// Pass through the vertex to the geometry shader where the rectangle is built
+const VERT_SHADER_SRC: &str = r#"
   #version 140
 
   in vec2 position;
-  in vec2 tex_coords;
+  in vec2 size;
+  in vec2 tex0;
+  in vec2 tex1;
   in vec3 color;
   in vec2 clip_pos;
   in vec2 clip_size;
+
+  out vec2 g_size;
+  out vec2 g_tex0;
+  out vec2 g_tex1;
+  out vec3 g_color;
+  out vec2 g_clip_pos;
+  out vec2 g_clip_size;
+
+  void main() {
+    gl_Position = vec4(position, 0.0, 1.0);
+	
+	g_size = size;
+	g_tex0 = tex0;
+	g_tex1 = tex1;
+	g_color = color;
+	g_clip_pos = clip_pos;
+	g_clip_size = clip_size;
+  }
+"#;
+
+const GEOM_SHADER_SRC: &str = r#"
+  #version 150 core
+
+  layout (points) in;
+  layout (triangle_strip, max_vertices = 4) out;
+
+  in vec2 g_size[];
+  in vec2 g_tex0[];
+  in vec2 g_tex1[];
+  in vec3 g_color[];
+  in vec2 g_clip_pos[];
+  in vec2 g_clip_size[];
 
   out vec2 v_tex_coords;
   out vec3 v_color;
@@ -588,15 +557,58 @@ const VERTEX_SHADER_SRC: &str = r#"
   uniform mat4 matrix;
 
   void main() {
-    v_tex_coords = tex_coords;
-    v_color = color;
+	vec4 base = gl_in[0].gl_Position;
+    
+    vec2 clip_pos = g_clip_pos[0];
+    vec2 clip_size = g_clip_size[0];
 
+    // draw the rectangle using 2 triangles in triangle_strip
+
+    // [0, 0] vertex
+    vec4 position = base;
     gl_ClipDistance[0] = position.x - clip_pos.x;
     gl_ClipDistance[1] = clip_pos.x + clip_size.x - position.x;
     gl_ClipDistance[2] = position.y - clip_pos.y;
     gl_ClipDistance[3] = clip_pos.y + clip_size.y - position.y;
+	gl_Position = matrix * position;
+	v_tex_coords = g_tex0[0];
+	v_color = g_color[0];
+	EmitVertex();
+    
+    // [0, 1] vertex
+    position = base + vec4(0.0, g_size[0].y, 0.0, 0.0);
+    gl_ClipDistance[0] = position.x - clip_pos.x;
+    gl_ClipDistance[1] = clip_pos.x + clip_size.x - position.x;
+    gl_ClipDistance[2] = position.y - clip_pos.y;
+    gl_ClipDistance[3] = clip_pos.y + clip_size.y - position.y;
+	gl_Position = matrix * position;
+	v_tex_coords = vec2(g_tex0[0].x, g_tex1[0].y);
+	v_color = g_color[0];
+    EmitVertex();
+    
+    // [1, 0] vertex
+    position = base + vec4(g_size[0].x, 0.0, 0.0, 0.0);
+	gl_ClipDistance[0] = position.x - clip_pos.x;
+    gl_ClipDistance[1] = clip_pos.x + clip_size.x - position.x;
+    gl_ClipDistance[2] = position.y - clip_pos.y;
+    gl_ClipDistance[3] = clip_pos.y + clip_size.y - position.y;
+	gl_Position = matrix * position;
+	v_tex_coords = vec2(g_tex1[0].x, g_tex0[0].y);
+	v_color = g_color[0];
+    EmitVertex();
+    
+    // [1, 1] vertex
+    position = base + vec4(g_size[0].x, g_size[0].y, 0.0, 0.0);
+    gl_ClipDistance[0] = position.x - clip_pos.x;
+    gl_ClipDistance[1] = clip_pos.x + clip_size.x - position.x;
+    gl_ClipDistance[2] = position.y - clip_pos.y;
+    gl_ClipDistance[3] = clip_pos.y + clip_size.y - position.y;
+    gl_Position = matrix * position;
+    v_tex_coords = g_tex1[0];
+    v_color = g_color[0];
+    EmitVertex();
 
-    gl_Position = matrix * vec4(position, 0.0, 1.0);
+    EndPrimitive();
   }
 "#;
 
@@ -629,3 +641,17 @@ const FONT_FRAGMENT_SHADER_SRC: &str = r#"
         color = vec4(v_color, texture(tex, v_tex_coords).r);
     }
 "#;
+
+fn matrix(display_pos: Point, display_size: Point) -> [[f32; 4]; 4] {
+    let left = display_pos.x;
+    let right = display_pos.x + display_size.x;
+    let top = display_pos.y;
+    let bot = display_pos.y + display_size.y;
+
+    [
+        [         (2.0 / (right - left)),                             0.0,  0.0, 0.0],
+        [                            0.0,          (2.0 / (top - bot)),  0.0, 0.0],
+        [                            0.0,                             0.0, -1.0, 0.0],
+        [(right + left) / (left - right), (top + bot) / (bot - top),  0.0, 1.0],
+    ]
+}
