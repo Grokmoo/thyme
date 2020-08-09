@@ -541,6 +541,24 @@ impl<'a> WidgetBuilder<'a> {
         self
     }
 
+    
+    /// Force the widget to layout its `size` and `position` immediately.
+    /// Assuming these attributes are not changed after this method is
+    /// called, these attributes will have their final values after this
+    /// method returns.  The size and position are written to the passed
+    /// in rect.
+    #[must_use]
+    pub fn trigger_layout(mut self, rect: &mut Rect) -> WidgetBuilder<'a> {
+        let state = self.frame.state(self.widget);
+        if self.recalc_pos_size {
+            self.recalculate_pos_size(state);
+        }
+
+        rect.pos = self.widget().pos;
+        rect.size = self.widget().size;
+        self
+    }
+
     /// Consumes the builder and adds a widget to the current frame.  The
     /// returned data includes information about the animation state and
     /// mouse interactions of the created element.
@@ -565,6 +583,7 @@ impl<'a> WidgetBuilder<'a> {
 
         let state = self.frame.state(self.widget);
 
+        // TODO don't use cursor for scroll
         self.widget().cursor = self.widget().cursor + state.scroll;
 
         if !state.is_open {
@@ -639,20 +658,5 @@ impl<'a> WidgetBuilder<'a> {
         }
         
         state
-    }
-
-    /// Force the widget to layout its `size` and `position` immediately.
-    /// Assuming these attributes are not changed after this method is
-    /// called, these attributes will have their final values after this
-    /// method returns.  Note that this method does not follow the usual
-    /// builder pattern, instead mutating the `WidgetBuilder` in place
-    /// and returning the size and pos.
-    pub fn trigger_layout(&mut self) -> Rect {
-        let state = self.frame.state(self.widget);
-        if self.recalc_pos_size {
-            self.recalculate_pos_size(state);
-        }
-
-        Rect::new(self.widget().pos, self.widget().size)
     }
 }

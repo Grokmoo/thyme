@@ -1,4 +1,4 @@
-use crate::{Align, Frame, WidgetState};
+use crate::{Align, Frame, Point, Rect, WidgetState};
 
 impl Frame {
     pub fn child(&mut self, theme: &str) -> WidgetState {
@@ -20,27 +20,30 @@ impl Frame {
     pub fn progress_bar(&mut self, theme: &str, frac: f32) {
         self.start(theme)
         .children(|ui| {
-            let mut builder = ui.start("bar");
+            let mut rect = Rect::default();
 
-            let mut rect = builder.trigger_layout();
-            rect.size.x *= frac;
-
-            builder.clip(rect).finish();
+            ui.start("bar")
+            .trigger_layout(&mut rect)
+            .clip(Rect::new(rect.pos, Point::new(rect.size.x * frac, rect.size.y)))
+            .finish();
         });
     }
 
     pub fn scrollpane<F: Fn(&mut Frame)>(&mut self, theme: &str, content_id: &str, children: F) {
         self.start(theme)
         .children(|ui| {
-            let mut content = ui.start("content").id(content_id);
-            let rect = content.trigger_layout();
-            content.clip(rect)
+            let mut content_size = Rect::default();
+
+            ui.start("content")
+            .id(content_id)
+            .trigger_layout(&mut content_size)
+            .clip(content_size)
             .children(children);
 
-            let pane_total_size = ui.parent_max_child_pos() - rect.pos;
+            let pane_total_size = ui.parent_max_child_pos() - content_size.pos;
 
             // check whether to show horizontal scrollbar
-            if pane_total_size.x > rect.size.x {
+            if pane_total_size.x > content_size.size.x {
                 ui.start("scrollbar_horizontal")
                 .align(Align::BotLeft)
                 .pos(0.0, 0.0)
@@ -55,7 +58,7 @@ impl Frame {
             }
 
             // check whether to show vertical scrollbar
-            if pane_total_size.y > rect.size.y {
+            if pane_total_size.y > content_size.size.y {
                 ui.start("scrollbar_vertical")
                 .align(Align::TopRight)
                 .pos(0.0, 0.0)
