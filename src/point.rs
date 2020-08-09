@@ -175,6 +175,14 @@ impl Point {
             y: self.y.round(),
         }
     }
+
+    /// Returns a per-component maximum of this and `other`
+    pub fn max(self, other: Point) -> Point {
+        Point {
+            x: self.x.max(other.x),
+            y: self.y.max(other.y)
+        }
+    }
 }
 
 impl From<[f32; 2]> for Point {

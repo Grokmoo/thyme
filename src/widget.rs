@@ -304,7 +304,7 @@ impl<'a> WidgetBuilder<'a> {
                 }, Some(theme) => theme,
             };
 
-            let index = frame.next_index();
+            let index = frame.num_widgets();
             let parent_widget = frame.widget(parent);
 
             let (data, widget) = Widget::create(parent_widget, theme);
@@ -547,7 +547,7 @@ impl<'a> WidgetBuilder<'a> {
     /// If you wish this widget to have one or more child widgets, you should
     /// call `children` instead.
     pub fn finish(self) -> WidgetState {
-        self.children(|_| {})
+        self.finish_with(None::<fn(&mut Frame)>)
     }
 
     /// Consumes the builder and adds a widget to the current frame.  The
@@ -555,10 +555,17 @@ impl<'a> WidgetBuilder<'a> {
     /// mouse interactions of the created element.
     /// The provided closure is called to enable adding children to this widget.
     /// If you don't want to add children, you can just call `finish` instead.
-    pub fn children<F: FnOnce(&mut Frame)>(mut self, f: F) -> WidgetState {
+    pub fn children<F: FnOnce(&mut Frame)>(self, f: F) -> WidgetState {
+        self.finish_with(Some(f))
+    }
+
+
+    fn finish_with<F: FnOnce(&mut Frame)>(mut self, f: Option<F>) -> WidgetState {
         if !self.widget().visible { return WidgetState::hidden(); }
 
         let state = self.frame.state(self.widget);
+
+        self.widget().cursor = self.widget().cursor + state.scroll;
 
         if !state.is_open {
             self.widget().visible = false;
@@ -569,10 +576,30 @@ impl<'a> WidgetBuilder<'a> {
             self.recalculate_pos_size(state);
         }
 
-        let old_parent_index = self.frame.parent_index();
-        self.frame.set_parent_index(self.widget);
-        (f)(self.frame);
-        self.frame.set_parent_index(old_parent_index);
+        let (self_pos, self_size) = {
+            let widget = self.widget();
+            (widget.pos, widget.size)
+        };
+
+        let old_max_child_pos = self.frame.max_child_pos();
+
+        // if there is a child function
+        if let Some(f) = f {
+            // push the max_child pos and parent index
+            self.frame.set_max_child_pos(self_pos);
+            let old_parent_index = self.frame.parent_index();
+            self.frame.set_parent_index(self.widget);
+
+            // build all children
+            (f)(self.frame);
+
+            // pop the max child pos and parent index
+            self.frame.set_parent_index(old_parent_index);
+            let this_children_max_pos = self.frame.max_child_pos();
+            self.frame.set_parent_max_child_pos(this_children_max_pos);
+        }
+
+        self.frame.set_max_child_pos(old_max_child_pos.max(self_pos + self_size));
 
         let (clicked, mut anim_state, dragged) = if self.enabled && self.data.wants_mouse {
             self.frame.check_mouse_taken(self.widget)

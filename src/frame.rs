@@ -16,6 +16,8 @@ pub struct Frame {
     context: Context,
     widgets: Vec<Widget>,
     parent_index: usize,
+    parent_max_child_pos: Point,
+    max_child_pos: Point,
 }
 
 impl Frame {
@@ -25,6 +27,8 @@ impl Frame {
             context,
             widgets: vec![root],
             parent_index: 0,
+            parent_max_child_pos: Point::default(),
+            max_child_pos: Point::default(),
         }
     }
 
@@ -83,12 +87,24 @@ impl Frame {
         context.state(widget.id())
     }
 
+    pub(crate) fn max_child_pos(&self) -> Point { self.max_child_pos }
+
+    pub(crate) fn set_max_child_pos(&mut self, pos: Point) {
+        self.max_child_pos = pos;
+    }
+
+    
+
+    pub(crate) fn set_parent_max_child_pos(&mut self, pos: Point) {
+        self.parent_max_child_pos = pos;
+    }
+
     pub(crate) fn parent_index(&self) -> usize { self.parent_index }
 
     pub(crate) fn set_parent_index(&mut self, index: usize) {
         self.parent_index = index;
     }
-    pub(crate) fn next_index(&self) -> usize { self.widgets.len() }
+    pub(crate) fn num_widgets(&self) -> usize { self.widgets.len() }
 
     pub(crate) fn push_widget(&mut self, widget: Widget) {
         self.widgets.push(widget);
@@ -127,6 +143,9 @@ impl Frame {
     }
 
     // internal state modifiers
+
+    pub fn parent_max_child_pos(&self) -> Point { self.parent_max_child_pos }
+
     pub fn cur_time_millis(&self) -> u32 {
         let context = self.context.internal().borrow();
         context.time_millis()
@@ -153,6 +172,17 @@ impl Frame {
     /// Returns the current time in millis minus the base time millis for the
     /// widget with the specified ID.  If the base time millis has not been set,
     /// will return the current time millis
+    pub fn scroll(&self, id: &str) -> Point {
+        let context = self.context.internal().borrow();
+        context.state(id).scroll
+    }
+
+    pub fn change_scroll<T: Into<String>>(&mut self, id: T, x: f32, y: f32) {
+        let mut context = self.context.internal().borrow_mut();
+        let state = context.state_mut(id);
+        state.scroll = state.scroll + Point { x, y }
+    }
+
     pub fn offset_time_millis(&self, id: &str) -> i32 {
         let context = self.context.internal().borrow();
         context.time_millis() as i32 - context.state(id).base_time_millis as i32

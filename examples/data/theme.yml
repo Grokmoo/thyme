@@ -118,7 +118,67 @@ image_sets:
           Hover: window_handle_hover
           Pressed: window_handle_pressed
           Disabled: window_handle_disabled
+      arrow_right:
+        position: [223, 36]
+        size: [12, 12]
+      arrow_left:
+        position: [223, 48]
+        size: [12, 12]
+      arrow_down:
+        position: [235, 36]
+        size: [12, 12]
+      arrow_up:
+        position: [235, 48]
+        size: [12, 12]
 widgets:
+  scrollpane:
+    width_from: Parent
+    height_from: Parent
+    align: Right
+    border: { all: 5 }
+    children:
+      content:
+        height_from: Parent
+        width_from: Parent
+        align: TopLeft
+        layout: Vertical
+        size: [-20, -20]
+        child_align: TopLeft
+      scrollbar_horizontal:
+        from: scrollbar_horizontal
+      scrollbar_vertical:
+        from: scrollbar_vertical
+  scroll_button:
+    wants_mouse: true
+    background: gui/small_button
+    size: [20, 20]
+    border: { all: 4 }
+  scrollbar_horizontal:
+    size: [0, 20]
+    width_from: Parent
+    children:
+      left:
+        from: scroll_button
+        align: Left
+        foreground: gui/arrow_left
+      right:
+        from: scroll_button
+        align: Right
+        pos: [20, 0]
+        foreground: gui/arrow_right
+  scrollbar_vertical:
+    size: [20, 0]
+    height_from: Parent
+    children:
+      up:
+        from: scroll_button
+        align: Top
+        foreground: gui/arrow_up
+      down:
+        from: scroll_button
+        align: Bot
+        foreground: gui/arrow_down
+        pos: [0, 20]
   progress_bar:
     size: [100, 24]
     background: gui/button
@@ -161,18 +221,21 @@ widgets:
     wants_mouse: true
     layout: Vertical
     layout_spacing: [5, 5]
-    border: { all: 5 }
+    border: { left: 5, right: 5, top: 35, bot: 5 }
+    size: [300, 300]
     child_align: Top
     children:
       titlebar:
         wants_mouse: true
         background: gui/small_button
         size: [0, 30]
+        pos: [0, -30]
         width_from: Parent
         child_align: Center
         children:
           title:
             from: label
+            text: "Main Window"
             font: medium
           close:
             wants_mouse: true
@@ -185,3 +248,31 @@ widgets:
         from: window_handle
         align: BotRight
         pos: [-1, -1]
+  window2:
+    from: window
+    align: Center
+    size: [200, 200]
+    children:
+      titlebar:
+        children:
+          title:
+            text: "Character Sheet"
+  stats_panel:
+    background: gui/small_button_normal
+    size: [200, 200]
+    child_align: TopLeft
+    layout: Vertical
+    children:
+      stats:
+        from: label
+        text_align: Left
+        size: [0, 100]
+  inventory_panel:
+    background: gui/small_button_normal
+    size: [200, 200]
+    child_align: TopLeft
+    layout: Vertical
+    children:
+      inventory:
+        from: label
+        text_align: Left

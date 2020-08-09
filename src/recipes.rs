@@ -1,4 +1,4 @@
-use crate::{Frame, Point, WidgetState};
+use crate::{Align, Frame, WidgetState};
 
 impl Frame {
     pub fn child(&mut self, theme: &str) -> WidgetState {
@@ -29,16 +29,56 @@ impl Frame {
         });
     }
 
-    pub fn window<F: Fn(&mut Frame)>(&mut self, theme: &str, id: &str, size: Point, children: F) {
+    pub fn scrollpane<F: Fn(&mut Frame)>(&mut self, theme: &str, content_id: &str, children: F) {
+        self.start(theme)
+        .children(|ui| {
+            let mut content = ui.start("content").id(content_id);
+            let rect = content.trigger_layout();
+            content.clip(rect)
+            .children(children);
+
+            let pane_total_size = ui.parent_max_child_pos() - rect.pos;
+
+            // check whether to show horizontal scrollbar
+            if pane_total_size.x > rect.size.x {
+                ui.start("scrollbar_horizontal")
+                .align(Align::BotLeft)
+                .pos(0.0, 0.0)
+                .children(|ui| {
+                    if ui.button("right", "").clicked {
+                        ui.change_scroll(content_id, -10.0, 0.0);
+                    }
+                    if ui.button("left", "").clicked {
+                        ui.change_scroll(content_id, 10.0, 0.0);
+                    }
+                });
+            }
+
+            // check whether to show vertical scrollbar
+            if pane_total_size.y > rect.size.y {
+                ui.start("scrollbar_vertical")
+                .align(Align::TopRight)
+                .pos(0.0, 0.0)
+                .children(|ui| {
+                    if ui.button("up", "").clicked {
+                        ui.change_scroll(content_id, 0.0, 10.0);
+                    }
+                    if ui.button("down", "").clicked {
+                        ui.change_scroll(content_id, 0.0, -10.0);
+                    }
+                });
+            }
+        });
+    }
+
+    pub fn window<F: Fn(&mut Frame)>(&mut self, theme: &str, id: &str, children: F) {
         self
         .start(theme)
-        .size(size.x, size.y)
-        .pos(0.0, 0.0)
         .id(id)
         .children(|ui| {
             let result = ui.start("titlebar")
             .children(|ui| {
-                ui.label("title", "Window Title");
+                ui.start("title").finish();
 
                 if ui.button("close", "").clicked {
                     ui.set_open(id, false);

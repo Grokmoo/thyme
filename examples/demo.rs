@@ -1,7 +1,7 @@
 use glium::glutin::{self, event::{Event, WindowEvent}, event_loop::{ControlFlow, EventLoop}, window::WindowBuilder};
 use glium::{Display, Surface};
 
-use thyme::{Color, Frame, Align, Point};
+use thyme::{Color, Frame};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // load assets
@@ -60,7 +60,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// example demonstrates a combination of Rust layout and styling as well as use
 /// of the theme definition file, loaded above
 fn build_ui(ui: &mut Frame) {
-    ui.window("window", "main_window", Point::new(300.0, 300.0), |ui| {
+    ui.window("window", "main_window", |ui| {
         ui.gap(20.0);
 
         ui.start("textbox")
@@ -85,34 +85,21 @@ fn build_ui(ui: &mut Frame) {
         }
     });
 
-    ui.start("window")
-    .id("window2")
-    .size(200.0, 200.0)
-    .align(Align::Bot)
-    .children(|ui| {
-        let result = ui.start("titlebar")
-        .children(|ui| {
-            ui.label("title", "Window Title");
+    ui.window("window2", "window2", |ui| {
+        ui.scrollpane("scrollpane", "pane01", |ui| {
+            ui.button("flashing_button", "Level Up!");
+    
+            ui.start("stats_panel")
+            .children(|ui| {
+                ui.label("stats", "Name\nStrength\nDexterity\nConstitution\nIntelligence\nWisdom\nCharisma");
+                ui.button("button", "Save Character");
+            });
 
-            if ui.button("close", "").clicked {
-                ui.set_open("window2", false);
-            }
+            ui.start("inventory_panel")
+            .children(|ui| {
+                ui.label("inventory", "Inventory:");
+            });
         });
-
-        if result.pressed {
-            ui.modify("window2", |state| {
-                state.moved = state.moved + result.dragged;
-            });
-        }
-
-        let result = ui.button("handle", "");
-        if result.pressed {
-            ui.modify("window2", |state| {
-                state.resize = state.resize + result.dragged;
-            });
-        }
-
-        ui.button("flashing_button", "Flash");
     });
 }
 

@@ -80,6 +80,7 @@ pub struct PersistentState {
     pub is_open: bool,
     pub resize: Point,
     pub moved: Point,
+    pub scroll: Point,
     pub base_time_millis: u32,
 }
 
@@ -89,6 +90,7 @@ impl Default for PersistentState {
             is_open: true,
             resize: Point::default(),
             moved: Point::default(),
+            scroll: Point::default(),
             base_time_millis: 0,
         }
     }
