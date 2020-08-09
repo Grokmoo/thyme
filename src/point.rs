@@ -156,6 +156,19 @@ impl Rect {
         pos.x >= self.pos.x && pos.y >= self.pos.y &&
             pos.x <= self.pos.x + self.size.x && pos.y <= self.pos.y + self.size.y
     }
+
+    /// Returns a new `Rect` that is the maximum extent on a component-by-component
+    /// basis between this and `other`.  The returned `Rect` will barely contain
+    /// both this and `other`.
+    pub fn max(self, other: Rect) -> Rect {
+        let min = self.pos.min(other.pos);
+        let max: Point = (self.pos + self.size).max(other.pos + other.size);
+
+        Rect {
+            pos: min,
+            size: max - min,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Copy, Clone, Default, Debug, PartialEq)]
@@ -181,6 +194,14 @@ impl Point {
         Point {
             x: self.x.max(other.x),
             y: self.y.max(other.y)
+        }
+    }
+
+    /// Returns a per-component minimum of this and `other`
+    pub fn min(self, other: Point) -> Point {
+        Point {
+            x: self.x.min(other.x),
+            y: self.y.min(other.y),
         }
     }
 }

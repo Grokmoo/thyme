@@ -13,6 +13,7 @@ pub struct Widget {
     // TODO potentially move these out and store current parent data
     // in the frame for a small perf boost
     // stored in the widget for parent ref purposes
+    scroll: Point,
     cursor: Point,
     theme_id: String,
     child_align: Align,
@@ -48,6 +49,7 @@ impl Widget {
             layout_spacing: Point::default(),
             child_align: Align::default(),
             pos: Point::default(),
+            scroll: Point::default(),
             cursor: Point::default(),
             border: Border::default(),
             size,
@@ -68,8 +70,12 @@ impl Widget {
 
         let align = theme.align.unwrap_or(parent.child_align);
         let manual_pos = theme.pos.is_some() || align != parent.child_align;
-        let cursor_pos = if align == parent.child_align { parent.cursor } else { Point::default() };
-        let raw_pos = theme.pos.unwrap_or(cursor_pos);
+        let cursor_pos = if align == parent.child_align {
+            parent.cursor + parent.scroll
+        } else {
+            parent.scroll
+        };
+        let raw_pos = theme.pos.unwrap_or(cursor_pos) + parent.scroll;
         let pos = pos(parent, raw_pos, size, align);
 
         let id = if parent.id.is_empty() {
@@ -100,6 +106,7 @@ impl Widget {
             background: theme.background,
             foreground: theme.foreground,
             pos,
+            scroll: Point::default(),
             cursor: Point::default(),
             border,
             size,
@@ -475,7 +482,7 @@ impl<'a> WidgetBuilder<'a> {
 
     #[must_use]
     pub fn pos(mut self, x: f32, y: f32) -> WidgetBuilder<'a> {
-        self.data.raw_pos = Point { x, y };
+        self.data.raw_pos = Point { x, y } + self.parent().scroll;
         self.data.manual_pos = true;
         self.recalc_pos_size = true;
         self
@@ -583,8 +590,8 @@ impl<'a> WidgetBuilder<'a> {
 
         let state = self.frame.state(self.widget);
 
-        // TODO don't use cursor for scroll
-        self.widget().cursor = self.widget().cursor + state.scroll;
+        self.widget().scroll = state.scroll;
+        self.widget().cursor = self.widget().cursor;
 
         if !state.is_open {
             self.widget().visible = false;
@@ -600,12 +607,13 @@ impl<'a> WidgetBuilder<'a> {
             (widget.pos, widget.size)
         };
 
-        let old_max_child_pos = self.frame.max_child_pos();
+        let self_bounds = Rect::new(self_pos, self_size);
+        let old_max_child_bounds = self.frame.max_child_bounds();
 
         // if there is a child function
         if let Some(f) = f {
             // push the max_child pos and parent index
-            self.frame.set_max_child_pos(self_pos);
+            self.frame.set_max_child_bounds(self_bounds);
             let old_parent_index = self.frame.parent_index();
             self.frame.set_parent_index(self.widget);
 
@@ -614,11 +622,11 @@ impl<'a> WidgetBuilder<'a> {
 
             // pop the max child pos and parent index
             self.frame.set_parent_index(old_parent_index);
-            let this_children_max_pos = self.frame.max_child_pos();
-            self.frame.set_parent_max_child_pos(this_children_max_pos);
+            let this_children_max_bounds = self.frame.max_child_bounds();
+            self.frame.set_parent_max_child_bounds(this_children_max_bounds);
         }
 
-        self.frame.set_max_child_pos(old_max_child_pos.max(self_pos + self_size));
+        self.frame.set_max_child_bounds(old_max_child_bounds.max(self_bounds));
 
         let (clicked, mut anim_state, dragged) = if self.enabled && self.data.wants_mouse {
             self.frame.check_mouse_taken(self.widget)

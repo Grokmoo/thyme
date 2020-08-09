@@ -142,7 +142,7 @@ widgets:
         width_from: Parent
         align: TopLeft
         layout: Vertical
-        size: [-20, -20]
+        size: [-15, -15]
         child_align: TopLeft
       scrollbar_horizontal:
         from: scrollbar_horizontal
@@ -154,7 +154,9 @@ widgets:
     size: [20, 20]
     border: { all: 4 }
   scrollbar_horizontal:
-    size: [0, 20]
+    size: [10, 20]
+    pos: [-5, -5]
+    align: BotLeft
     width_from: Parent
     children:
       left:
@@ -167,7 +169,9 @@ widgets:
         pos: [20, 0]
         foreground: gui/arrow_right
   scrollbar_vertical:
-    size: [20, 0]
+    size: [20, 10]
+    pos: [-5, -5]
+    align: TopRight
     height_from: Parent
     children:
       up:
@@ -195,6 +199,9 @@ widgets:
     text_align: Left
     size: [0, 150]
     width_from: Parent
+  bg_label:
+    from: label
+    background: gui/small_button_normal
   label:
     font: small
     border: { width: 5 }

@@ -1,7 +1,7 @@
 use glium::glutin::{self, event::{Event, WindowEvent}, event_loop::{ControlFlow, EventLoop}, window::WindowBuilder};
 use glium::{Display, Surface};
 
-use thyme::{Color, Frame};
+use thyme::{Color, Frame, WidthRelative};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // load assets
@@ -99,6 +99,13 @@ fn build_ui(ui: &mut Frame) {
             .children(|ui| {
                 ui.label("inventory", "Inventory:");
             });
+
+            ui.start("bg_label")
+            .text("Manually Positioned")
+            .size(100.0, 50.0)
+            .width_from(WidthRelative::Normal)
+            .pos(300.0, 300.0)
+            .finish();
         });
     });
 }

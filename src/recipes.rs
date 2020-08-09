@@ -1,4 +1,4 @@
-use crate::{Align, Frame, Point, Rect, WidgetState};
+use crate::{Frame, Point, Rect, WidgetState};
 
 impl Frame {
     pub fn child(&mut self, theme: &str) -> WidgetState {
@@ -32,21 +32,24 @@ impl Frame {
     pub fn scrollpane<F: Fn(&mut Frame)>(&mut self, theme: &str, content_id: &str, children: F) {
         self.start(theme)
         .children(|ui| {
-            let mut content_size = Rect::default();
+            let mut content_bounds = Rect::default();
 
             ui.start("content")
             .id(content_id)
-            .trigger_layout(&mut content_size)
-            .clip(content_size)
+            .trigger_layout(&mut content_bounds)
+            .clip(content_bounds)
             .children(children);
 
-            let pane_total_size = ui.parent_max_child_pos() - content_size.pos;
+            let content_min = content_bounds.pos;
+            let content_max = content_bounds.pos + content_bounds.size;
+
+            let pane_bounds = ui.parent_max_child_bounds();
+            let pane_min = pane_bounds.pos;
+            let pane_max = pane_bounds.pos + pane_bounds.size;
 
             // check whether to show horizontal scrollbar
-            if pane_total_size.x > content_size.size.x {
+            if pane_min.x < content_min.x || pane_max.x > content_max.x {
                 ui.start("scrollbar_horizontal")
-                .align(Align::BotLeft)
-                .pos(0.0, 0.0)
                 .children(|ui| {
                     if ui.button("right", "").clicked {
                         ui.change_scroll(content_id, -10.0, 0.0);
@@ -58,10 +61,8 @@ impl Frame {
             }
 
             // check whether to show vertical scrollbar
-            if pane_total_size.y > content_size.size.y {
+            if pane_min.y < content_min.y || pane_max.y > content_max.y {
                 ui.start("scrollbar_vertical")
-                .align(Align::TopRight)
-                .pos(0.0, 0.0)
                 .children(|ui| {
                     if ui.button("up", "").clicked {
                         ui.change_scroll(content_id, 0.0, 10.0);

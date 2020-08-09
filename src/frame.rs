@@ -16,8 +16,8 @@ pub struct Frame {
     context: Context,
     widgets: Vec<Widget>,
     parent_index: usize,
-    parent_max_child_pos: Point,
-    max_child_pos: Point,
+    parent_max_child_bounds: Rect,
+    max_child_bounds: Rect,
 }
 
 impl Frame {
@@ -27,8 +27,8 @@ impl Frame {
             context,
             widgets: vec![root],
             parent_index: 0,
-            parent_max_child_pos: Point::default(),
-            max_child_pos: Point::default(),
+            parent_max_child_bounds: Rect::default(),
+            max_child_bounds: Rect::default(),
         }
     }
 
@@ -87,16 +87,14 @@ impl Frame {
         context.state(widget.id())
     }
 
-    pub(crate) fn max_child_pos(&self) -> Point { self.max_child_pos }
+    pub(crate) fn max_child_bounds(&self) -> Rect { self.max_child_bounds }
 
-    pub(crate) fn set_max_child_pos(&mut self, pos: Point) {
-        self.max_child_pos = pos;
+    pub(crate) fn set_max_child_bounds(&mut self, bounds: Rect) {
+        self.max_child_bounds = bounds;
     }
 
-    
-
-    pub(crate) fn set_parent_max_child_pos(&mut self, pos: Point) {
-        self.parent_max_child_pos = pos;
+    pub(crate) fn set_parent_max_child_bounds(&mut self, bounds: Rect) {
+        self.parent_max_child_bounds = bounds;
     }
 
     pub(crate) fn parent_index(&self) -> usize { self.parent_index }
@@ -144,7 +142,7 @@ impl Frame {
 
     // internal state modifiers
 
-    pub fn parent_max_child_pos(&self) -> Point { self.parent_max_child_pos }
+    pub fn parent_max_child_bounds(&self) -> Rect { self.parent_max_child_bounds }
 
     pub fn cur_time_millis(&self) -> u32 {
         let context = self.context.internal().borrow();
