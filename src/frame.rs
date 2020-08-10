@@ -41,7 +41,8 @@ impl Frame {
 
         let context = self.context.internal().borrow_mut();
 
-        if context.mouse_pressed_outside() || self.mouse_taken.is_some() {
+        if context.mouse_pressed_outside() || self.mouse_taken.is_some() ||
+            !widget.clip().is_inside(context.mouse_pos()) {
             return MOUSE_NOT_TAKEN;
         }
 
