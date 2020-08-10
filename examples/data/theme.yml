@@ -168,6 +168,11 @@ widgets:
         align: Right
         pos: [20, 0]
         foreground: gui/arrow_right
+      scroll:
+        wants_mouse: true
+        background: gui/small_button
+        align: Left
+        border: { all: 4 }
   scrollbar_vertical:
     size: [20, 10]
     pos: [-5, -5]
@@ -183,6 +188,11 @@ widgets:
         align: Bot
         foreground: gui/arrow_down
         pos: [0, 20]
+      scroll:
+        wants_mouse: true
+        background: gui/small_button
+        align: Top
+        border: { all: 4 }
   progress_bar:
     size: [100, 24]
     background: gui/button
