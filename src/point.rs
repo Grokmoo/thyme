@@ -157,6 +157,19 @@ impl Rect {
             pos.x <= self.pos.x + self.size.x && pos.y <= self.pos.y + self.size.y
     }
 
+    /// Returns a new `Rect` this is the minimum extent on a component-by-component
+    /// basis between this and `other`.  The returned `Rect` will barely fit inside
+    /// both this and `other` (if possible - if not it will have size 0)
+    pub fn min(self, other: Rect) -> Rect {
+        let min = self.pos.max(other.pos);
+        let max: Point = (self.pos + self.size).min(other.pos + other.size);
+
+        Rect {
+            pos: min,
+            size: (max - min).max(Point::default()),
+        }
+    }
+
     /// Returns a new `Rect` that is the maximum extent on a component-by-component
     /// basis between this and `other`.  The returned `Rect` will barely contain
     /// both this and `other`.

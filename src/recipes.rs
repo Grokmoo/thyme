@@ -29,7 +29,7 @@ impl Frame {
         });
     }
 
-    pub fn scrollpane<F: Fn(&mut Frame)>(&mut self, theme: &str, content_id: &str, children: F) {
+    pub fn scrollpane<F: FnOnce(&mut Frame)>(&mut self, theme: &str, content_id: &str, children: F) {
         self.start(theme)
         .children(|ui| {
             let mut content_bounds = Rect::default();
@@ -146,7 +146,7 @@ impl Frame {
         });
     }
 
-    pub fn window<F: Fn(&mut Frame)>(&mut self, theme: &str, id: &str, children: F) {
+    pub fn window<F: FnOnce(&mut Frame)>(&mut self, theme: &str, id: &str, children: F) {
         self
         .start(theme)
         .id(id)

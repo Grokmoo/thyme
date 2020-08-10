@@ -526,7 +526,8 @@ impl<'a> WidgetBuilder<'a> {
 
     #[must_use]
     pub fn clip(mut self, clip: Rect) -> WidgetBuilder<'a> {
-        self.widget().clip = clip;
+        let cur_clip = self.widget().clip;
+        self.widget().clip = cur_clip.min(clip);
         self
     }
 
