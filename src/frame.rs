@@ -82,12 +82,6 @@ impl Frame {
         context.init_state(widget.id(), open);
     }
 
-    pub(crate) fn state(&self, index: usize) -> PersistentState {
-        let context = self.context.internal().borrow();
-        let widget = &self.widgets[index];
-        context.state(widget.id())
-    }
-
     pub(crate) fn max_child_bounds(&self) -> Rect { self.max_child_bounds }
 
     pub(crate) fn set_max_child_bounds(&mut self, bounds: Rect) {
@@ -143,6 +137,16 @@ impl Frame {
 
     // internal state modifiers
 
+    pub fn focus_keyboard<T: Into<String>>(&mut self, id: T) {
+        let mut context = self.context.internal().borrow_mut();
+        context.set_focus_keyboard(id.into());
+    }
+
+    pub fn is_focus_keyboard(&self, id: &str) -> bool {
+        let context = self.context.internal().borrow();
+        context.is_focus_keyboard(id)
+    }
+
     pub fn parent_max_child_bounds(&self) -> Rect { self.parent_max_child_bounds }
 
     pub fn cur_time_millis(&self) -> u32 {
@@ -163,14 +167,14 @@ impl Frame {
         state.base_time_millis = cur_time;
     }
 
+    /// Returns the current time in millis minus the base time millis for the
+    /// widget with the specified ID.  If the base time millis has not been set,
+    /// will return the current time millis
     pub fn base_time_millis(&self, id: &str) -> u32 {
         let context = self.context.internal().borrow();
         context.state(id).base_time_millis
     }
-
-    /// Returns the current time in millis minus the base time millis for the
-    /// widget with the specified ID.  If the base time millis has not been set,
-    /// will return the current time millis
+    
     pub fn scroll(&self, id: &str) -> Point {
         let context = self.context.internal().borrow();
         context.state(id).scroll
@@ -185,6 +189,11 @@ impl Frame {
     pub fn offset_time_millis(&self, id: &str) -> i32 {
         let context = self.context.internal().borrow();
         context.time_millis() as i32 - context.state(id).base_time_millis as i32
+    }
+
+    pub fn text_for(&self, id: &str) -> Option<String> {
+        let context = self.context.internal().borrow();
+        context.state(id).text.clone()
     }
 
     pub fn toggle_open<T: Into<String>>(&mut self, id: T) {
@@ -207,6 +216,11 @@ impl Frame {
         let mut context = self.context.internal().borrow_mut();
         let id = self.widgets[self.parent_index].id();
         context.state_mut(id).is_open = open;
+    }
+
+    pub fn clear(&mut self, id: &str) {
+        let mut context = self.context.internal().borrow_mut();
+        context.clear_state(id);
     }
 
     pub fn modify<T: Into<String>, F: Fn(&mut PersistentState)>(&mut self, id: T, f: F) {

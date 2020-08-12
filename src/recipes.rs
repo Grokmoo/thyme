@@ -17,6 +17,36 @@ impl Frame {
         self.start(theme).text(label).active(active).wants_mouse(true).finish()
     }
 
+    pub fn input_field(&mut self, theme: &str, id: &str) {
+        self.modify(id, |state| {
+            if state.text.is_none() {
+                state.text = Some(String::new());
+            }
+
+            for c in state.characters.drain(..) {
+                if c as u32 == 8 { //backspace
+                    state.text.as_mut().unwrap().pop();
+                } else {
+                    state.text.as_mut().unwrap().push(c);
+                }
+            }
+        });
+        let mut text_pos = Point::default();
+
+        let result = self.start(theme)
+        .id(id)
+        .trigger_text_layout(&mut text_pos)
+        .children(|ui| {
+            if ui.is_focus_keyboard(id) {
+                ui.start("caret").pos(text_pos.x, text_pos.y).finish();
+            }
+        });
+
+        if result.clicked {
+            self.focus_keyboard(id);
+        }
+    }
+
     pub fn progress_bar(&mut self, theme: &str, frac: f32) {
         self.start(theme)
         .children(|ui| {

@@ -45,6 +45,35 @@ pub trait DrawList {
     fn back_adjust_positions(&mut self, since_index: usize, amount: Point);
 }
 
+/// An implementation of DrawList that does nothing.  It should be (mostly) optimized
+/// out when used
+pub(crate) struct DummyDrawList {
+    index: usize,
+}
+
+impl DummyDrawList {
+    pub fn new() -> DummyDrawList {
+        DummyDrawList { index: 0 }
+    }
+}
+
+impl DrawList for DummyDrawList {
+    fn push_rect(
+        &mut self,
+        _pos: [f32; 2],
+        _size: [f32; 2],
+        _tex: [TexCoord; 2],
+        _color: Color,
+        _clip: Rect,
+    ) {
+        self.index += 1;
+    }
+
+    fn len(&self) -> usize { self.index }
+
+    fn back_adjust_positions(&mut self, _since_index: usize, _amount: Point) {}
+}
+
 pub struct TextureData {
     handle: TextureHandle,
     size: [u32; 2],

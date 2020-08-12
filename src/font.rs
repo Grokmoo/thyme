@@ -1,4 +1,4 @@
-use crate::render::{TexCoord, DrawList, FontHandle};
+use crate::render::{TexCoord, DrawList, FontHandle, DummyDrawList};
 use crate::{Point, Rect, Align, Color};
 
 pub struct FontSource {
@@ -56,6 +56,36 @@ impl Font {
 
     pub fn handle(&self) -> FontHandle { self.handle }
 
+    pub(crate) fn layout(
+        &self,
+        area_size: Point,
+        pos: Point,
+        text: &str,
+        align: Align,
+        cursor: &mut Point,
+    ) {
+        let mut draw_list = DummyDrawList::new();
+        let mut renderer = FontRenderer::new(
+            &self,
+            &mut draw_list,
+            area_size,
+            pos,
+            align,
+            Color::white(),
+            Rect::default(),
+        );
+        renderer.render(text);
+
+        if text.is_empty() {
+            // compute the cursor position for empty text
+            renderer.adjust_line_x();
+            renderer.size.y += 2.0 * renderer.font.line_height;
+            renderer.adjust_all_y();
+        }
+
+        *cursor = renderer.pos;
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn draw<D: DrawList>(
         &self,
@@ -67,7 +97,7 @@ impl Font {
         color: Color,
         clip: Rect,
     ) {
-        let renderer = FontRenderer::new(
+        let mut renderer = FontRenderer::new(
             &self,
             draw_list,
             area_size,
@@ -129,7 +159,7 @@ impl<'a, D: DrawList> FontRenderer<'a, D> {
         }
     }
 
-    fn render(mut self, text: &str) {
+    fn render(&mut self, text: &str) {
         for c in text.chars() {
             let font_char = match self.font.char(c) {
                 None => continue, // TODO draw a special character here?
@@ -195,9 +225,9 @@ impl<'a, D: DrawList> FontRenderer<'a, D> {
     fn next_line(&mut self) {
         self.pos.y += self.font.line_height;
         self.size.y += self.font.line_height;
-        self.pos.x = self.initial_pos.x;
 
         self.adjust_line_x();
+        self.pos.x = self.initial_pos.x;
         self.cur_line_index = self.draw_list.len();
         self.size.x = 0.0;
     }
@@ -216,6 +246,7 @@ impl<'a, D: DrawList> FontRenderer<'a, D> {
             Center =>   (self.area_size.y - self.size.y) / 2.0,
         };
 
+        self.pos.y += y_offset;
         self.draw_list.back_adjust_positions(
             self.initial_index,
             Point { x: 0.0, y: y_offset }
@@ -236,6 +267,7 @@ impl<'a, D: DrawList> FontRenderer<'a, D> {
             Center =>   (self.area_size.x - self.size.x) / 2.0,
         };
     
+        self.pos.x += x_offset;
         self.draw_list.back_adjust_positions(
             self.cur_line_index,
             Point { x: x_offset, y: 0.0 }

@@ -46,6 +46,9 @@ impl WinitIo {
             CursorMoved { position, .. } => {
                 context.set_mouse_pos((position.x as f32, position.y as f32).into());
             },
+            ReceivedCharacter(c) => {
+                context.push_character(*c);
+            }
             _ => (),
         }
     }

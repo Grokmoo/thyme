@@ -83,6 +83,8 @@ fn build_ui(ui: &mut Frame) {
         if ui.button("button", "Start!").clicked {
             ui.set_base_time_now("pbar");
         }
+
+        ui.input_field("input_field", "name");
     });
 
     ui.window("window2", "window2", |ui| {
@@ -91,7 +93,9 @@ fn build_ui(ui: &mut Frame) {
     
             ui.start("stats_panel")
             .children(|ui| {
-                ui.label("stats", "Name\nStrength\nDexterity\nConstitution\nIntelligence\nWisdom\nCharisma");
+                let text = format!("Name: {}\nStrength\nDexterity\nConstitution\nIntelligence\nWisdom\nCharisma", ui.text_for("name").unwrap_or_default());
+
+                ui.label("stats", text);
                 ui.button("button", "Save Character");
             });
 

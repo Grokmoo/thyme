@@ -1,6 +1,6 @@
 use crate::{
     AnimState, AnimStateKey, Color, Frame, Point, Border, Align, 
-    Layout, WidthRelative, HeightRelative, PersistentState, Rect,
+    Layout, WidthRelative, HeightRelative, Rect,
 };
 use crate::font::FontSummary;
 use crate::image::ImageHandle;
@@ -332,7 +332,7 @@ impl<'a> WidgetBuilder<'a> {
         }
     }
 
-    fn recalculate_pos_size(&mut self, state: PersistentState) {
+    fn recalculate_pos_size(&mut self, state_moved: Point, state_resize: Point) {
         {
             let parent = self.frame.widget(self.parent);
             let widget = self.frame.widget(self.widget);
@@ -352,10 +352,10 @@ impl<'a> WidgetBuilder<'a> {
             let parent = self.frame.widget(self.parent);
             let widget = self.frame.widget(self.widget);
             let pos = pos(parent, self.data.raw_pos, widget.size, self.data.align);
-            self.widget().pos = pos + state.moved;
+            self.widget().pos = pos + state_moved;
         }
 
-        self.widget().size = self.widget().size + state.resize;
+        self.widget().size = self.widget().size + state_resize;
 
         self.recalc_pos_size = false;
     }
@@ -557,13 +557,66 @@ impl<'a> WidgetBuilder<'a> {
     /// in rect.
     #[must_use]
     pub fn trigger_layout(mut self, rect: &mut Rect) -> WidgetBuilder<'a> {
-        let state = self.frame.state(self.widget);
+        let (state_moved, state_resize) = {
+            let internal = self.frame.context_internal().borrow();
+            let state = internal.state(&self.frame.widget(self.widget).id);
+            (state.moved, state.resize)
+        };
         if self.recalc_pos_size {
-            self.recalculate_pos_size(state);
+            self.recalculate_pos_size(state_moved, state_resize);
         }
 
         rect.pos = self.widget().pos;
         rect.size = self.widget().size;
+        self
+    }
+
+    /// Causes this widget to layout its current text.  The final position of the text
+    /// cursor is written into `pos`.  If this widget does not have a font or has no text,
+    /// nothing is written into `pos`.
+    #[must_use]
+    pub fn trigger_text_layout(mut self, cursor: &mut Point) -> WidgetBuilder<'a> {
+        // recalculate pos size and calculate text, if needed
+        let (text, state_moved, state_resize) = {
+            let internal = self.frame.context_internal().borrow();
+            let state = internal.state(&self.frame.widget(self.widget).id);
+            (
+                state.text.as_ref().map(|t| t.to_string()),
+                state.moved,
+                state.resize,
+            )
+        };
+
+        if self.recalc_pos_size {
+            self.recalculate_pos_size(state_moved, state_resize);
+        }
+
+        if let Some(text) = text {
+            self.frame.widget_mut(self.widget).text = Some(text);
+        }
+
+        let text = match &self.frame.widget(self.widget).text {
+            None => return self,
+            Some(text) => text,
+        };
+
+        let font_def = match self.frame.widget(self.widget).font {
+            None => return self,
+            Some(def) => def,
+        };
+
+        {
+            let widget = self.frame.widget(self.widget);
+            let fg_pos = Point::default();
+            let fg_size = widget.inner_size();
+            let align = widget.text_align();
+
+            let internal = self.frame.context_internal().borrow();
+            let font = internal.themes().font(font_def.handle);
+
+            font.layout(fg_size, fg_pos, text, align, cursor);
+        }
+
         self
     }
 
@@ -589,7 +642,21 @@ impl<'a> WidgetBuilder<'a> {
     fn finish_with<F: FnOnce(&mut Frame)>(mut self, f: Option<F>) -> WidgetState {
         if !self.widget().visible { return WidgetState::hidden(); }
 
-        let state = self.frame.state(self.widget);
+        let (state, text) = {
+            let internal = self.frame.context_internal();
+            let internal = internal.borrow();
+            let state = internal.state(&self.frame.widget(self.widget).id);
+
+            let text = match &state.text {
+                None => None,
+                Some(text) => Some(text.to_string())
+            };
+            (state.copy_data(), text)
+        };
+
+        if let Some(text) = text {
+            self.frame.widget_mut(self.widget).text = Some(text);
+        }
 
         self.widget().scroll = state.scroll;
         self.widget().cursor = self.widget().cursor;
@@ -600,7 +667,7 @@ impl<'a> WidgetBuilder<'a> {
         }
 
         if self.recalc_pos_size {
-            self.recalculate_pos_size(state);
+            self.recalculate_pos_size(state.moved, state.resize);
         }
 
         let (self_pos, self_size) = {

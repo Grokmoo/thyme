@@ -75,13 +75,34 @@ impl<'a, R: Renderer, I: IO> ContextBuilder<'a, R, I> {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone)]
+pub(crate) struct PersistentStateData {
+    pub is_open: bool,
+    pub resize: Point,
+    pub moved: Point,
+    pub scroll: Point,
+}
+
+#[derive(Debug)]
 pub struct PersistentState {
     pub is_open: bool,
     pub resize: Point,
     pub moved: Point,
     pub scroll: Point,
     pub base_time_millis: u32,
+    pub characters: Vec<char>,
+    pub text: Option<String>,
+}
+
+impl PersistentState {
+    pub(crate) fn copy_data(&self) -> PersistentStateData {
+        PersistentStateData {
+            is_open: self.is_open,
+            resize: self.resize,
+            moved: self.moved,
+            scroll: self.scroll,
+        }
+    }
 }
 
 impl Default for PersistentState {
@@ -92,6 +113,8 @@ impl Default for PersistentState {
             moved: Point::default(),
             scroll: Point::default(),
             base_time_millis: 0,
+            characters: Vec::default(),
+            text: None,
         }
     }
 }
@@ -102,12 +125,15 @@ pub struct ContextInternal {
 
     mouse_pressed_outside: [bool; 3],
 
+    keyboard_focus_widget: Option<String>,
     persistent_state: HashMap<String, PersistentState>,
+    empty_persistent_state: PersistentState,
 
     last_mouse_pos: Point,
     mouse_pos: Point,
     mouse_pressed: [bool; 3],
     mouse_clicked: [bool; 3],
+
     display_size: Point,
 
     start_instant: Instant,
@@ -124,6 +150,14 @@ impl ContextInternal {
     pub(crate) fn last_mouse_pos(&self) -> Point { self.last_mouse_pos }
     pub(crate) fn mouse_pressed(&self, index: usize) -> bool { self.mouse_pressed[index] }
     pub(crate) fn mouse_clicked(&self, index: usize) -> bool { self.mouse_clicked[index] }
+
+    pub (crate) fn set_focus_keyboard(&mut self, id: String) {
+        self.keyboard_focus_widget = Some(id);
+    }
+
+    pub (crate) fn is_focus_keyboard(&self, id: &str) -> bool {
+        self.keyboard_focus_widget.as_deref() == Some(id)
+    }
 
     pub(crate) fn mouse_taken_last_frame(&self) -> Option<&str> {
         self.mouse_taken_last_frame.as_deref()
@@ -142,8 +176,15 @@ impl ContextInternal {
         );
     }
 
-    pub(crate) fn state(&self, id: &str) -> PersistentState {
-        self.persistent_state.get(id).copied().unwrap_or_default()
+    pub(crate) fn clear_state(&mut self, id: &str) {
+        self.persistent_state.remove(id);
+    }
+
+    pub(crate) fn state(&self, id: &str) -> &PersistentState {
+        match self.persistent_state.get(id) {
+            None => &self.empty_persistent_state,
+            Some(state) => state,
+        }
     }
 
     pub(crate) fn state_mut<T: Into<String>>(&mut self, id: T) -> &mut PersistentState {
@@ -174,6 +215,7 @@ impl Context {
             display_size,
             themes,
             persistent_state: HashMap::new(),
+            empty_persistent_state: PersistentState::default(),
             mouse_pos: Point::default(),
             last_mouse_pos: Point::default(),
             mouse_pressed: [false; 3],
@@ -182,6 +224,7 @@ impl Context {
             mouse_pressed_outside: [false; 3],
             time_millis: 0,
             start_instant: Instant::now(),
+            keyboard_focus_widget: None,
         };
 
         Context {
@@ -224,6 +267,18 @@ impl Context {
         }
 
         internal.mouse_pressed[index] = pressed;
+    }
+
+    pub(crate) fn push_character(&mut self, c: char) {
+        let mut internal = self.internal.borrow_mut();
+
+        let id = match &internal.keyboard_focus_widget {
+            Some(id) => id.to_string(),
+            None => return,
+        };
+
+        let state = internal.state_mut(id);
+        state.characters.push(c);
     }
 
     pub(crate) fn set_mouse_pos(&mut self, pos: Point) {

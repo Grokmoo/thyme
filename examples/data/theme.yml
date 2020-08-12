@@ -118,6 +118,17 @@ image_sets:
           Hover: window_handle_hover
           Pressed: window_handle_pressed
           Disabled: window_handle_disabled
+      caret_on:
+        position: [194, 49]
+        size: [2, 16]
+      caret_off:
+        position: [197, 49]
+        size: [2, 16]
+      caret:
+        frame_time_millis: 500
+        frames:
+          - caret_on
+          - caret_off
       arrow_right:
         position: [223, 36]
         size: [12, 12]
@@ -203,6 +214,19 @@ widgets:
         background: gui/progress_bar
         width_from: Parent
         height_from: Parent
+  input_field:
+    font: small
+    border: { height: 4, width: 5 }
+    background: gui/small_button
+    text_align: Left
+    wants_mouse: true
+    size: [150, 24]
+    child_align: TopLeft
+    children:
+      caret:
+        size: [2, 0]
+        height_from: Parent
+        background: gui/caret
   textbox:
     font: small
     border: { width: 5 }
@@ -239,7 +263,7 @@ widgets:
     layout: Vertical
     layout_spacing: [5, 5]
     border: { left: 5, right: 5, top: 35, bot: 5 }
-    size: [300, 300]
+    size: [300, 400]
     child_align: Top
     children:
       titlebar:
