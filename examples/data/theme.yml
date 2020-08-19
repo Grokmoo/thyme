@@ -289,31 +289,72 @@ widgets:
         from: window_handle
         align: BotRight
         pos: [-1, -1]
-  window2:
+  party_window:
     from: window
-    align: Center
-    size: [200, 200]
+    size: [200, 300]
     children:
       titlebar:
         children:
           title:
-            text: "Character Sheet"
+            text: "Form Your Party"
+      members_panel:
+        from: members_panel
+  members_panel:
+    width_from: Parent
+    height_from: Parent
+    layout: Vertical
+    layout_spacing: [5, 5]
+    children:
+      add_character_button:
+        from: button
+        background: gui/small_button
+        text: "New..."
+        size: [50, 50]
+      empty_slot_button:
+        from: button
+        background: gui/small_button
+        size: [50, 50]
+      filled_slot_button:
+        from: button
+        background: gui/small_button
+        size: [50, 50]
+  character_window:
+    from: window
+    size: [400, 600]
+    align: Center
+    children:
+      titlebar:
+        children:
+          title:
+            text: "Create Character"
   stats_panel:
-    background: gui/small_button_normal
-    size: [200, 200]
-    child_align: TopLeft
+    width_from: Parent
+    height_from: Parent
     layout: Vertical
+    layout_spacing: [5, 5]
     children:
-      stats:
-        from: label
-        text_align: Left
-        size: [0, 100]
-  inventory_panel:
-    background: gui/small_button_normal
-    size: [200, 200]
-    child_align: TopLeft
-    layout: Vertical
-    children:
-      inventory:
-        from: label
-        text_align: Left
+      stat_panel:
+        size: [0, 50]
+        width_from: Parent
+        layout: Horizontal
+        layout_spacing: [5, 5]
+        child_align: Left
+        children:
+          label:
+            from: label
+            size: [90, 0]
+            width_from: Normal
+            text_align: Right
+          decrease:
+            from: button
+            background: gui/small_button
+            size: [20, 20]
+          value:
+            from: label
+            size: [30, 0]
+            font: medium
+            width_from: Normal
+          increase:
+            from: button
+            background: gui/small_button
+            size: [20, 20]

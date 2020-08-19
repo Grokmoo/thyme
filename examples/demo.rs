@@ -1,8 +1,16 @@
-use glium::glutin::{self, event::{Event, WindowEvent}, event_loop::{ControlFlow, EventLoop}, window::WindowBuilder};
+use std::collections::HashMap;
+
+use glium::glutin::{
+    self,
+    event::{Event, WindowEvent},
+    event_loop::{ControlFlow, EventLoop},
+    window::WindowBuilder
+};
 use glium::{Display, Surface};
 
-use thyme::{Color, Frame, WidthRelative};
+use thyme::{Frame};
 
+/// A simple party creator and character sheet for an RPG.
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // load assets
     let font_src = include_bytes!("data/fonts/Roboto-Medium.ttf");
@@ -31,6 +39,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     context_builder.register_font_source("roboto", font_src.to_vec())?;
     let mut context = context_builder.build(window_size.into())?;
 
+    let mut party = Party::default();
+
     // run main loop
     event_loop.run(move |event, _, control_flow| match event {
         Event::MainEventsCleared => {
@@ -43,7 +53,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let mut frame = context.create_frame();
 
-            build_ui(&mut frame);
+            build_ui(&mut frame, &mut party);
 
             renderer.draw_frame(&mut target, frame).unwrap();
 
@@ -56,66 +66,97 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     })
 }
 
+#[derive(Default)]
+struct Party {
+    members: [Option<Character>; 4],
+    editing_index: Option<usize>,
+}
+
+#[derive(Default)]
+struct Character {
+    stats: HashMap<Stat, u32>,
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+enum Stat {
+    Strength,
+    Dexterity,
+    Constitution,
+    Intelligence,
+    Wisdom,
+    Charisma,
+}
+
+impl Stat {
+    fn iter() -> impl Iterator<Item=Stat> + 'static {
+        use Stat::*;
+        [Strength, Dexterity, Constitution, Intelligence, Wisdom, Charisma].iter().copied()
+    }
+}
+
 /// The function to build the Thyme user interface.  Called once each frame.  This
 /// example demonstrates a combination of Rust layout and styling as well as use
 /// of the theme definition file, loaded above
-fn build_ui(ui: &mut Frame) {
-    ui.window("window", "main_window", |ui| {
-        ui.gap(20.0);
+fn build_ui(ui: &mut Frame, party: &mut Party) {
 
-        ui.start("textbox")
-        .text(SAMPLE_TEXT)
-        .text_color(Color::cyan())
-        .finish();
-        let label = if ui.is_open("window2") {
-            "Close Window"
-        } else {
-            "Open Window"
-        };
-        if ui.button("button", label).clicked {
-            ui.toggle_open("window2");
-        }
+    ui.window("party_window", "party_window", |ui| {
+        ui.start("members_panel")
+        .children(|ui| {
+            let mut add_character_shown = false;
+            for (index, member) in party.members.iter_mut().enumerate() {
+                match member.as_mut() {
+                    None => {
+                        if add_character_shown {
+                            ui.start("empty_slot_button").enabled(false).finish();
+                        } else {
+                            add_character_shown = true;
+                            if ui.start("add_character_button").finish().clicked {
+                                *member = Some(Character::default());
+                                ui.set_open("character_window", true);
+                                party.editing_index = Some(index);
+                            }
+                        }
+                    },
+                    Some(_member) => {
+                        let clicked = ui.start("filled_slot_button")
+                        .active(Some(index) == party.editing_index)
+                        .finish().clicked;
 
-        let frac = (ui.offset_time_millis("pbar") as f32 / 1_000.0).min(1.0);
-
-        ui.progress_bar("progress_bar", frac);
-
-        if ui.button("button", "Start!").clicked {
-            ui.set_base_time_now("pbar");
-        }
-
-        ui.input_field("input_field", "name");
-    });
-
-    ui.window("window2", "window2", |ui| {
-        ui.scrollpane("scrollpane", "pane01", |ui| {
-            ui.button("flashing_button", "Level Up!");
-    
-            ui.start("stats_panel")
-            .children(|ui| {
-                let text = format!("Name: {}\nStrength\nDexterity\nConstitution\nIntelligence\nWisdom\nCharisma", ui.text_for("name").unwrap_or_default());
-
-                ui.label("stats", text);
-                ui.button("button", "Save Character");
-            });
-
-            ui.start("inventory_panel")
-            .children(|ui| {
-                ui.label("inventory", "Inventory:");
-            });
-
-            ui.start("bg_label")
-            .text("Manually Positioned")
-            .size(100.0, 50.0)
-            .width_from(WidthRelative::Normal)
-            .pos(300.0, 300.0)
-            .finish();
+                        if clicked {
+                            party.editing_index = Some(index);
+                        }
+                    }
+                }
+            }
         });
     });
-}
 
-const SAMPLE_TEXT: &str = r#"
-This is some longer multiline text.
-It has explicit line breaks as well as automatic text wrapping.  It also has a different color and a different size than the other text in the window.
-Thisisanextremelylonglinewithnospacingtotestoutwhathappenswhenyoudon'thaveanyspacesinyourword.
-"#;
+    // TODO make this window modal
+    if let Some(index) = party.editing_index {
+        ui.window("character_window", "character_window", |ui| {
+            let character = party.members[index].as_mut().unwrap();
+
+            ui.start("stats_panel")
+            .children(|ui| {
+                for stat in Stat::iter() {
+                    let value = character.stats.entry(stat).or_insert(10);
+    
+                    ui.start("stat_panel")
+                    .children(|ui| {
+                        ui.label("label", format!("{:?}", stat));
+
+                        if ui.button("decrease", "-").clicked {
+                            *value = 3.max(*value - 1);
+                        }
+
+                        ui.label("value", format!("{}", *value));
+                        
+                        if ui.button("increase", "+").clicked {
+                            *value = 18.min(*value + 1);
+                        }
+                    }); 
+                }
+            });            
+        });
+    }
+}
