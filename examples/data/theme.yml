@@ -73,6 +73,15 @@ image_sets:
       small_button_active:
         position: [207, 60]
         grid_size: [5, 5]
+      small_button_black:
+        position: [207, 75]
+        grid_size: [5, 5]
+      input_field:
+        states:
+          Normal: small_button_black
+          Hover: small_button_hover
+          Pressed: small_button_pressed
+          Disabled: small_button_disabled
       small_button:
         states:
           Normal: small_button_normal
@@ -121,9 +130,11 @@ image_sets:
       caret_on:
         position: [194, 49]
         size: [2, 16]
+        stretch: true
       caret_off:
         position: [197, 49]
         size: [2, 16]
+        stretch: true
       caret:
         frame_time_millis: 500
         frames:
@@ -145,7 +156,6 @@ widgets:
   scrollpane:
     width_from: Parent
     height_from: Parent
-    align: Right
     border: { all: 5 }
     children:
       content:
@@ -217,14 +227,14 @@ widgets:
   input_field:
     font: small
     border: { height: 4, width: 5 }
-    background: gui/small_button
+    background: gui/input_field
     text_align: Left
     wants_mouse: true
     size: [150, 24]
     child_align: TopLeft
     children:
       caret:
-        size: [2, 0]
+        size: [2, -2]
         height_from: Parent
         background: gui/caret
   textbox:
@@ -241,7 +251,6 @@ widgets:
     border: { width: 5 }
     text_align: Center
     height_from: FontLine
-    width_from: Parent
   window_handle:
     wants_mouse: true
     background: gui/window_handle
@@ -252,7 +261,7 @@ widgets:
   button:
     font: small
     wants_mouse: true
-    background: gui/button
+    background: gui/small_button
     text_align: Center
     size: [150, 24]
     border: { all: 5 }
@@ -269,15 +278,18 @@ widgets:
       titlebar:
         wants_mouse: true
         background: gui/small_button
-        size: [0, 30]
-        pos: [0, -30]
+        size: [10, 30]
+        pos: [-6, -36]
+        border: { all: 5 }
         width_from: Parent
         child_align: Center
+        align: TopLeft
         children:
           title:
             from: label
             text: "Main Window"
             font: medium
+            width_from: Parent
           close:
             wants_mouse: true
             background: gui/small_button
@@ -296,45 +308,76 @@ widgets:
       titlebar:
         children:
           title:
-            text: "Form Your Party"
-      members_panel:
-        from: members_panel
+            text: "Form Party"
   members_panel:
+    from: scrollpane
     width_from: Parent
     height_from: Parent
     layout: Vertical
     layout_spacing: [5, 5]
     children:
-      add_character_button:
-        from: button
-        background: gui/small_button
-        text: "New..."
-        size: [50, 50]
-      empty_slot_button:
-        from: button
-        background: gui/small_button
-        size: [50, 50]
-      filled_slot_button:
-        from: button
-        background: gui/small_button
-        size: [50, 50]
+      content:
+        children:
+          add_character_button:
+            from: button
+            background: gui/small_button
+            text: "New Character..."
+            width_from: Parent
+            size: [0, 50]
+          filled_slot_button:
+            from: button
+            background: gui/small_button
+            width_from: Parent
+            size: [0, 50]
   character_window:
     from: window
-    size: [400, 600]
+    size: [250, 500]
     align: Center
     children:
       titlebar:
         children:
           title:
-            text: "Create Character"
-  stats_panel:
+            text: "Edit Character"
+      pane:
+        from: scrollpane
+  name_panel:
     width_from: Parent
-    height_from: Parent
+    size: [0, 25]
+    layout: Horizontal
+    children:
+      name_input:
+        from: input_field
+        size: [0, 30]
+        width_from: Parent
+        text_align: Center
+        font: medium
+  subpanel:
+    background: gui/small_button_normal
+    width_from: Parent
     layout: Vertical
     layout_spacing: [5, 5]
+    border: { all: 5 }
     children:
+      title:
+        from: label
+        width_from: Parent
+        font: medium
+  race_selector:
+    from: button
+    width_from: Parent
+    size: [0, 25]
+  stats_panel:
+    from: subpanel
+    size: [0, 265]
+    children:
+      title:
+        text: Stats
+      points_available:
+        from: label
+        width_from: Parent
+        text_align: Right
       stat_panel:
-        size: [0, 50]
+        size: [0, 30]
         width_from: Parent
         layout: Horizontal
         layout_spacing: [5, 5]
@@ -343,18 +386,75 @@ widgets:
           label:
             from: label
             size: [90, 0]
-            width_from: Normal
             text_align: Right
           decrease:
             from: button
+            text: "-"
             background: gui/small_button
             size: [20, 20]
           value:
             from: label
             size: [30, 0]
             font: medium
-            width_from: Normal
           increase:
             from: button
+            text: "+"
             background: gui/small_button
             size: [20, 20]
+  item_picker:
+    from: window
+    align: Center
+    size: [350, 150]
+    layout: Horizontal
+    child_align: Left
+    children:
+      titlebar:
+        children:
+          title:
+            text: "Purchase an Item"
+      item_button:
+        from: button
+        layout: Vertical
+        size: [100, 0]
+        height_from: Parent
+        children:
+          name:
+            from: label
+            width_from: Parent
+          icon:
+            size: [32, 32]
+          price:
+            from: label
+            width_from: Parent
+  inventory_panel:
+    from: subpanel
+    size: [0, 200]
+    children:
+      title:
+        text: Items
+      top_panel:
+        size: [0, 25]
+        width_from: Parent
+        children:
+          buy:
+            from: button
+            size: [80, 25]
+            text: Purchase..
+          gold:
+            from: label
+            size: [100, 25]
+            align: Right
+            text_align: Right
+      items_panel:
+        from: items_panel
+        size: [0, -40]
+  items_panel:
+    from: scrollpane
+    layout: Vertical
+    children:
+      content:
+        children:
+          item_button:
+            from: button
+            width_from: Parent
+            size: [0, 25]

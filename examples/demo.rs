@@ -68,13 +68,48 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 #[derive(Default)]
 struct Party {
-    members: [Option<Character>; 4],
+    members: Vec<Character>,
     editing_index: Option<usize>,
 }
 
-#[derive(Default)]
+const INITIAL_GP: u32 = 100;
+const MIN_STAT: u32 = 3;
+const MAX_STAT: u32 = 18;
+const STAT_POINTS: u32 = 75;
+
 struct Character {
+    name: String,
     stats: HashMap<Stat, u32>,
+
+    race: Race,
+    gp: u32,
+    items: Vec<Item>,
+}
+
+impl Character {
+    fn generate(index: usize) -> Character {
+        Character {
+            name: format!("Charname {}", index),
+            stats: HashMap::default(),
+            gp: INITIAL_GP,
+            items: Vec::default(),
+            race: Race::default(),
+        }
+    }
+}
+
+#[derive(Debug)]
+enum Race {
+    Human,
+    Elf,
+    Dwarf,
+    Halfling,
+}
+
+impl Default for Race {
+    fn default() -> Self {
+        Race::Human
+    }
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
@@ -94,69 +129,175 @@ impl Stat {
     }
 }
 
+#[derive(Clone)]
+struct Item {
+    name: &'static str,
+    price: u32,
+}
+
+const ITEMS: [Item; 3] = [
+    Item { name: "Sword", price: 50 },
+    Item { name: "Shield", price: 20 },
+    Item { name: "Torch", price: 2 }
+];
+
 /// The function to build the Thyme user interface.  Called once each frame.  This
 /// example demonstrates a combination of Rust layout and styling as well as use
 /// of the theme definition file, loaded above
 fn build_ui(ui: &mut Frame, party: &mut Party) {
-
     ui.window("party_window", "party_window", |ui| {
-        ui.start("members_panel")
-        .children(|ui| {
-            let mut add_character_shown = false;
-            for (index, member) in party.members.iter_mut().enumerate() {
-                match member.as_mut() {
-                    None => {
-                        if add_character_shown {
-                            ui.start("empty_slot_button").enabled(false).finish();
-                        } else {
-                            add_character_shown = true;
-                            if ui.start("add_character_button").finish().clicked {
-                                *member = Some(Character::default());
-                                ui.set_open("character_window", true);
-                                party.editing_index = Some(index);
-                            }
-                        }
-                    },
-                    Some(_member) => {
-                        let clicked = ui.start("filled_slot_button")
-                        .active(Some(index) == party.editing_index)
-                        .finish().clicked;
-
-                        if clicked {
-                            party.editing_index = Some(index);
-                        }
-                    }
-                }
-            }
+        ui.scrollpane("members_panel", "party_content", |ui| {
+            party_members_panel(ui, party);
         });
     });
 
-    // TODO make this window modal
     if let Some(index) = party.editing_index {
+        let character = &mut party.members[index];
+
         ui.window("character_window", "character_window", |ui| {
-            let character = party.members[index].as_mut().unwrap();
+            // TODO scroll with mouse wheel
+            ui.scrollpane("pane", "character_content", |ui| {
+                ui.start("name_panel")
+                .children(|ui| {
+                    if let Some(new_name) = ui.input_field("name_input", "name_input") {
+                        character.name = new_name;
+                    }
+                });
 
-            ui.start("stats_panel")
-            .children(|ui| {
-                for stat in Stat::iter() {
-                    let value = character.stats.entry(stat).or_insert(10);
+                ui.gap(10.0);
+
+                // TODO combo box
+                ui.button("race_selector", format!("{:?}", character.race));
     
-                    ui.start("stat_panel")
-                    .children(|ui| {
-                        ui.label("label", format!("{:?}", stat));
-
-                        if ui.button("decrease", "-").clicked {
-                            *value = 3.max(*value - 1);
-                        }
-
-                        ui.label("value", format!("{}", *value));
-                        
-                        if ui.button("increase", "+").clicked {
-                            *value = 18.min(*value + 1);
-                        }
-                    }); 
-                }
-            });            
+                ui.gap(10.0);
+    
+                ui.start("stats_panel")
+                .children(|ui| {
+                    stats_panel(ui, character);
+                });
+                
+                ui.gap(10.0);
+    
+                ui.start("inventory_panel")
+                .children(|ui| {
+                    inventory_panel(ui, character);
+                });
+            });
         });
+
+        // TODO make this modal
+        // TODO window draw order
+        ui.window("item_picker", "item_picker", |ui| {
+            item_picker(ui, character);
+        });
+    }
+}
+
+fn party_members_panel(ui: &mut Frame, party: &mut Party) {
+    for (index, member) in party.members.iter_mut().enumerate() {
+        let clicked = ui.start("filled_slot_button")
+        .text(&member.name)
+        .active(Some(index) == party.editing_index)
+        .finish().clicked;
+
+        if clicked {
+            set_active_character(ui, member);
+            party.editing_index = Some(index);
+        }
+    }
+
+    if ui.start("add_character_button").finish().clicked {
+        let new_member = Character::generate(party.members.len());
+        set_active_character(ui, &new_member);
+        party.members.push(new_member);
+        party.editing_index = Some(party.members.len() - 1);
+    }
+}
+
+fn set_active_character(ui: &mut Frame, character: &Character) {
+    ui.set_open("character_window", true);
+    ui.modify("name_input", |state| {
+        state.text = Some(character.name.clone());
+    });
+    ui.set_open("item_picker", false);
+}
+
+fn stats_panel(ui: &mut Frame, character: &mut Character) {
+    let points_used: u32 = character.stats.values().sum();
+    let points_available: u32 = STAT_POINTS - points_used;
+
+    ui.child("title");
+
+    for stat in Stat::iter() {
+        let value = character.stats.entry(stat).or_insert(10);
+
+        ui.start("stat_panel")
+        .children(|ui| {
+            ui.label("label", format!("{:?}", stat));
+
+            let clicked = ui.start("decrease").enabled(*value > MIN_STAT).finish().clicked;
+            if clicked {
+                *value -= 1;
+            }
+
+            ui.label("value", format!("{}", *value));
+            
+            let clicked = ui.start("increase").enabled(points_available > 0 && *value < MAX_STAT).finish().clicked;
+            if clicked {
+                *value = 18.min(*value + 1);
+            }
+        }); 
+    }
+
+    ui.label("points_available", format!("Points Remaining: {}", points_available));
+}
+
+fn item_picker(ui: &mut Frame, character: &mut Character) {
+    for item in ITEMS.iter() {
+        let clicked = ui.start("item_button")
+        .enabled(character.gp >= item.price)
+        .children(|ui| {
+            ui.label("name", item.name);
+            // TODO icon image
+            ui.child("icon");
+            ui.label("price", format!("{} Gold", item.price));
+        }).clicked;
+
+        if clicked {
+            character.gp -= item.price;
+            character.items.push(item.clone());
+            ui.set_open("item_picker", false);
+        }
+    }
+}
+
+fn inventory_panel(ui: &mut Frame, character: &mut Character) {
+    ui.child("title");
+    ui.start("top_panel")
+    .children(|ui| {
+        if ui.child("buy").clicked {
+            ui.set_open("item_picker", true);
+        }
+
+        ui.label("gold", format!("{} Gold", character.gp));
+    });
+    
+    ui.scrollpane("items_panel", "items_content", |ui| {
+        items_panel(ui, character);
+    });
+}
+
+fn items_panel(ui: &mut Frame, character: &mut Character) {
+    let mut sell = None;
+    for (index, item) in character.items.iter().enumerate() {
+        // TODO tooltip that says remove item
+        if ui.button("item_button", item.name).clicked {
+            sell = Some(index);
+        }
+    }
+
+    if let Some(index) = sell {
+        let item = character.items.remove(index);
+        character.gp += item.price;
     }
 }
