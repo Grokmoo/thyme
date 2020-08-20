@@ -17,18 +17,27 @@ impl Frame {
         self.start(theme).text(label).active(active).wants_mouse(true).finish()
     }
 
-    pub fn input_field(&mut self, theme: &str, id: &str) {
+    pub fn input_field(&mut self, theme: &str, id: &str) -> Option<String> {
+        let mut text_out = None;
+
         self.modify(id, |state| {
             if state.text.is_none() {
                 state.text = Some(String::new());
             }
 
+            let mut text_changed = false;
             for c in state.characters.drain(..) {
                 if c as u32 == 8 { //backspace
                     state.text.as_mut().unwrap().pop();
+                    text_changed = true;
                 } else {
                     state.text.as_mut().unwrap().push(c);
+                    text_changed = true;
                 }
+            }
+
+            if text_changed {
+                text_out = state.text.clone();
             }
         });
         let mut text_pos = Point::default();
@@ -45,6 +54,8 @@ impl Frame {
         if result.clicked {
             self.focus_keyboard(id);
         }
+
+        text_out
     }
 
     pub fn progress_bar(&mut self, theme: &str, frac: f32) {
