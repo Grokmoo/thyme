@@ -60,7 +60,7 @@ impl Widget {
         }
     }
 
-    fn create(parent: &Widget, theme: &WidgetTheme) -> (WidgetData, Widget) {
+    fn create(parent: &Widget, theme: &WidgetTheme, id: String) -> (WidgetData, Widget) {
         let font = theme.font;
         let border = theme.border.unwrap_or_default();
         let raw_size = theme.size.unwrap_or_default();
@@ -77,12 +77,6 @@ impl Widget {
         };
         let raw_pos = theme.pos.unwrap_or(cursor_pos) + parent.scroll;
         let pos = pos(parent, raw_pos, size, align);
-
-        let id = if parent.id.is_empty() {
-            theme.id.to_string()
-        } else {
-            format!("{}/{}", parent.id, theme.id)
-        };
 
         let data = WidgetData {
             manual_pos,
@@ -297,7 +291,7 @@ impl<'a> WidgetBuilder<'a> {
     #[must_use]
     pub fn new(frame: &'a mut Frame, parent: usize, theme_id: String, base_theme: &str) -> WidgetBuilder<'a> {
         let (data, index, widget) = {
-            let context = frame.context_internal();
+            let context = std::rc::Rc::clone(&frame.context_internal());
             let context = context.borrow();
             let theme = match context.themes().theme(&theme_id) {
                 None => {
@@ -312,9 +306,20 @@ impl<'a> WidgetBuilder<'a> {
             };
 
             let index = frame.num_widgets();
+
+            let id = {
+                let parent_widget = frame.widget(parent);
+                if parent_widget.id.is_empty() {
+                    theme.id.to_string()
+                } else {
+                    format!("{}/{}", parent_widget.id, theme.id)
+                }
+            };
+
+            let id = frame.generate_id(id);
             let parent_widget = frame.widget(parent);
 
-            let (data, widget) = Widget::create(parent_widget, theme);
+            let (data, widget) = Widget::create(parent_widget, theme, id);
 
             (data, index, widget)
         };

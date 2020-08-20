@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -18,6 +19,8 @@ pub struct Frame {
     parent_index: usize,
     parent_max_child_bounds: Rect,
     max_child_bounds: Rect,
+
+    generated_ids: HashMap<String, u32>,
 }
 
 impl Frame {
@@ -29,7 +32,21 @@ impl Frame {
             parent_index: 0,
             parent_max_child_bounds: Rect::default(),
             max_child_bounds: Rect::default(),
+            generated_ids: HashMap::default(),
         }
+    }
+
+    pub(crate) fn generate_id(&mut self, id: String) -> String {
+        let mut output = id.clone();
+        let index = self.generated_ids.entry(id).or_insert(0);
+
+        if *index > 0 {
+            output.push_str(&index.to_string());
+        }
+
+        *index += 1;
+
+        output
     }
 
     pub(crate) fn context_internal(&self) -> &Rc<RefCell<ContextInternal>> {
@@ -223,7 +240,7 @@ impl Frame {
         context.clear_state(id);
     }
 
-    pub fn modify<T: Into<String>, F: Fn(&mut PersistentState)>(&mut self, id: T, f: F) {
+    pub fn modify<T: Into<String>, F: FnOnce(&mut PersistentState)>(&mut self, id: T, f: F) {
         let mut context = self.context.internal().borrow_mut();
         (f)(context.state_mut(id));
     }
