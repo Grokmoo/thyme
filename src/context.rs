@@ -264,6 +264,7 @@ impl Context {
 
         if internal.mouse_pressed[index] && !pressed {
             internal.mouse_clicked[index] = true;
+            internal.keyboard_focus_widget = None;
         }
 
         internal.mouse_pressed[index] = pressed;
