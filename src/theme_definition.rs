@@ -91,14 +91,52 @@ pub struct AnimState {
 }
 
 impl AnimState {
+    /// Creates an AnimState with the two specified state keys.
+    pub const fn with_two(state1: AnimStateKey, state2: AnimStateKey) -> AnimState {
+        AnimState { keys: [
+            state1, state2, AnimStateKey::Normal, AnimStateKey::Normal
+        ]}
+    }
+
+    /// Creates an AnimState with the three specified state keys.
+    pub const fn with_three(state1: AnimStateKey, state2: AnimStateKey, state3: AnimStateKey) -> AnimState {
+        AnimState { keys: [
+            state1, state2, state3, AnimStateKey::Normal
+        ]}
+    }
+
+    /// Creates an AnimState with the four specified state keys.
+    pub const fn with_four(state1: AnimStateKey, state2: AnimStateKey, state3: AnimStateKey, state4: AnimStateKey) -> AnimState {
+        AnimState { keys: [
+            state1, state2, state3, state4
+        ]}
+    }
+
+    /// Creates an AnimState consisting of the single specified `state`.
     pub const fn new(state: AnimStateKey) -> AnimState {
         AnimState { keys: [state, AnimStateKey::Normal, AnimStateKey::Normal, AnimStateKey::Normal] }
     }
 
+    /// Creates an AnimState corresponding to the Normal state with no changes
     pub const fn normal() -> AnimState {
         AnimState { keys: [AnimStateKey::Normal; 4] }
     }
 
+    /// Creates an AnimState consisting of only the Pressed state.
+    pub const fn pressed() -> AnimState {
+        let mut keys = [AnimStateKey::Normal; 4];
+        keys[0] = AnimStateKey::Pressed;
+        AnimState { keys }
+    }
+
+    /// Creates an AnimState consisting of the Hover state.
+    pub fn hover() -> AnimState {
+        let mut keys = [AnimStateKey::Normal; 4];
+        keys[0] = AnimStateKey::Hover;
+        AnimState { keys }
+    }
+
+    /// Creates an AnimState consisting of only the Distabled state.
     pub const fn disabled() -> AnimState {
         let mut keys = [AnimStateKey::Normal; 4];
         keys[0] = AnimStateKey::Disabled;
