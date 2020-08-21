@@ -79,11 +79,9 @@ impl Frame {
             if was_taken_last {
                 self.mouse_taken = Some(widget.id().to_string());
                 let dragged = context.mouse_pos() - context.last_mouse_pos();
-                let anim_state = AnimState::new(AnimStateKey::Pressed);
-                self.mouse_anim_state = anim_state;
                 return (
                     context.mouse_clicked(0),
-                    anim_state,
+                    AnimState::new(AnimStateKey::Pressed),
                     dragged
                 );
             } else {
@@ -97,11 +95,9 @@ impl Frame {
         }
 
         self.mouse_taken = Some(widget.id().to_string());
-        let anim_state = AnimState::new(AnimStateKey::Hover);
-        self.mouse_anim_state = anim_state;
         (
             was_taken_last && context.mouse_clicked(0),
-            anim_state,
+            AnimState::new(AnimStateKey::Hover),
             Point::default()
         )
     }
@@ -167,10 +163,21 @@ impl Frame {
 
     // internal state modifiers
 
+    /// Sets the mouse cursor to the specified image with alignment.  If you are hiding the default
+    /// OS cursor, this should be called at least once every frame you want to show a cursor.  If it
+    /// is called multiple times, the last call will take effect.  The image will automatically inherit
+    /// `Normal` and `Pressed` animation states.  See `set_mouse_state` to override this behavior.
     pub fn set_mouse_cursor(&mut self, image: &str, align: Align) {
         let context = self.context.internal().borrow();
         let image = context.themes().find_image(Some(image));
         self.mouse_cursor = image.map(|image| (image, align));
+    }
+
+    /// Manually set the Mouse cursor to the specified `state`.  This is used when
+    /// drawing the specified mouse cursor image.  The mouse will automatically inherit
+    /// `Normal` and `Pressed` states by default.  This overrides that behavior.
+    pub fn set_mouse_state(&mut self, state: AnimState) {
+        self.mouse_anim_state = state;
     }
 
     pub fn focus_keyboard<T: Into<String>>(&mut self, id: T) {

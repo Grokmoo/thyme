@@ -56,7 +56,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let mut frame = context.create_frame();
 
-            // show a custom cursor.  it automatically inherits the state of the active widget
+            // show a custom cursor.  it automatically inherits mouse presses in its state
             frame.set_mouse_cursor("gui/cursor", Align::TopLeft);
             build_ui(&mut frame, &mut party);
 
