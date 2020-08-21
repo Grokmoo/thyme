@@ -73,6 +73,7 @@ impl GliumRenderer {
     }
 
     pub fn draw_frame<T: Surface>(&mut self, target: &mut T, frame: Frame) -> Result<(), GliumError> {
+        let mouse_cursor = frame.mouse_cursor();
         let (context, widgets) = frame.finish_frame();
         let context = context.internal().borrow();
 
@@ -154,6 +155,26 @@ impl GliumRenderer {
         // render anything from the final draw calls
         if let Some(mode) = draw_mode {
             self.render(target, mode)?;
+        }
+
+        if let Some((mouse_cursor, align, anim_state)) = mouse_cursor {
+            let image = context.themes().image(mouse_cursor);
+            let mouse_pos = context.mouse_pos();
+            let size = image.base_size();
+            let pos = mouse_pos - align.adjust_for(size);
+            let clip = Rect::new(pos, size);
+
+            let params = ImageDrawParams {
+                pos: pos.into(),
+                size: size.into(),
+                anim_state,
+                clip,
+                time_millis,
+            };
+
+            self.draw_list.clear();
+            image.draw(&mut self.draw_list, params);
+            self.render(target, DrawMode::Image(image.texture()))?;
         }
 
         Ok(())

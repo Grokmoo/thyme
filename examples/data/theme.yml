@@ -9,6 +9,17 @@ image_sets:
   gui:
     source: gui
     images:
+      cursor_normal:
+        position: [224, 64]
+        size: [21, 21]
+      cursor_pressed:
+        position: [224, 86]
+        size: [21, 21]
+      cursor:
+        states:
+          Normal: cursor_normal
+          Hover: cursor_normal
+          Pressed: cursor_pressed
       window_bg:
         position: [0, 0]
         grid_size: [32, 32]

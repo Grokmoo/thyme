@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{Error};
 use crate::render::{TexCoord, DrawList, TextureHandle, TextureData};
-use crate::{Rect, Color, AnimState};
+use crate::{Rect, Color, AnimState, Point};
 use crate::theme_definition::{ImageDefinition, ImageDefinitionKind};
 
 #[derive(Copy, Clone)]
@@ -42,11 +42,14 @@ pub(crate) struct ImageDrawParams {
 pub struct Image {
     texture: TextureHandle,
     color: Color,
-    kind: ImageKind
+    kind: ImageKind,
+    base_size: Point,
 }
 
 impl Image {
     pub fn texture(&self) -> TextureHandle { self.texture }
+
+    pub fn base_size(&self) -> Point { self.base_size }
 
     pub(crate) fn draw<D: DrawList>(
         &self,
@@ -85,6 +88,7 @@ impl Image {
         texture: &TextureData,
         others: &HashMap<String, Image>
     )-> Result<Image, Error> {
+        let base_size;
         let kind = match def.kind {
             ImageDefinitionKind::Composed { grid_size, position} => {
                 let mut tex_coords = [[TexCoord::default(); 4]; 4];
@@ -98,18 +102,22 @@ impl Image {
                 }
 
                 let grid_size = [grid_size[0] as f32, grid_size[1] as f32];
+                base_size = Point::new(grid_size[0] * 3.0, grid_size[1] * 3.0);
                 ImageKind::Composed { tex_coords, grid_size }
             },
             ImageDefinitionKind::Simple { size, position, stretch } => {
                 let tex1 = texture.tex_coord(position[0], position[1]);
                 let tex2 = texture.tex_coord(position[0] + size[0], position[1] + size[1]);
                 let fixed_size = if !stretch { Some([size[0] as f32, size[1] as f32]) } else { None };
+                base_size = Point::new(size[0] as f32, size[1] as f32);
                 ImageKind::Simple { tex_coords: [tex1, tex2], fixed_size }
             },
             ImageDefinitionKind::Timed { frame_time_millis, frames, once } => {
+                let mut size = Point::default();
                 let mut frames_out = Vec::new();
                 for id in frames {
                     let image = find_image_in_set(image_id, others, &id)?;
+                    size = image.base_size;
                     frames_out.push(image);
                 }
                 
@@ -119,15 +127,19 @@ impl Image {
                     );
                 }
 
+                base_size = size;
                 ImageKind::Timed { frame_time_millis, frames: frames_out, once }
             },
             ImageDefinitionKind::Animated { states } => {
+                let mut size = Point::default();
                 let mut states_out: Vec<(AnimState, Image)> = Vec::new();
                 for (state, id) in states {
                     let image = find_image_in_set(image_id, others, &id)?;
+                    size = image.base_size;
                     states_out.push((state, image));
                 }
 
+                base_size = size;
                 ImageKind::Animated { states: states_out }
             }
         };
@@ -135,7 +147,8 @@ impl Image {
         Ok(Image {
             color: def.color,
             texture: texture.handle(),
-            kind
+            kind,
+            base_size,
         })
     }
 

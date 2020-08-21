@@ -6,7 +6,7 @@ use std::time::Instant;
 use crate::{Point, Error, Frame};
 use crate::widget::Widget;
 use crate::theme::ThemeSet;
-use crate::theme_definition::ThemeDefinition;
+use crate::theme_definition::{ThemeDefinition, AnimState, AnimStateKey};
 use crate::render::{Renderer, IO, TextureData, TextureHandle};
 use crate::font::FontSource;
 
@@ -290,11 +290,18 @@ impl Context {
     pub fn create_frame(&mut self) -> Frame {
         let now = Instant::now();
 
+        let anim_state;
         let display_size = {
             let mut context = self.internal.borrow_mut();
 
             let elapsed = (now - context.start_instant).as_millis() as u32;
             context.time_millis = elapsed;
+
+            if context.mouse_pressed[0] {
+                anim_state = AnimState::new(AnimStateKey::Pressed);
+            } else {
+                anim_state = AnimState::normal();
+            }
 
             context.display_size()
         };
@@ -302,6 +309,6 @@ impl Context {
         let context = Context { internal: Rc::clone(&self.internal) };
 
         let root = Widget::root(display_size);
-        Frame::new(context, root)
+        Frame::new(context, root, anim_state)
     }
 }

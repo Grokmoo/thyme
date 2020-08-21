@@ -259,6 +259,23 @@ impl Default for Align {
     fn default() -> Self { Align::TopLeft }
 }
 
+impl Align {
+    pub fn adjust_for(self, size: Point) -> Point {
+        use Align::*;
+        match self {
+            Left => Point { x: 0.0, y: size.y / 2.0 },
+            Right => Point { x: size.x, y: size.y / 2.0 },
+            Bot => Point { x: size.x / 2.0, y: size.y },
+            Top => Point { x: size.x / 2.0, y: 0.0 },
+            Center => Point { x: size.x / 2.0, y: size.y / 2.0 },
+            BotLeft => Point { x: 0.0, y: size.y },
+            BotRight => Point { x: size.x, y: size.y },
+            TopLeft => Point { x: 0.0, y: 0.0 },
+            TopRight => Point { x: size.x, y: 0.0 },
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct FontDefinition {

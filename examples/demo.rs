@@ -8,7 +8,7 @@ use glium::glutin::{
 };
 use glium::{Display, Surface};
 
-use thyme::{Frame};
+use thyme::{Frame, Align};
 
 /// A simple party creator and character sheet for an RPG.
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -27,6 +27,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_title("Thyme Demo")
         .with_inner_size(glutin::dpi::LogicalSize::new(window_size[0], window_size[1]));
     let display = Display::new(builder, context, &event_loop)?;
+
+    // hide the default cursor
+    display.gl_window().window().set_cursor_visible(false);
 
     // create thyme backend
     let mut io = thyme::WinitIo::new();
@@ -53,6 +56,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let mut frame = context.create_frame();
 
+            // show a custom cursor.  it automatically inherits the state of the active widget
+            frame.set_mouse_cursor("gui/cursor", Align::TopLeft);
             build_ui(&mut frame, &mut party);
 
             renderer.draw_frame(&mut target, frame).unwrap();

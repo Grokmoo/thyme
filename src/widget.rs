@@ -251,17 +251,7 @@ fn pos(parent: &Widget, pos: Point, self_size: Point, align: Align) -> Point {
         },
     };
 
-    pos - match align {
-        Align::Left => Point { x: 0.0, y: self_size.y / 2.0 },
-        Align::Right => Point { x: self_size.x, y: self_size.y / 2.0 },
-        Align::Bot => Point { x: self_size.x / 2.0, y: self_size.y },
-        Align::Top => Point { x: self_size.x / 2.0, y: 0.0 },
-        Align::Center => Point { x: self_size.x / 2.0, y: self_size.y / 2.0 },
-        Align::BotLeft => Point { x: 0.0, y: self_size.y },
-        Align::BotRight => Point { x: self_size.x, y: self_size.y },
-        Align::TopLeft => Point { x: 0.0, y: 0.0 },
-        Align::TopRight => Point { x: self_size.x, y: 0.0 },
-    }.round()
+    pos - align.adjust_for(self_size).round()
 }
 
 struct WidgetData {

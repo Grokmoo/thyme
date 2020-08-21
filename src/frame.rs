@@ -3,10 +3,10 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::context::{Context, ContextInternal};
-
 use crate::{
-    AnimState, AnimStateKey, Rect, Point, WidgetBuilder, PersistentState,
+    AnimState, AnimStateKey, Rect, Point, WidgetBuilder, PersistentState, Align,
 };
+use crate::image::ImageHandle;
 use crate::widget::Widget;
 
 const MOUSE_NOT_TAKEN: (bool, AnimState, Point) =
@@ -21,10 +21,13 @@ pub struct Frame {
     max_child_bounds: Rect,
 
     generated_ids: HashMap<String, u32>,
+
+    mouse_cursor: Option<(ImageHandle, Align)>,
+    mouse_anim_state: AnimState,
 }
 
 impl Frame {
-    pub(crate) fn new(context: Context, root: Widget) -> Frame {
+    pub(crate) fn new(context: Context, root: Widget, mouse_anim_state: AnimState) -> Frame {
         Frame {
             mouse_taken: None,
             context,
@@ -33,7 +36,13 @@ impl Frame {
             parent_max_child_bounds: Rect::default(),
             max_child_bounds: Rect::default(),
             generated_ids: HashMap::default(),
+            mouse_cursor: None,
+            mouse_anim_state,
         }
+    }
+
+    pub(crate) fn mouse_cursor(&self) -> Option<(ImageHandle, Align, AnimState)> {
+        self.mouse_cursor.map(|(image, align)| (image, align, self.mouse_anim_state))
     }
 
     pub(crate) fn generate_id(&mut self, id: String) -> String {
@@ -70,9 +79,11 @@ impl Frame {
             if was_taken_last {
                 self.mouse_taken = Some(widget.id().to_string());
                 let dragged = context.mouse_pos() - context.last_mouse_pos();
+                let anim_state = AnimState::new(AnimStateKey::Pressed);
+                self.mouse_anim_state = anim_state;
                 return (
                     context.mouse_clicked(0),
-                    AnimState::new(AnimStateKey::Pressed),
+                    anim_state,
                     dragged
                 );
             } else {
@@ -86,9 +97,11 @@ impl Frame {
         }
 
         self.mouse_taken = Some(widget.id().to_string());
+        let anim_state = AnimState::new(AnimStateKey::Hover);
+        self.mouse_anim_state = anim_state;
         (
             was_taken_last && context.mouse_clicked(0),
-            AnimState::new(AnimStateKey::Hover),
+            anim_state,
             Point::default()
         )
     }
@@ -153,6 +166,12 @@ impl Frame {
     }
 
     // internal state modifiers
+
+    pub fn set_mouse_cursor(&mut self, image: &str, align: Align) {
+        let context = self.context.internal().borrow();
+        let image = context.themes().find_image(Some(image));
+        self.mouse_cursor = image.map(|image| (image, align));
+    }
 
     pub fn focus_keyboard<T: Into<String>>(&mut self, id: T) {
         let mut context = self.context.internal().borrow_mut();
