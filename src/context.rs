@@ -72,7 +72,7 @@ impl<'a, R: Renderer, I: IO> ContextBuilder<'a, R, I> {
         let display_size = self.io.display_size();
         let textures = self.textures;
         let fonts = self.font_sources;
-        let themes = ThemeSet::new(self.theme_def, textures, fonts, self.renderer)?;
+        let themes = ThemeSet::new(self.theme_def, textures, fonts, self.renderer, scale_factor)?;
         Ok(Context::new(themes, display_size, scale_factor))
     }
 }

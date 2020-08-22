@@ -266,12 +266,13 @@ impl Renderer for GliumRenderer {
         handle: FontHandle,
         source: &FontSource,
         size: f32,
+        scale: f32,
     ) -> Result<Font, crate::Error> {
         let font = &source.font;
 
         // TODO size font texture appropriately
         let mut data = vec![0u8; (FONT_TEX_SIZE * FONT_TEX_SIZE) as usize];
-        let font_scale = rusttype::Scale { x: size, y: size };
+        let font_scale = rusttype::Scale { x: size * scale, y: size * scale };
 
         let mut characters = Vec::new();
         let mut writer = FontTextureWriter {

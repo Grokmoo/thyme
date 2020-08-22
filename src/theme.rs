@@ -25,7 +25,10 @@ impl ThemeSet {
         textures: HashMap<String, TextureData>,
         font_sources: HashMap<String, FontSource>,
         renderer: &mut R,
+        display_scale: f32,
     ) -> Result<ThemeSet, Error> {
+        // TODO need to be able to rebuild fonts when scale factor changes
+        // this will invalidate the FontSummary
         let mut font_handles = HashMap::new();
         let mut font_handle = FontHandle::default();
         let mut fonts = Vec::new();
@@ -34,7 +37,7 @@ impl ThemeSet {
                 Error::Theme(format!("Unable to locate font handle {}", font.source))
             )?;
 
-            let font = renderer.register_font(font_handle, source, font.size)?;
+            let font = renderer.register_font(font_handle, source, font.size, display_scale)?;
             font_handle = font_handle.next();
 
             let line_height = font.line_height();

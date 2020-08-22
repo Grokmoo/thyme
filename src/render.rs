@@ -15,6 +15,7 @@ pub trait Renderer {
         handle: FontHandle,
         source: &FontSource,
         size: f32,
+        scale: f32,
     ) -> Result<Font, Error>;
 
     fn register_texture(
