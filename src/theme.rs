@@ -28,7 +28,7 @@ impl ThemeSet {
         display_scale: f32,
     ) -> Result<ThemeSet, Error> {
         // TODO need to be able to rebuild fonts when scale factor changes
-        // this will invalidate the FontSummary
+        // FontSummary size will stay the same for this
         let mut font_handles = HashMap::new();
         let mut font_handle = FontHandle::default();
         let mut fonts = Vec::new();
@@ -40,7 +40,7 @@ impl ThemeSet {
             let font = renderer.register_font(font_handle, source, font.size, display_scale)?;
             font_handle = font_handle.next();
 
-            let line_height = font.line_height();
+            let line_height = font.line_height() / display_scale;
             let handle = font.handle();
             assert!(handle.id() == fonts.len());
             fonts.push(font);

@@ -607,9 +607,14 @@ impl<'a> WidgetBuilder<'a> {
             let align = widget.text_align();
 
             let internal = self.frame.context_internal().borrow();
+            let scale = internal.scale_factor();
             let font = internal.themes().font(font_def.handle);
 
-            font.layout(fg_size, fg_pos, text, align, cursor);
+            let mut scaled_cursor = *cursor * scale;
+
+            font.layout(fg_size * scale, fg_pos * scale, text, align, &mut scaled_cursor);
+
+            *cursor = scaled_cursor / scale;
         }
 
         self
