@@ -80,6 +80,7 @@ impl GliumRenderer {
         let time_millis = context.time_millis();
         let display_pos = Point::default();
         let display_size = context.display_size();
+        let scale = context.scale_factor();
         self.matrix = matrix(display_pos, display_size);
 
         // render backgrounds
@@ -105,6 +106,7 @@ impl GliumRenderer {
                     anim_state: widget.anim_state(),
                     clip: widget.clip(),
                     time_millis,
+                    scale,
                 }
             );
         }
@@ -130,6 +132,7 @@ impl GliumRenderer {
                         anim_state: widget.anim_state(),
                         clip: widget.clip(),
                         time_millis,
+                        scale,
                     }
                 );
             }
@@ -141,12 +144,12 @@ impl GliumRenderer {
 
                     font.draw(
                         &mut self.draw_list,
-                        fg_size,
-                        fg_pos.into(),
+                        fg_size * scale,
+                        (fg_pos * scale).into(),
                         text,
                         widget.text_align(),
                         widget.text_color(),
-                        widget.clip(),
+                        widget.clip() * scale,
                     )
                 }
             }
@@ -170,6 +173,7 @@ impl GliumRenderer {
                 anim_state,
                 clip,
                 time_millis,
+                scale
             };
 
             self.draw_list.clear();

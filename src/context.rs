@@ -12,7 +12,7 @@ use crate::font::FontSource;
 
 pub struct ContextBuilder<'a, R: Renderer, I: IO> {
     renderer: &'a mut R,
-    _io: &'a mut I,
+    io: &'a mut I,
     font_sources: HashMap<String, FontSource>,
     textures: HashMap<String, TextureData>,
     next_texture_handle: TextureHandle,
@@ -25,7 +25,7 @@ impl<'a, R: Renderer, I: IO> ContextBuilder<'a, R, I> {
 
         Ok(ContextBuilder {
             renderer,
-            _io: io,
+            io,
             font_sources: HashMap::new(),
             textures: HashMap::new(),
             next_texture_handle: TextureHandle::default(),
@@ -67,11 +67,13 @@ impl<'a, R: Renderer, I: IO> ContextBuilder<'a, R, I> {
         Ok(())
     }
 
-    pub fn build(self, display_size: Point) -> Result<Context, Error> {
+    pub fn build(self) -> Result<Context, Error> {
+        let scale_factor = self.io.scale_factor();
+        let display_size = self.io.display_size();
         let textures = self.textures;
         let fonts = self.font_sources;
         let themes = ThemeSet::new(self.theme_def, textures, fonts, self.renderer)?;
-        Ok(Context::new(themes, display_size))
+        Ok(Context::new(themes, display_size, scale_factor))
     }
 }
 
@@ -135,6 +137,7 @@ pub struct ContextInternal {
     mouse_clicked: [bool; 3],
 
     display_size: Point,
+    scale_factor: f32,
 
     start_instant: Instant,
     time_millis: u32,
@@ -163,6 +166,7 @@ impl ContextInternal {
         self.mouse_taken_last_frame.as_deref()
     }
 
+    pub(crate) fn scale_factor(&self) -> f32 { self.scale_factor }
     pub(crate) fn display_size(&self) -> Point { self.display_size }
 
     pub(crate) fn themes(&self) -> &ThemeSet { &self.themes }
@@ -210,9 +214,10 @@ pub struct Context {
 }
 
 impl Context {
-    fn new(themes: ThemeSet, display_size: Point) -> Context {
+    fn new(themes: ThemeSet, display_size: Point, scale_factor: f32) -> Context {
         let internal = ContextInternal {
             display_size,
+            scale_factor,
             themes,
             persistent_state: HashMap::new(),
             empty_persistent_state: PersistentState::default(),
@@ -239,6 +244,11 @@ impl Context {
 
     pub(crate) fn internal(&self) -> &Rc<RefCell<ContextInternal>> {
         &self.internal
+    }
+
+    pub(crate) fn set_scale_factor(&mut self, scale: f32) {
+        let mut internal = self.internal.borrow_mut();
+        internal.scale_factor = scale;
     }
 
     pub(crate) fn set_display_size(&mut self, size: Point) {
@@ -303,7 +313,7 @@ impl Context {
                 anim_state = AnimState::normal();
             }
 
-            context.display_size()
+            context.display_size() / context.scale_factor()
         };
 
         let context = Context { internal: Rc::clone(&self.internal) };

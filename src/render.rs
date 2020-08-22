@@ -3,7 +3,11 @@ use std::num::NonZeroU16;
 use crate::{Color, Rect, Point, Error};
 use crate::font::{FontSource, Font};
 
-pub trait IO {}
+pub trait IO {
+    fn scale_factor(&self) -> f32;
+
+    fn display_size(&self) -> Point;
+}
 
 pub trait Renderer {
     fn register_font(

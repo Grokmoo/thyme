@@ -184,6 +184,26 @@ impl Rect {
     }
 }
 
+impl Mul<Rect> for f32 {
+    type Output = Rect;
+    fn mul(self, rect: Rect) -> Rect {
+        Rect {
+            pos: rect.pos * self,
+            size: rect.size * self,
+        }
+    }
+}
+
+impl Mul<f32> for Rect {
+    type Output = Rect;
+    fn mul(self, val: f32) -> Rect {
+        Rect {
+            pos: self.pos * val,
+            size: self.size * val,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Copy, Clone, Default, Debug, PartialEq)]
 pub struct Point {
     pub x: f32,

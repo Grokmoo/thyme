@@ -36,6 +36,7 @@ pub(crate) struct ImageDrawParams {
     pub anim_state: AnimState,
     pub clip: Rect,
     pub time_millis: u32,
+    pub scale: f32,
 }
 
 #[derive(Clone)]
@@ -58,13 +59,32 @@ impl Image {
     ) {
         match &self.kind {
             ImageKind::Composed { tex_coords, grid_size } => {
-                self.draw_composed(draw_list, tex_coords, *grid_size, params.pos, params.size, params.clip);
+                self.draw_composed(
+                    draw_list,
+                    tex_coords,
+                    [grid_size[0] * params.scale, grid_size[1] * params.scale],
+                    [params.pos[0] * params.scale, params.pos[1] * params.scale],
+                    [params.size[0] * params.scale, params.size[1] * params.scale],
+                    params.clip * params.scale
+                );
             },
             ImageKind::Simple { tex_coords, fixed_size } => {
                 if let Some(size) = fixed_size {
-                    self.draw_simple(draw_list, tex_coords, params.pos, *size, params.clip);
+                    self.draw_simple(
+                        draw_list,
+                        tex_coords,
+                        [params.pos[0] * params.scale, params.pos[1] * params.scale],
+                        [size[0] * params.scale, size[1] * params.scale],
+                        params.clip * params.scale
+                    );
                 } else {
-                    self.draw_simple(draw_list, tex_coords, params.pos, params.size, params.clip);
+                    self.draw_simple(
+                        draw_list,
+                        tex_coords,
+                        [params.pos[0] * params.scale, params.pos[1] * params.scale],
+                        [params.size[0] * params.scale, params.size[1] * params.scale],
+                        params.clip * params.scale
+                    );
                 }
             },
             ImageKind::Timed { frame_time_millis, frames, once } => {
