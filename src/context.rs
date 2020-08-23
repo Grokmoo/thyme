@@ -124,6 +124,7 @@ impl Default for PersistentState {
 pub struct ContextInternal {
     themes: ThemeSet,
     mouse_taken_last_frame: Option<String>,
+    modal_id: Option<String>,
 
     mouse_pressed_outside: [bool; 3],
 
@@ -144,6 +145,24 @@ pub struct ContextInternal {
 }
 
 impl ContextInternal {
+    pub(crate) fn modal_id(&self) -> Option<&str> {
+        self.modal_id.as_deref()
+    }
+
+    pub(crate) fn has_modal(&self) -> bool {
+        self.modal_id.is_some()
+    }
+
+    pub(crate) fn clear_modal_if_match(&mut self, id: &str) {
+        if Some(id) == self.modal_id.as_deref() {
+            self.modal_id.take();
+        }
+    }
+
+    pub(crate) fn set_modal(&mut self, id: String) {
+        self.modal_id = Some(id);
+    }
+
     pub(crate) fn base_time_millis_for(&self, id: &str) -> u32 {
         self.persistent_state.get(id).map_or(0, |state| state.base_time_millis)
     }
@@ -226,6 +245,7 @@ impl Context {
             mouse_pressed: [false; 3],
             mouse_clicked: [false; 3],
             mouse_taken_last_frame: None,
+            modal_id: None,
             mouse_pressed_outside: [false; 3],
             time_millis: 0,
             start_instant: Instant::now(),

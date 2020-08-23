@@ -197,7 +197,7 @@ impl Frame {
                 ui.start("title").finish();
 
                 if ui.button("close", "").clicked {
-                    ui.set_open(id, false);
+                    ui.close(id);
                 }
             });
 

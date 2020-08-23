@@ -17,6 +17,7 @@ pub struct Frame {
     context: Context,
     widgets: Vec<Widget>,
     parent_index: usize,
+    pub(crate) in_modal_tree: bool,
     parent_max_child_bounds: Rect,
     max_child_bounds: Rect,
 
@@ -33,6 +34,7 @@ impl Frame {
             context,
             widgets: vec![root],
             parent_index: 0,
+            in_modal_tree: false,
             parent_max_child_bounds: Rect::default(),
             max_child_bounds: Rect::default(),
             generated_ids: HashMap::default(),
@@ -66,6 +68,10 @@ impl Frame {
         let widget = &self.widgets[index];
 
         let context = self.context.internal().borrow_mut();
+
+        if context.has_modal() && !self.in_modal_tree {
+            return MOUSE_NOT_TAKEN;
+        }
 
         if context.mouse_pressed_outside() || self.mouse_taken.is_some() ||
             !widget.clip().is_inside(context.mouse_pos()) {
@@ -239,30 +245,48 @@ impl Frame {
         context.state(id).text.clone()
     }
 
-    pub fn toggle_open<T: Into<String>>(&mut self, id: T) {
-        let mut context = self.context.internal().borrow_mut();
-        let state = context.state_mut(id);
-        state.is_open = !state.is_open;
-    }
-
     pub fn is_open(&self, id: &str) -> bool {
         let context = self.context.internal().borrow();
         context.state(id).is_open
     }
 
-    pub fn set_open<T: Into<String>>(&mut self, id: T, open: bool) {
+    pub fn open_modal<T: Into<String>>(&mut self, id: T) {
+        let id = id.into();
+
         let mut context = self.context.internal().borrow_mut();
-        context.state_mut(id).is_open = open;
+        context.state_mut(id.clone()).is_open = true;
+        context.set_modal(id);
     }
 
-    pub fn set_parent_open(&mut self, open: bool) {
+    pub fn open<T: Into<String>>(&mut self, id: T) {
+        let mut context = self.context.internal().borrow_mut();
+        context.state_mut(id).is_open = true;
+    }
+
+    pub fn close<T: Into<String>>(&mut self, id: T) {
+        let id = id.into();
+
+        let mut context = self.context.internal().borrow_mut();
+        context.clear_modal_if_match(&id);
+        context.state_mut(id).is_open = false;
+    }
+
+    pub fn open_parent(&mut self) {
         let mut context = self.context.internal().borrow_mut();
         let id = self.widgets[self.parent_index].id();
-        context.state_mut(id).is_open = open;
+        context.state_mut(id).is_open = true;
+    }
+
+    pub fn close_parent(&mut self) {
+        let mut context = self.context.internal().borrow_mut();
+        let id = self.widgets[self.parent_index].id();
+        context.clear_modal_if_match(id);
+        context.state_mut(id).is_open = false;
     }
 
     pub fn clear(&mut self, id: &str) {
         let mut context = self.context.internal().borrow_mut();
+        context.clear_modal_if_match(id);
         context.clear_state(id);
     }
 

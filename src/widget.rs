@@ -638,20 +638,21 @@ impl<'a> WidgetBuilder<'a> {
         self.finish_with(Some(f))
     }
 
-
     fn finish_with<F: FnOnce(&mut Frame)>(mut self, f: Option<F>) -> WidgetState {
         if !self.widget().visible { return WidgetState::hidden(); }
 
-        let (state, text) = {
-            let internal = self.frame.context_internal();
-            let internal = internal.borrow();
+        let (state, text, in_modal_tree) = {
+            let internal = self.frame.context_internal().borrow();
             let state = internal.state(&self.frame.widget(self.widget).id);
 
             let text = match &state.text {
                 None => None,
                 Some(text) => Some(text.to_string())
             };
-            (state.copy_data(), text)
+
+            let in_modal_tree = Some(self.frame.widget(self.widget).id()) == internal.modal_id();
+
+            (state.copy_data(), text, in_modal_tree)
         };
 
         if let Some(text) = text {
@@ -678,6 +679,11 @@ impl<'a> WidgetBuilder<'a> {
         let self_bounds = Rect::new(self_pos, self_size);
         let old_max_child_bounds = self.frame.max_child_bounds();
 
+        // set modal tree value only if a match is found
+        if in_modal_tree {
+            self.frame.in_modal_tree = true;
+        }
+
         // if there is a child function
         if let Some(f) = f {
             // push the max_child pos and parent index
@@ -688,7 +694,6 @@ impl<'a> WidgetBuilder<'a> {
             // build all children
             (f)(self.frame);
 
-            // pop the max child pos and parent index
             self.frame.set_parent_index(old_parent_index);
             let this_children_max_bounds = self.frame.max_child_bounds();
             self.frame.set_parent_max_child_bounds(this_children_max_bounds);
@@ -701,6 +706,11 @@ impl<'a> WidgetBuilder<'a> {
         } else {
             (false, AnimState::disabled(), Point::default())
         };
+
+        // unset modal tree value only if this widget was the modal one
+        if in_modal_tree {
+            self.frame.in_modal_tree = false;
+        }
 
         if self.active {
             anim_state.add(AnimStateKey::Active);

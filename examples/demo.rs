@@ -207,7 +207,6 @@ fn build_ui(ui: &mut Frame, party: &mut Party) {
             });
         });
 
-        // TODO make this modal
         // TODO window draw order
         ui.window("item_picker", "item_picker", |ui| {
             item_picker(ui, character);
@@ -237,11 +236,11 @@ fn party_members_panel(ui: &mut Frame, party: &mut Party) {
 }
 
 fn set_active_character(ui: &mut Frame, character: &Character) {
-    ui.set_open("character_window", true);
+    ui.open("character_window");
     ui.modify("name_input", |state| {
         state.text = Some(character.name.clone());
     });
-    ui.set_open("item_picker", false);
+    ui.close("item_picker");
 }
 
 fn stats_panel(ui: &mut Frame, character: &mut Character) {
@@ -288,7 +287,7 @@ fn item_picker(ui: &mut Frame, character: &mut Character) {
         if clicked {
             character.gp -= item.price;
             character.items.push(item.clone());
-            ui.set_open("item_picker", false);
+            ui.close("item_picker");
         }
     }
 }
@@ -298,7 +297,7 @@ fn inventory_panel(ui: &mut Frame, character: &mut Character) {
     ui.start("top_panel")
     .children(|ui| {
         if ui.child("buy").clicked {
-            ui.set_open("item_picker", true);
+            ui.open_modal("item_picker");
         }
 
         ui.label("gold", format!("{} Gold", character.gp));
