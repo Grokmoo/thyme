@@ -47,10 +47,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // run main loop
     event_loop.run(move |event, _, control_flow| match event {
         Event::MainEventsCleared => {
-            let gl_window = display.gl_window();
-            gl_window.window().request_redraw();
-        }
-        Event::RedrawRequested(_) => {
             let mut target = display.draw();
             target.clear_color(0.0, 0.0, 0.0, 0.0);
 
