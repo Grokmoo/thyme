@@ -258,6 +258,11 @@ impl Frame {
         context.set_modal(id);
     }
 
+    pub fn close_modal_on_click_outside(&mut self) {
+        let mut context = self.context.internal().borrow_mut();
+        context.close_modal_on_click_outside();
+    }
+
     pub fn open<T: Into<String>>(&mut self, id: T) {
         let mut context = self.context.internal().borrow_mut();
         context.state_mut(id).is_open = true;

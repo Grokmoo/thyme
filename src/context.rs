@@ -125,6 +125,7 @@ pub struct ContextInternal {
     themes: ThemeSet,
     mouse_taken_last_frame: Option<String>,
     modal_id: Option<String>,
+    close_modal_on_click_outside: bool,
 
     mouse_pressed_outside: [bool; 3],
 
@@ -145,6 +146,10 @@ pub struct ContextInternal {
 }
 
 impl ContextInternal {
+    pub(crate) fn close_modal_on_click_outside(&mut self) {
+        self.close_modal_on_click_outside = true;
+    }
+
     pub(crate) fn modal_id(&self) -> Option<&str> {
         self.modal_id.as_deref()
     }
@@ -161,6 +166,7 @@ impl ContextInternal {
 
     pub(crate) fn set_modal(&mut self, id: String) {
         self.modal_id = Some(id);
+        self.close_modal_on_click_outside = false;
     }
 
     pub(crate) fn base_time_millis_for(&self, id: &str) -> u32 {
@@ -222,6 +228,13 @@ impl ContextInternal {
     }
 
     pub(crate) fn next_frame(&mut self, mouse_taken: Option<String>) {
+        if self.close_modal_on_click_outside && self.mouse_clicked[0] && mouse_taken.is_none() {
+            // clear modal id and close the associated state
+            let id = self.modal_id.take();
+            if let Some(id) = id {
+                self.state_mut(id).is_open = false;
+            }
+        }
         self.mouse_clicked = [false; 3];
         self.mouse_taken_last_frame = mouse_taken;
         self.last_mouse_pos = self.mouse_pos;
@@ -246,6 +259,7 @@ impl Context {
             mouse_clicked: [false; 3],
             mouse_taken_last_frame: None,
             modal_id: None,
+            close_modal_on_click_outside: false,
             mouse_pressed_outside: [false; 3],
             time_millis: 0,
             start_instant: Instant::now(),
