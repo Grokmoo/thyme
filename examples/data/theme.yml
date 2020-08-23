@@ -312,6 +312,11 @@ widgets:
         from: window_handle
         align: BotRight
         pos: [-1, -1]
+  bench:
+    from: label
+    background: gui/small_button_normal
+    size: [250, 50]
+    align: TopRight
   party_window:
     from: window
     size: [200, 300]

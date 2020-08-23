@@ -8,7 +8,7 @@ use glium::glutin::{
 };
 use glium::{Display, Surface};
 
-use thyme::{Frame, Align};
+use thyme::{Frame, Align, bench};
 
 /// A simple party creator and character sheet for an RPG.
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -47,8 +47,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // run main loop
     event_loop.run(move |event, _, control_flow| match event {
         Event::MainEventsCleared => {
+            let frame_start = std::time::Instant::now();
+
             let mut target = display.draw();
             target.clear_color(0.0, 0.0, 0.0, 0.0);
+
+            let thyme_bench = bench::start("thyme");
+
+            let frame_bench = bench::start("frame");
 
             let mut frame = context.create_frame();
 
@@ -56,9 +62,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             frame.set_mouse_cursor("gui/cursor", Align::TopLeft);
             build_ui(&mut frame, &mut party);
 
+            bench::end(frame_bench);
+
+            let draw_bench = bench::start("draw");
             renderer.draw_frame(&mut target, frame).unwrap();
+            bench::end(draw_bench);
+
+            bench::end(thyme_bench);
 
             target.finish().unwrap();
+
+            *control_flow = ControlFlow::WaitUntil(frame_start + std::time::Duration::from_millis(16));
         }
         Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => *control_flow = ControlFlow::Exit,
         event => {
@@ -146,6 +160,13 @@ const ITEMS: [Item; 3] = [
 /// example demonstrates a combination of Rust layout and styling as well as use
 /// of the theme definition file, loaded above
 fn build_ui(ui: &mut Frame, party: &mut Party) {
+    ui.label("bench", format!(
+        "{}\n{}\n{}",
+        bench::report("thyme"),
+        bench::report("frame"),
+        bench::report("draw"),
+    ));
+
     ui.window("party_window", "party_window", |ui| {
         ui.scrollpane("members_panel", "party_content", |ui| {
             party_members_panel(ui, party);

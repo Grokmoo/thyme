@@ -1,3 +1,5 @@
+pub mod bench;
+
 mod context;
 mod font;
 mod frame;
