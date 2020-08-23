@@ -61,7 +61,7 @@ impl WinitIo {
                 context.set_mouse_pressed(pressed, index);
             },
             CursorMoved { position, .. } => {
-                context.set_mouse_pos((position.x as f32, position.y as f32).into());
+                context.set_mouse_pos((position.x as f32 / self.scale_factor, position.y as f32 / self.scale_factor).into());
             },
             ReceivedCharacter(c) => {
                 context.push_character(*c);
