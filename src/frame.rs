@@ -260,7 +260,9 @@ impl Frame {
 
     pub fn close_modal_on_click_outside(&mut self) {
         let mut context = self.context.internal().borrow_mut();
-        context.close_modal_on_click_outside();
+        context.mut_modal(|modal| {
+            modal.close_on_click_outside = true;
+        });
     }
 
     pub fn open<T: Into<String>>(&mut self, id: T) {

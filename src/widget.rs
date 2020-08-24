@@ -687,6 +687,12 @@ impl<'a> WidgetBuilder<'a> {
 
         // set modal tree value only if a match is found
         if in_modal_tree {
+            {
+                let mut internal = self.frame.context_internal().borrow_mut();
+                internal.mut_modal(|modal| {
+                    modal.bounds = self_bounds;
+                });
+            }
             self.frame.in_modal_tree = true;
         }
 

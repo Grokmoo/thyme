@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::Instant;
 
-use crate::{Point, Error, Frame};
+use crate::{Point, Error, Frame, Rect};
 use crate::widget::Widget;
 use crate::theme::ThemeSet;
 use crate::theme_definition::{ThemeDefinition, AnimState, AnimStateKey};
@@ -124,8 +124,7 @@ impl Default for PersistentState {
 pub struct ContextInternal {
     themes: ThemeSet,
     mouse_taken_last_frame: Option<String>,
-    modal_id: Option<String>,
-    close_modal_on_click_outside: bool,
+    modal: Option<Modal>,
 
     mouse_pressed_outside: [bool; 3],
 
@@ -146,27 +145,28 @@ pub struct ContextInternal {
 }
 
 impl ContextInternal {
-    pub(crate) fn close_modal_on_click_outside(&mut self) {
-        self.close_modal_on_click_outside = true;
+    pub(crate) fn mut_modal<F: FnOnce(&mut Modal)>(&mut self, f: F) {
+        if let Some(modal) = self.modal.as_mut() {
+            (f)(modal);
+        }
     }
 
     pub(crate) fn modal_id(&self) -> Option<&str> {
-        self.modal_id.as_deref()
+        self.modal.as_ref().map(|modal| modal.id.as_ref())
     }
 
     pub(crate) fn has_modal(&self) -> bool {
-        self.modal_id.is_some()
+        self.modal.is_some()
     }
 
     pub(crate) fn clear_modal_if_match(&mut self, id: &str) {
-        if Some(id) == self.modal_id.as_deref() {
-            self.modal_id.take();
+        if self.modal_id() == Some(id) {
+            self.modal.take();
         }
     }
 
     pub(crate) fn set_modal(&mut self, id: String) {
-        self.modal_id = Some(id);
-        self.close_modal_on_click_outside = false;
+        self.modal = Some(Modal::new(id));
     }
 
     pub(crate) fn base_time_millis_for(&self, id: &str) -> u32 {
@@ -228,14 +228,20 @@ impl ContextInternal {
     }
 
     pub(crate) fn next_frame(&mut self, mouse_taken: Option<String>) {
-        if self.close_modal_on_click_outside && self.mouse_clicked[0] && mouse_taken.is_none() {
-            // TODO don't use mouse_taken - check if mouse is inside the modal
-            // clear modal id and close the associated state
-            let id = self.modal_id.take();
-            if let Some(id) = id {
-                self.state_mut(id).is_open = false;
+        let mut clear_modal = false;
+        if let Some(modal) = self.modal.as_mut() {
+            if modal.prevent_close {
+                modal.prevent_close = false;
+            } else if modal.close_on_click_outside && self.mouse_clicked[0] && !modal.bounds.is_inside(self.mouse_pos) {
+                clear_modal = true;
             }
         }
+
+        if clear_modal {
+            let modal = self.modal.take().unwrap();
+            self.state_mut(modal.id).is_open = false;
+        }
+
         self.mouse_clicked = [false; 3];
         self.mouse_taken_last_frame = mouse_taken;
         self.last_mouse_pos = self.mouse_pos;
@@ -259,9 +265,8 @@ impl Context {
             mouse_pressed: [false; 3],
             mouse_clicked: [false; 3],
             mouse_taken_last_frame: None,
-            modal_id: None,
-            close_modal_on_click_outside: false,
             mouse_pressed_outside: [false; 3],
+            modal: None,
             time_millis: 0,
             start_instant: Instant::now(),
             keyboard_focus_widget: None,
@@ -355,5 +360,23 @@ impl Context {
 
         let root = Widget::root(display_size);
         Frame::new(context, root, anim_state)
+    }
+}
+
+pub(crate) struct Modal {
+    pub(crate) id: String,
+    pub(crate) close_on_click_outside: bool,
+    pub(crate) bounds: Rect,
+    pub(crate) prevent_close: bool,
+}
+
+impl Modal {
+    fn new(id: String) -> Modal {
+        Modal {
+            id,
+            close_on_click_outside: false,
+            bounds: Rect::default(),
+            prevent_close: true,
+        }
     }
 }
