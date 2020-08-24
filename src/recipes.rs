@@ -36,7 +36,7 @@ impl Frame {
         .id(&popup_id)
         .screen_pos(rect.pos.x, rect.pos.y + rect.size.y)
         .initially_open(false)
-        .next_render_group()
+        .new_render_group_front()
         .scrollpane("cb_popup_content", |ui| {
             for value in values {
                 if ui.button("entry", value.to_string()).clicked {

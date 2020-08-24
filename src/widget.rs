@@ -2,9 +2,7 @@ use crate::{
     AnimState, AnimStateKey, Color, Frame, Point, Border, Align, 
     Layout, WidthRelative, HeightRelative, Rect,
 };
-use crate::{frame::RendGroup};
-use crate::font::FontSummary;
-use crate::image::ImageHandle;
+use crate::{frame::{RendGroup, RendGroupOrder}, font::FontSummary, image::ImageHandle};
 use crate::theme::{WidgetTheme};
 use crate::window::WindowBuilder;
 
@@ -93,7 +91,7 @@ impl Widget {
             enabled: true,
             active: false,
             recalc_pos_size: true,
-            next_render_group: false,
+            next_render_group: None,
         };
 
         let widget = Widget {
@@ -282,7 +280,7 @@ pub(crate) struct WidgetData {
     enabled: bool,
     active: bool,
     recalc_pos_size: bool,
-    next_render_group: bool,
+    next_render_group: Option<RendGroupOrder>,
 }
 
 pub struct WidgetBuilder<'a> {
@@ -368,8 +366,14 @@ impl<'a> WidgetBuilder<'a> {
     }
     
     #[must_use]
-    pub fn next_render_group(mut self) -> WidgetBuilder<'a> {
-        self.data.next_render_group = true;
+    pub fn new_render_group_back(mut self) -> WidgetBuilder<'a> {
+        self.data.next_render_group = Some(RendGroupOrder::Back);
+        self
+    }
+
+    #[must_use]
+    pub fn new_render_group_front(mut self) -> WidgetBuilder<'a> {
+        self.data.next_render_group = Some(RendGroupOrder::Front);
         self
     }
 
@@ -639,7 +643,7 @@ impl<'a> WidgetBuilder<'a> {
     /// created by your application.
     #[must_use]
     pub fn window(self, id: &str) -> WindowBuilder<'a> {
-        WindowBuilder::new(self.id(id).next_render_group())
+        WindowBuilder::new(self.id(id).new_render_group_back())
     }
 
     /// Consumes this builder and adds a scrollpane widget to the current frame.
@@ -717,8 +721,8 @@ impl<'a> WidgetBuilder<'a> {
 
         let prev_rend_group = self.frame.cur_render_group();
 
-        if self.data.next_render_group {
-            self.frame.next_render_group();
+        if let Some(order) = self.data.next_render_group {
+            self.frame.next_render_group(order);
         }
 
         let widget_index = self.frame.num_widgets();
@@ -747,7 +751,7 @@ impl<'a> WidgetBuilder<'a> {
             (false, AnimState::disabled(), Point::default())
         };
 
-        if self.data.next_render_group {
+        if self.data.next_render_group.is_some() {
             self.frame.prev_render_group(prev_rend_group);
         }
 

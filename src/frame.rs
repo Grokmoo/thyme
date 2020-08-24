@@ -39,6 +39,7 @@ impl Frame {
             widgets: vec![root],
             cur_rend_group,
             render_groups: vec![RendGroupDef {
+                ordering: 0,
                 group: cur_rend_group,
                 start: 0,
                 num: 0,
@@ -314,11 +315,18 @@ impl Frame {
         self.cur_rend_group = group;
     }
 
-    pub(crate) fn next_render_group(&mut self) {
+    pub(crate) fn next_render_group(&mut self, ordering: RendGroupOrder) {
         let widgets_len = self.widgets.len();
         let index = self.render_groups.len() as u16;
         let cur_rend_group = RendGroup { index };
+
+        let ordering = match ordering {
+            RendGroupOrder::Front => -1,
+            RendGroupOrder::Back => index as i16,
+        };
+
         self.render_groups.push(RendGroupDef {
+            ordering,
             group: cur_rend_group,
             start: widgets_len,
             num: 0,
@@ -329,8 +337,17 @@ impl Frame {
     pub(crate) fn finish_frame(self) -> (Context, Vec<Widget>, Vec<RendGroupDef>) {
         self.context.internal().borrow_mut().next_frame(self.mouse_taken);
 
-        (self.context, self.widgets, self.render_groups)
+        let mut render_groups = self.render_groups;
+        render_groups.sort_by_key(|group| group.ordering);
+
+        (self.context, self.widgets, render_groups)
     }
+}
+
+#[derive(Copy, Clone)]
+pub(crate) enum RendGroupOrder {
+    Front,
+    Back,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
@@ -340,6 +357,7 @@ pub(crate) struct RendGroup {
 
 #[derive(Debug)]
 pub(crate) struct RendGroupDef {
+    ordering: i16,
     group: RendGroup,
     start: usize,
     num: usize,
