@@ -42,9 +42,9 @@ impl<'a> WindowBuilder<'a> {
     /// mouse interactions of the created element.
     /// The provided closure is called to enable adding children to this window.
     pub fn children<F: FnOnce(&mut Frame)>(self, children: F) -> WidgetState {
-        let mut builder = self.builder;
+        let builder = self.builder;
         let state = self.state;
-        let id = builder.widget().id().to_string();
+        let id = builder.widget.id().to_string();
 
         builder.children(|ui| {
             let drag_move = if state.with_titlebar {

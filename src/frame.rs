@@ -110,12 +110,6 @@ impl Frame {
         )
     }
 
-    pub(crate) fn init_state(&mut self, index: usize, open: bool) {
-        let mut context = self.context.internal().borrow_mut();
-        let widget = &self.widgets[index];
-        context.init_state(widget.id(), open);
-    }
-
     pub(crate) fn max_child_bounds(&self) -> Rect { self.max_child_bounds }
 
     pub(crate) fn set_max_child_bounds(&mut self, bounds: Rect) {

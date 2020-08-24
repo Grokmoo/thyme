@@ -269,7 +269,7 @@ pub(crate) struct WidgetData {
 pub struct WidgetBuilder<'a> {
     pub frame: &'a mut Frame,
     pub parent: usize,
-    pub widget: usize,
+    pub widget: Widget,
     data: WidgetData,
 
     enabled: bool,
@@ -283,7 +283,7 @@ pub struct WidgetBuilder<'a> {
 impl<'a> WidgetBuilder<'a> {
     #[must_use]
     pub fn new(frame: &'a mut Frame, parent: usize, theme_id: String, base_theme: &str) -> WidgetBuilder<'a> {
-        let (data, index, widget) = {
+        let (data, widget) = {
             let context = std::rc::Rc::clone(&frame.context_internal());
             let context = context.borrow();
             let theme = match context.themes().theme(&theme_id) {
@@ -297,8 +297,6 @@ impl<'a> WidgetBuilder<'a> {
                     }
                 }, Some(theme) => theme,
             };
-
-            let index = frame.num_widgets();
 
             let id = {
                 let parent_widget = frame.widget(parent);
@@ -314,15 +312,13 @@ impl<'a> WidgetBuilder<'a> {
 
             let (data, widget) = Widget::create(parent_widget, theme, id);
 
-            (data, index, widget)
+            (data, widget)
         };
-
-        frame.push_widget(widget);
 
         WidgetBuilder {
             frame,
             parent,
-            widget: index,
+            widget,
             data,
             enabled: true,
             active: false,
@@ -334,7 +330,7 @@ impl<'a> WidgetBuilder<'a> {
     fn recalculate_pos_size(&mut self, state_moved: Point, state_resize: Point) {
         {
             let parent = self.frame.widget(self.parent);
-            let widget = self.frame.widget(self.widget);
+            let widget = &self.widget;
             let size = size (
                 parent,
                 self.data.raw_size,
@@ -344,27 +340,23 @@ impl<'a> WidgetBuilder<'a> {
                 self.data.height_from
             );
 
-            self.widget().size = size;
+            self.widget.size = size;
         }
 
         {
             let parent = self.frame.widget(self.parent);
-            let widget = self.frame.widget(self.widget);
+            let widget = &self.widget;
             let pos = pos(parent, self.data.raw_pos, widget.size, self.data.align);
-            self.widget().pos = pos + state_moved;
+            self.widget.pos = pos + state_moved;
         }
 
-        self.widget().size = self.widget().size + state_resize;
+        self.widget.size = self.widget.size + state_resize;
 
         self.recalc_pos_size = false;
     }
 
     fn parent(&self) -> &Widget {
         self.frame.widget(self.parent)
-    }
-
-    pub(crate) fn widget(&mut self) -> &mut Widget {
-        self.frame.widget_mut(self.widget)
     }
     
     #[must_use]
@@ -381,32 +373,35 @@ impl<'a> WidgetBuilder<'a> {
 
     #[must_use]
     pub fn id<T: Into<String>>(mut self, id: T) -> WidgetBuilder<'a> {
-        self.widget().id = id.into();
+        self.widget.id = id.into();
         self.recalc_pos_size = true;
         self
     }
 
     #[must_use]
     pub fn initially_open(self, open: bool) -> WidgetBuilder<'a> {
-        self.frame.init_state(self.widget, open);
+        {
+            let mut context = self.frame.context_internal().borrow_mut();
+            context.init_state(&self.widget.id, open);
+        }
         self
     }
 
     #[must_use]
     pub fn text_color(mut self, color: Color) -> WidgetBuilder<'a> {
-        self.widget().text_color = color;
+        self.widget.text_color = color;
         self
     }
 
     #[must_use]
     pub fn text_align(mut self, align: Align) -> WidgetBuilder<'a> {
-        self.widget().text_align = align;
+        self.widget.text_align = align;
         self
     }
 
     #[must_use]
     pub fn text<T: Into<String>>(mut self, text: T) -> WidgetBuilder<'a> {
-        self.widget().text = Some(text.into());
+        self.widget.text = Some(text.into());
         self
     }
 
@@ -418,7 +413,7 @@ impl<'a> WidgetBuilder<'a> {
             context.themes().find_font(Some(font))
         };
 
-        self.widget().font = font;
+        self.widget.font = font;
         self.recalc_pos_size = true;
         self
     }
@@ -431,7 +426,7 @@ impl<'a> WidgetBuilder<'a> {
             context.themes().find_image(Some(fg))
         };
 
-        self.widget().foreground = fg;
+        self.widget.foreground = fg;
         self
     }
 
@@ -443,19 +438,19 @@ impl<'a> WidgetBuilder<'a> {
             context.themes().find_image(Some(bg))
         };
 
-        self.widget().background = bg;
+        self.widget.background = bg;
         self
     }
 
     #[must_use]
     pub fn child_align(mut self, align: Align) -> WidgetBuilder<'a> {
-        self.widget().child_align = align;
+        self.widget.child_align = align;
         self
     }
 
     #[must_use]
     pub fn layout_spacing(mut self, spacing: Point) -> WidgetBuilder<'a> {
-        self.widget().layout_spacing = spacing;
+        self.widget.layout_spacing = spacing;
         self
     }
 
@@ -471,14 +466,14 @@ impl<'a> WidgetBuilder<'a> {
 
     #[must_use]
     pub fn layout(mut self, layout: Layout) -> WidgetBuilder<'a> {
-        self.widget().layout = layout;
+        self.widget.layout = layout;
         self
     }
 
     #[must_use]
     pub fn screen_pos(mut self, x: f32, y: f32) -> WidgetBuilder<'a> {
         self.data.raw_pos = Point { x, y };
-        self.widget().pos = Point { x, y };
+        self.widget.pos = Point { x, y };
         self.data.align = Align::TopLeft;
         self.data.manual_pos = true;
         self.recalc_pos_size = false;
@@ -503,7 +498,7 @@ impl<'a> WidgetBuilder<'a> {
     
     #[must_use]
     pub fn border(mut self, border: Border) -> WidgetBuilder<'a> {
-        self.widget().border = border;
+        self.widget.border = border;
         self.recalc_pos_size = true;
         self
     }
@@ -531,8 +526,8 @@ impl<'a> WidgetBuilder<'a> {
 
     #[must_use]
     pub fn clip(mut self, clip: Rect) -> WidgetBuilder<'a> {
-        let cur_clip = self.widget().clip;
-        self.widget().clip = cur_clip.min(clip);
+        let cur_clip = self.widget.clip;
+        self.widget.clip = cur_clip.min(clip);
         self
     }
 
@@ -544,7 +539,7 @@ impl<'a> WidgetBuilder<'a> {
 
     #[must_use]
     pub fn visible(mut self, visible: bool) -> WidgetBuilder<'a> {
-        self.widget().visible = visible;
+        self.widget.visible = visible;
         self
     }
 
@@ -564,15 +559,15 @@ impl<'a> WidgetBuilder<'a> {
     pub fn trigger_layout(mut self, rect: &mut Rect) -> WidgetBuilder<'a> {
         let (state_moved, state_resize) = {
             let internal = self.frame.context_internal().borrow();
-            let state = internal.state(&self.frame.widget(self.widget).id);
+            let state = internal.state(&self.widget.id);
             (state.moved, state.resize)
         };
         if self.recalc_pos_size {
             self.recalculate_pos_size(state_moved, state_resize);
         }
 
-        rect.pos = self.widget().pos;
-        rect.size = self.widget().size;
+        rect.pos = self.widget.pos;
+        rect.size = self.widget.size;
         self
     }
 
@@ -584,7 +579,7 @@ impl<'a> WidgetBuilder<'a> {
         // recalculate pos size and calculate text, if needed
         let (text, state_moved, state_resize) = {
             let internal = self.frame.context_internal().borrow();
-            let state = internal.state(&self.frame.widget(self.widget).id);
+            let state = internal.state(&self.widget.id);
             (
                 state.text.as_ref().map(|t| t.to_string()),
                 state.moved,
@@ -597,21 +592,21 @@ impl<'a> WidgetBuilder<'a> {
         }
 
         if let Some(text) = text {
-            self.frame.widget_mut(self.widget).text = Some(text);
+            self.widget.text = Some(text);
         }
 
-        let text = match &self.frame.widget(self.widget).text {
+        let text = match &self.widget.text {
             None => return self,
             Some(text) => text,
         };
 
-        let font_def = match self.frame.widget(self.widget).font {
+        let font_def = match self.widget.font {
             None => return self,
             Some(def) => def,
         };
 
         {
-            let widget = self.frame.widget(self.widget);
+            let widget = &self.widget;
             let fg_pos = Point::default();
             let fg_size = widget.inner_size();
             let align = widget.text_align();
@@ -664,31 +659,31 @@ impl<'a> WidgetBuilder<'a> {
     }
 
     fn finish_with<F: FnOnce(&mut Frame)>(mut self, f: Option<F>) -> WidgetState {
-        if !self.widget().visible { return WidgetState::hidden(); }
+        if !self.widget.visible { return WidgetState::hidden(); }
 
         let (state, text, in_modal_tree) = {
             let internal = self.frame.context_internal().borrow();
-            let state = internal.state(&self.frame.widget(self.widget).id);
+            let state = internal.state(&self.widget.id);
 
             let text = match &state.text {
                 None => None,
                 Some(text) => Some(text.to_string())
             };
 
-            let in_modal_tree = Some(self.frame.widget(self.widget).id()) == internal.modal_id();
+            let in_modal_tree = Some(self.widget.id()) == internal.modal_id();
 
             (state.copy_data(), text, in_modal_tree)
         };
 
         if let Some(text) = text {
-            self.frame.widget_mut(self.widget).text = Some(text);
+            self.widget.text = Some(text);
         }
 
-        self.widget().scroll = state.scroll;
-        self.widget().cursor = self.widget().cursor;
+        self.widget.scroll = state.scroll;
+        self.widget.cursor = self.widget.cursor;
 
         if !state.is_open {
-            self.widget().visible = false;
+            self.widget.visible = false;
             return WidgetState::hidden();
         }
 
@@ -696,11 +691,8 @@ impl<'a> WidgetBuilder<'a> {
             self.recalculate_pos_size(state.moved, state.resize);
         }
 
-        let (self_pos, self_size) = {
-            let widget = self.widget();
-            (widget.pos, widget.size)
-        };
-
+        let self_pos = self.widget.pos;
+        let self_size = self.widget.size;
         let self_bounds = Rect::new(self_pos, self_size);
         let old_max_child_bounds = self.frame.max_child_bounds();
 
@@ -715,12 +707,15 @@ impl<'a> WidgetBuilder<'a> {
             self.frame.in_modal_tree = true;
         }
 
+        let widget_index = self.frame.num_widgets();
+        self.frame.push_widget(self.widget);
+
         // if there is a child function
         if let Some(f) = f {
             // push the max_child pos and parent index
             self.frame.set_max_child_bounds(self_bounds);
             let old_parent_index = self.frame.parent_index();
-            self.frame.set_parent_index(self.widget);
+            self.frame.set_parent_index(widget_index);
 
             // build all children
             (f)(self.frame);
@@ -733,7 +728,7 @@ impl<'a> WidgetBuilder<'a> {
         self.frame.set_max_child_bounds(old_max_child_bounds.max(self_bounds));
 
         let (clicked, mut anim_state, dragged) = if self.enabled && self.data.wants_mouse {
-            self.frame.check_mouse_taken(self.widget)
+            self.frame.check_mouse_taken(widget_index)
         } else {
             (false, AnimState::disabled(), Point::default())
         };
@@ -751,13 +746,13 @@ impl<'a> WidgetBuilder<'a> {
             self.frame.next_render_group();
         }
 
-        self.widget().anim_state = anim_state;
+        self.frame.widget_mut(widget_index).anim_state = anim_state;
 
         let state = WidgetState::new(anim_state, clicked, dragged);
-        let size = self.widget().size;
+        let size = self.frame.widget(widget_index).size;
         if !self.data.manual_pos {
             use Align::*;
-            let (x, y) = match self.parent().child_align {
+            let (x, y) = match self.frame.widget(self.parent).child_align {
                 Left => (size.x, 0.0),
                 Right => (-size.x, 0.0),
                 Bot => (0.0, -size.y),
