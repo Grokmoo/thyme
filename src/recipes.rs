@@ -15,25 +15,32 @@ impl Frame {
         self.start(theme).text(label).wants_mouse(true).finish()
     }
 
-    pub fn combo_box<'a, T: Display>(&mut self, theme: &str, current: T, values: &'a [T]) -> Option<&'a T> {
-        // TODO popup ID, pane content ID
+    pub fn combo_box<'a, T: Display>(&mut self, theme: &str, id: &str, current: T, values: &'a [T]) -> Option<&'a T> {
+        let popup_id = format!("{}_popup", id);
         
-        if self.start(theme).text(current.to_string()).wants_mouse(true).finish().clicked {
-            self.open_modal("cb_popup");
+        let mut rect = Rect::default();
+
+        if self.start(theme)
+        .text(current.to_string())
+        .wants_mouse(true)
+        .trigger_layout(&mut rect)
+        .finish().clicked {
+            self.open_modal(&popup_id);
             self.close_modal_on_click_outside();
         }
 
         let mut result = None;
 
         // TODO combo box popup to show up on top
-        self.start(&format!("{}_popup", theme))
-        .id("cb_popup")
+        self.start(&format!("{}_popup", id))
+        .id(&popup_id)
+        .screen_pos(rect.pos.x, rect.pos.y + rect.size.y)
         .initially_open(false)
         .scrollpane("cb_popup_content", |ui| {
             for value in values {
                 if ui.button("entry", value.to_string()).clicked {
                     result = Some(value);
-                    ui.close("cb_popup");
+                    ui.close(&popup_id);
                 }
             }
         });
