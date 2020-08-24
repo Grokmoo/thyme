@@ -87,6 +87,10 @@ impl Widget {
             width_from,
             height_from,
             align,
+            enabled: true,
+            active: false,
+            recalc_pos_size: true,
+            next_render_group: false,
         };
 
         let widget = Widget {
@@ -264,20 +268,18 @@ pub(crate) struct WidgetData {
     width_from: WidthRelative,
     height_from: HeightRelative,
     align: Align,
+
+    enabled: bool,
+    active: bool,
+    recalc_pos_size: bool,
+    next_render_group: bool,
 }
 
 pub struct WidgetBuilder<'a> {
     pub frame: &'a mut Frame,
     pub parent: usize,
     pub widget: Widget,
-    data: WidgetData,
-
-    enabled: bool,
-    active: bool,
-
-    recalc_pos_size: bool,
-
-    next_render_group: bool,
+    data: WidgetData,    
 }
 
 impl<'a> WidgetBuilder<'a> {
@@ -320,10 +322,6 @@ impl<'a> WidgetBuilder<'a> {
             parent,
             widget,
             data,
-            enabled: true,
-            active: false,
-            recalc_pos_size: true,
-            next_render_group: false,
         }
     }
 
@@ -352,7 +350,7 @@ impl<'a> WidgetBuilder<'a> {
 
         self.widget.size = self.widget.size + state_resize;
 
-        self.recalc_pos_size = false;
+        self.data.recalc_pos_size = false;
     }
 
     fn parent(&self) -> &Widget {
@@ -361,7 +359,7 @@ impl<'a> WidgetBuilder<'a> {
     
     #[must_use]
     pub fn next_render_group(mut self) -> WidgetBuilder<'a> {
-        self.next_render_group = true;
+        self.data.next_render_group = true;
         self
     }
 
@@ -374,7 +372,7 @@ impl<'a> WidgetBuilder<'a> {
     #[must_use]
     pub fn id<T: Into<String>>(mut self, id: T) -> WidgetBuilder<'a> {
         self.widget.id = id.into();
-        self.recalc_pos_size = true;
+        self.data.recalc_pos_size = true;
         self
     }
 
@@ -414,7 +412,7 @@ impl<'a> WidgetBuilder<'a> {
         };
 
         self.widget.font = font;
-        self.recalc_pos_size = true;
+        self.data.recalc_pos_size = true;
         self
     }
 
@@ -476,7 +474,7 @@ impl<'a> WidgetBuilder<'a> {
         self.widget.pos = Point { x, y };
         self.data.align = Align::TopLeft;
         self.data.manual_pos = true;
-        self.recalc_pos_size = false;
+        self.data.recalc_pos_size = false;
         self
     }
 
@@ -484,7 +482,7 @@ impl<'a> WidgetBuilder<'a> {
     pub fn pos(mut self, x: f32, y: f32) -> WidgetBuilder<'a> {
         self.data.raw_pos = Point { x, y } + self.parent().scroll;
         self.data.manual_pos = true;
-        self.recalc_pos_size = true;
+        self.data.recalc_pos_size = true;
         self
     }
 
@@ -492,35 +490,35 @@ impl<'a> WidgetBuilder<'a> {
     pub fn align(mut self, align: Align) -> WidgetBuilder<'a> {
         self.data.align = align;
         self.data.manual_pos = true;
-        self.recalc_pos_size = true;
+        self.data.recalc_pos_size = true;
         self
     }
     
     #[must_use]
     pub fn border(mut self, border: Border) -> WidgetBuilder<'a> {
         self.widget.border = border;
-        self.recalc_pos_size = true;
+        self.data.recalc_pos_size = true;
         self
     }
 
     #[must_use]
     pub fn size(mut self, x: f32, y: f32) -> WidgetBuilder<'a> {
         self.data.raw_size = Point { x, y };
-        self.recalc_pos_size = true;
+        self.data.recalc_pos_size = true;
         self
     }
 
     #[must_use]
     pub fn width_from(mut self, from: WidthRelative) -> WidgetBuilder<'a> {
         self.data.width_from = from;
-        self.recalc_pos_size = true;
+        self.data.recalc_pos_size = true;
         self
     }
 
     #[must_use]
     pub fn height_from(mut self, from: HeightRelative) -> WidgetBuilder<'a> {
         self.data.height_from = from;
-        self.recalc_pos_size = true;
+        self.data.recalc_pos_size = true;
         self
     }
 
@@ -533,7 +531,7 @@ impl<'a> WidgetBuilder<'a> {
 
     #[must_use]
     pub fn active(mut self, active: bool) -> WidgetBuilder<'a> {
-        self.active = active;
+        self.data.active = active;
         self
     }
 
@@ -545,7 +543,7 @@ impl<'a> WidgetBuilder<'a> {
 
     #[must_use]
     pub fn enabled(mut self, enabled: bool) -> WidgetBuilder<'a> {
-        self.enabled = enabled;
+        self.data.enabled = enabled;
         self
     }
 
@@ -562,7 +560,7 @@ impl<'a> WidgetBuilder<'a> {
             let state = internal.state(&self.widget.id);
             (state.moved, state.resize)
         };
-        if self.recalc_pos_size {
+        if self.data.recalc_pos_size {
             self.recalculate_pos_size(state_moved, state_resize);
         }
 
@@ -587,7 +585,7 @@ impl<'a> WidgetBuilder<'a> {
             )
         };
 
-        if self.recalc_pos_size {
+        if self.data.recalc_pos_size {
             self.recalculate_pos_size(state_moved, state_resize);
         }
 
@@ -687,7 +685,7 @@ impl<'a> WidgetBuilder<'a> {
             return WidgetState::hidden();
         }
 
-        if self.recalc_pos_size {
+        if self.data.recalc_pos_size {
             self.recalculate_pos_size(state.moved, state.resize);
         }
 
@@ -727,7 +725,7 @@ impl<'a> WidgetBuilder<'a> {
 
         self.frame.set_max_child_bounds(old_max_child_bounds.max(self_bounds));
 
-        let (clicked, mut anim_state, dragged) = if self.enabled && self.data.wants_mouse {
+        let (clicked, mut anim_state, dragged) = if self.data.enabled && self.data.wants_mouse {
             self.frame.check_mouse_taken(widget_index)
         } else {
             (false, AnimState::disabled(), Point::default())
@@ -738,11 +736,11 @@ impl<'a> WidgetBuilder<'a> {
             self.frame.in_modal_tree = false;
         }
 
-        if self.active {
+        if self.data.active {
             anim_state.add(AnimStateKey::Active);
         }
 
-        if self.next_render_group {
+        if self.data.next_render_group {
             self.frame.next_render_group();
         }
 
