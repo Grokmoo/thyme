@@ -113,12 +113,25 @@ impl Character {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 enum Race {
     Human,
     Elf,
     Dwarf,
     Halfling,
+}
+
+impl Race {
+    fn all() -> &'static [Race] {
+        use Race::*;
+        &[Human, Elf, Dwarf, Halfling]
+    }
+}
+
+impl std::fmt::Display for Race {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 impl Default for Race {
@@ -189,7 +202,9 @@ fn build_ui(ui: &mut Frame, party: &mut Party) {
                 ui.gap(10.0);
 
                 // TODO combo box
-                ui.button("race_selector", format!("{:?}", character.race));
+                if let Some(race) = ui.combo_box("race_selector", character.race, Race::all()) {
+                    character.race = *race;
+                }
     
                 ui.gap(10.0);
     

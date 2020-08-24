@@ -229,6 +229,7 @@ impl ContextInternal {
 
     pub(crate) fn next_frame(&mut self, mouse_taken: Option<String>) {
         if self.close_modal_on_click_outside && self.mouse_clicked[0] && mouse_taken.is_none() {
+            // TODO don't use mouse_taken - check if mouse is inside the modal
             // clear modal id and close the associated state
             let id = self.modal_id.take();
             if let Some(id) = id {

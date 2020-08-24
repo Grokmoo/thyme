@@ -164,6 +164,24 @@ image_sets:
         position: [235, 48]
         size: [12, 12]
 widgets:
+  combo_box:
+    from: button
+  combo_box_popup:
+    from: scrollpane
+    width_from: Parent
+    height_from: Normal
+    size: [0, 75]
+    background: gui/small_button_normal
+    children:
+      content:
+        size: [-15, 0]
+        children:
+          entry:
+            from: button
+            width_from: Parent
+            size: [0, 25]
+      scrollbar_vertical:
+        size: [20, 30]
   scrollpane:
     width_from: Parent
     height_from: Parent
@@ -379,9 +397,11 @@ widgets:
         width_from: Parent
         font: medium
   race_selector:
-    from: button
+    from: combo_box
     width_from: Parent
     size: [0, 25]
+  race_selector_popup:
+    from: combo_box_popup
   stats_panel:
     from: subpanel
     size: [0, 265]

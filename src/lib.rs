@@ -18,6 +18,7 @@ pub use point::{Rect, Point, Border};
 pub use widget::{WidgetBuilder, WidgetState};
 pub use context::{Context, ContextBuilder, PersistentState};
 pub use theme_definition::{AnimStateKey, AnimState, Align, Color, Layout, WidthRelative, HeightRelative};
+pub use recipes::scrollpane_content;
 pub use winit_io::WinitIo;
 pub use glium_backend::GliumRenderer;
 

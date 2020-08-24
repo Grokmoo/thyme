@@ -620,6 +620,12 @@ impl<'a> WidgetBuilder<'a> {
         self
     }
 
+    /// Consumes this builder and adds a scrollpane widget to the current frame.
+    /// The provided closure is called to add children to the scrollpane's content.
+    pub fn scrollpane<F: FnOnce(&mut Frame)>(self, content_id: &str, f: F) -> WidgetState {
+        self.finish_with(Some(crate::scrollpane_content(content_id, f)))
+    }
+
     /// Consumes the builder and adds a widget to the current frame.  The
     /// returned data includes information about the animation state and
     /// mouse interactions of the created element.
