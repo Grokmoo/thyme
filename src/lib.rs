@@ -11,6 +11,7 @@ mod render;
 mod theme_definition;
 mod point;
 mod widget;
+mod window;
 mod winit_io;
 
 pub use frame::Frame;
@@ -18,6 +19,7 @@ pub use point::{Rect, Point, Border};
 pub use widget::{WidgetBuilder, WidgetState};
 pub use context::{Context, ContextBuilder, PersistentState};
 pub use theme_definition::{AnimStateKey, AnimState, Align, Color, Layout, WidthRelative, HeightRelative};
+pub use window::WindowBuilder;
 pub use recipes::scrollpane_content;
 pub use winit_io::WinitIo;
 pub use glium_backend::GliumRenderer;

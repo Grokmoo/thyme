@@ -101,31 +101,8 @@ impl Frame {
     pub fn window<F: FnOnce(&mut Frame)>(&mut self, theme: &str, id: &str, children: F) {
         self
         .start(theme)
-        .id(id)
-        .next_render_group()
+        .window(id)
         .children(|ui| {
-            let result = ui.start("titlebar")
-            .children(|ui| {
-                ui.start("title").finish();
-
-                if ui.button("close", "").clicked {
-                    ui.close(id);
-                }
-            });
-
-            if result.pressed {
-                ui.modify(id, |state| {
-                    state.moved = state.moved + result.dragged;
-                });
-            }
-
-            let result = ui.button("handle", "");
-            if result.pressed {
-                ui.modify(id, |state| {
-                    state.resize = state.resize + result.dragged;
-                });
-            }
-
             (children)(ui);
         });
     }

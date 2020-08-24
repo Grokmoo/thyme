@@ -180,7 +180,12 @@ fn build_ui(ui: &mut Frame, party: &mut Party) {
         bench::report("draw"),
     ));
 
-    ui.window("party_window", "party_window", |ui| {
+    ui.start("party_window")
+    .window("party_window")
+    .with_close_button(false)
+    .moveable(false)
+    .resizable(false)
+    .children(|ui| {
         ui.scrollpane("members_panel", "party_content", |ui| {
             party_members_panel(ui, party);
         });

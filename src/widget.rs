@@ -5,6 +5,7 @@ use crate::{
 use crate::font::FontSummary;
 use crate::image::ImageHandle;
 use crate::theme::{WidgetTheme};
+use crate::window::WindowBuilder;
 
 pub struct Widget {
     // identifier for persistent state
@@ -254,7 +255,7 @@ fn pos(parent: &Widget, pos: Point, self_size: Point, align: Align) -> Point {
     pos - align.adjust_for(self_size).round()
 }
 
-struct WidgetData {
+pub(crate) struct WidgetData {
     manual_pos: bool,
     wants_mouse: bool,
 
@@ -362,7 +363,7 @@ impl<'a> WidgetBuilder<'a> {
         self.frame.widget(self.parent)
     }
 
-    fn widget(&mut self) -> &mut Widget {
+    pub(crate) fn widget(&mut self) -> &mut Widget {
         self.frame.widget_mut(self.widget)
     }
     
@@ -627,6 +628,15 @@ impl<'a> WidgetBuilder<'a> {
         }
 
         self
+    }
+
+    /// Turns this builder into a WindowBuilder.  You should use all `WidgetBuilder` methods
+    /// before calling this method.  The window must still be completed with one of the
+    /// `WindowBuilder` methods.  You must pass a unique `id` for each each window
+    /// created by your application.
+    #[must_use]
+    pub fn window(self, id: &str) -> WindowBuilder<'a> {
+        WindowBuilder::new(self.id(id).next_render_group())
     }
 
     /// Consumes this builder and adds a scrollpane widget to the current frame.
