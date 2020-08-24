@@ -275,6 +275,8 @@ pub struct WidgetBuilder<'a> {
     active: bool,
 
     recalc_pos_size: bool,
+
+    next_render_group: bool,
 }
 
 impl<'a> WidgetBuilder<'a> {
@@ -324,6 +326,7 @@ impl<'a> WidgetBuilder<'a> {
             enabled: true,
             active: false,
             recalc_pos_size: true,
+            next_render_group: false,
         }
     }
 
@@ -361,6 +364,12 @@ impl<'a> WidgetBuilder<'a> {
 
     fn widget(&mut self) -> &mut Widget {
         self.frame.widget_mut(self.widget)
+    }
+    
+    #[must_use]
+    pub fn next_render_group(mut self) -> WidgetBuilder<'a> {
+        self.next_render_group = true;
+        self
     }
 
     #[must_use]
@@ -726,6 +735,10 @@ impl<'a> WidgetBuilder<'a> {
 
         if self.active {
             anim_state.add(AnimStateKey::Active);
+        }
+
+        if self.next_render_group {
+            self.frame.next_render_group();
         }
 
         self.widget().anim_state = anim_state;

@@ -9,7 +9,7 @@ use glium::uniforms::{MagnifySamplerFilter, MinifySamplerFilter, Sampler, Sample
 use glium::texture::{Texture2d, RawImage2d, SrgbTexture2d};
 use glium::index::PrimitiveType;
 
-use crate::image::ImageDrawParams;
+use crate::{image::ImageDrawParams};
 use crate::render::{TexCoord, DrawList, DrawMode, Renderer, TextureHandle, TextureData, FontHandle};
 use crate::font::{Font, FontSource, FontChar};
 use crate::{Frame, Point, Color, Rect};
@@ -74,7 +74,7 @@ impl GliumRenderer {
 
     pub fn draw_frame<T: Surface>(&mut self, target: &mut T, frame: Frame) -> Result<(), GliumError> {
         let mouse_cursor = frame.mouse_cursor();
-        let (context, widgets) = frame.finish_frame();
+        let (context, widgets, render_groups) = frame.finish_frame();
         let context = context.internal().borrow();
 
         let time_millis = context.time_millis();
@@ -83,52 +83,27 @@ impl GliumRenderer {
         let scale = context.scale_factor();
         self.matrix = matrix(display_pos, display_size);
 
-        // render backgrounds
-        let mut draw_mode = None;
-        self.draw_list.clear();
+        for render_group in render_groups {
+            let mut draw_mode = None;
+            self.draw_list.clear();
 
-        for widget in &widgets {
-            if !widget.visible() { continue; }
-            let image_handle = match widget.background() {
-                None => continue,
-                Some(handle) => handle,
-            };
-            let time_millis = time_millis - context.base_time_millis_for(widget.id());
-            let image = context.themes().image(image_handle);
-
-            self.render_if_changed(target, &mut draw_mode, DrawMode::Image(image.texture()))?;
-            
-            image.draw(
-                &mut self.draw_list,
-                ImageDrawParams {
-                    pos: widget.pos().into(),
-                    size: widget.size().into(),
-                    anim_state: widget.anim_state(),
-                    clip: widget.clip(),
-                    time_millis,
-                    scale,
-                }
-            );
-        }
-
-        // render foregrounds
-        for widget in &widgets {
-            if !widget.visible() { continue; }
-
-            let border = widget.border();
-            let fg_pos = widget.pos() + border.tl();
-            let fg_size = widget.inner_size();
-
-            if let Some(image_handle) = widget.foreground() {
+            // render backgrounds
+            for widget in render_group.iter(&widgets) {
+                if !widget.visible() { continue; }
+                let image_handle = match widget.background() {
+                    None => continue,
+                    Some(handle) => handle,
+                };
                 let time_millis = time_millis - context.base_time_millis_for(widget.id());
                 let image = context.themes().image(image_handle);
+    
                 self.render_if_changed(target, &mut draw_mode, DrawMode::Image(image.texture()))?;
-
+                
                 image.draw(
                     &mut self.draw_list,
                     ImageDrawParams {
-                        pos: fg_pos.into(),
-                        size: fg_size.into(),
+                        pos: widget.pos().into(),
+                        size: widget.size().into(),
                         anim_state: widget.anim_state(),
                         clip: widget.clip(),
                         time_millis,
@@ -137,27 +112,53 @@ impl GliumRenderer {
                 );
             }
 
-            if let Some(text) = widget.text() {
-                if let Some(font_sum) = widget.font() {
-                    self.render_if_changed(target, &mut draw_mode, DrawMode::Font(font_sum.handle))?;
-                    let font = context.themes().font(font_sum.handle);
+            for widget in render_group.iter(&widgets) {
+                if !widget.visible() { continue; }
 
-                    font.draw(
+                let border = widget.border();
+                let fg_pos = widget.pos() + border.tl();
+                let fg_size = widget.inner_size();
+    
+                if let Some(image_handle) = widget.foreground() {
+                    let time_millis = time_millis - context.base_time_millis_for(widget.id());
+                    let image = context.themes().image(image_handle);
+                    self.render_if_changed(target, &mut draw_mode, DrawMode::Image(image.texture()))?;
+    
+                    image.draw(
                         &mut self.draw_list,
-                        fg_size * scale,
-                        (fg_pos * scale).into(),
-                        text,
-                        widget.text_align(),
-                        widget.text_color(),
-                        widget.clip() * scale,
-                    )
+                        ImageDrawParams {
+                            pos: fg_pos.into(),
+                            size: fg_size.into(),
+                            anim_state: widget.anim_state(),
+                            clip: widget.clip(),
+                            time_millis,
+                            scale,
+                        }
+                    );
+                }
+    
+                if let Some(text) = widget.text() {
+                    if let Some(font_sum) = widget.font() {
+                        self.render_if_changed(target, &mut draw_mode, DrawMode::Font(font_sum.handle))?;
+                        let font = context.themes().font(font_sum.handle);
+    
+                        font.draw(
+                            &mut self.draw_list,
+                            fg_size * scale,
+                            (fg_pos * scale).into(),
+                            text,
+                            widget.text_align(),
+                            widget.text_color(),
+                            widget.clip() * scale,
+                        )
+                    }
                 }
             }
-        }
 
-        // render anything from the final draw calls
-        if let Some(mode) = draw_mode {
-            self.render(target, mode)?;
+            // render anything from the final draw calls
+            if let Some(mode) = draw_mode {
+                self.render(target, mode)?;
+            }
         }
 
         if let Some((mouse_cursor, align, anim_state)) = mouse_cursor {

@@ -16,6 +16,7 @@ pub struct Frame {
     mouse_taken: Option<String>,
     context: Context,
     widgets: Vec<Widget>,
+    render_groups: Vec<RenderGroup>,
     parent_index: usize,
     pub(crate) in_modal_tree: bool,
     parent_max_child_bounds: Rect,
@@ -33,6 +34,7 @@ impl Frame {
             mouse_taken: None,
             context,
             widgets: vec![root],
+            render_groups: vec![RenderGroup { start: 0, end: 0 }],
             parent_index: 0,
             in_modal_tree: false,
             parent_max_child_bounds: Rect::default(),
@@ -302,9 +304,30 @@ impl Frame {
         (f)(context.state_mut(id));
     }
 
-    pub(crate) fn finish_frame(self) -> (Context, Vec<Widget>) {
+    pub(crate) fn next_render_group(&mut self) {
+        let last_render_group = self.render_groups.len() - 1;
+        let widgets_len = self.widgets.len();
+        self.render_groups[last_render_group].end = widgets_len;
+        self.render_groups.push(RenderGroup { start: widgets_len, end: widgets_len });
+    }
+
+    pub(crate) fn finish_frame(mut self) -> (Context, Vec<Widget>, Vec<RenderGroup>) {
+        let last_render_group = self.render_groups.len() - 1;
+        self.render_groups[last_render_group].end = self.widgets.len();
+
         self.context.internal().borrow_mut().next_frame(self.mouse_taken);
 
-        (self.context, self.widgets)
+        (self.context, self.widgets, self.render_groups)
+    }
+}
+
+pub(crate) struct RenderGroup {
+    start: usize,
+    end: usize,
+}
+
+impl RenderGroup {
+    pub(crate) fn iter<'a, 'b>(&'a self, widgets: &'b [Widget]) -> impl Iterator<Item=&'b Widget> {
+        widgets.iter().skip(self.start).take(self.end - self.start)
     }
 }

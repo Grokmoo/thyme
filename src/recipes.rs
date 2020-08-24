@@ -102,6 +102,7 @@ impl Frame {
         self
         .start(theme)
         .id(id)
+        .next_render_group()
         .children(|ui| {
             let result = ui.start("titlebar")
             .children(|ui| {
