@@ -16,7 +16,9 @@ pub struct Frame {
     mouse_taken: Option<String>,
     context: Context,
     widgets: Vec<Widget>,
-    render_groups: Vec<RenderGroup>,
+    render_groups: Vec<RendGroupDef>,
+    cur_rend_group: RendGroup,
+
     parent_index: usize,
     pub(crate) in_modal_tree: bool,
     parent_max_child_bounds: Rect,
@@ -30,11 +32,17 @@ pub struct Frame {
 
 impl Frame {
     pub(crate) fn new(context: Context, root: Widget, mouse_anim_state: AnimState) -> Frame {
+        let cur_rend_group = RendGroup::default();
         Frame {
             mouse_taken: None,
             context,
             widgets: vec![root],
-            render_groups: vec![RenderGroup { start: 0, end: 0 }],
+            cur_rend_group,
+            render_groups: vec![RendGroupDef {
+                group: cur_rend_group,
+                start: 0,
+                num: 0,
+            }],
             parent_index: 0,
             in_modal_tree: false,
             parent_max_child_bounds: Rect::default(),
@@ -126,10 +134,6 @@ impl Frame {
         self.parent_index = index;
     }
     pub(crate) fn num_widgets(&self) -> usize { self.widgets.len() }
-
-    pub(crate) fn push_widget(&mut self, widget: Widget) {
-        self.widgets.push(widget);
-    }
 
     pub(crate) fn widget(&self, index: usize) -> &Widget {
         &self.widgets[index]
@@ -298,30 +302,52 @@ impl Frame {
         (f)(context.state_mut(id));
     }
 
-    pub(crate) fn next_render_group(&mut self) {
-        let last_render_group = self.render_groups.len() - 1;
-        let widgets_len = self.widgets.len();
-        self.render_groups[last_render_group].end = widgets_len;
-        self.render_groups.push(RenderGroup { start: widgets_len, end: widgets_len });
+    pub(crate) fn push_widget(&mut self, mut widget: Widget) {
+        widget.set_rend_group(self.cur_rend_group);
+        self.render_groups[self.cur_rend_group.index as usize].num += 1;
+        self.widgets.push(widget);
     }
 
-    pub(crate) fn finish_frame(mut self) -> (Context, Vec<Widget>, Vec<RenderGroup>) {
-        let last_render_group = self.render_groups.len() - 1;
-        self.render_groups[last_render_group].end = self.widgets.len();
+    pub(crate) fn cur_render_group(&self) -> RendGroup { self.cur_rend_group }
 
+    pub(crate) fn prev_render_group(&mut self, group: RendGroup) {
+        self.cur_rend_group = group;
+    }
+
+    pub(crate) fn next_render_group(&mut self) {
+        let widgets_len = self.widgets.len();
+        let index = self.render_groups.len() as u16;
+        let cur_rend_group = RendGroup { index };
+        self.render_groups.push(RendGroupDef {
+            group: cur_rend_group,
+            start: widgets_len,
+            num: 0,
+        });
+        self.cur_rend_group = cur_rend_group;
+    }
+
+    pub(crate) fn finish_frame(self) -> (Context, Vec<Widget>, Vec<RendGroupDef>) {
         self.context.internal().borrow_mut().next_frame(self.mouse_taken);
 
         (self.context, self.widgets, self.render_groups)
     }
 }
 
-pub(crate) struct RenderGroup {
-    start: usize,
-    end: usize,
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
+pub(crate) struct RendGroup {
+    index: u16,
 }
 
-impl RenderGroup {
+#[derive(Debug)]
+pub(crate) struct RendGroupDef {
+    group: RendGroup,
+    start: usize,
+    num: usize,
+}
+
+impl RendGroupDef {
     pub(crate) fn iter<'a, 'b>(&'a self, widgets: &'b [Widget]) -> impl Iterator<Item=&'b Widget> {
-        widgets.iter().skip(self.start).take(self.end - self.start)
+        let group = self.group;
+        widgets.iter().skip(self.start).filter(move |widget| widget.rend_group() == group).take(self.num + 1)
     }
 }

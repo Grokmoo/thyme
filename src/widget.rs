@@ -2,6 +2,7 @@ use crate::{
     AnimState, AnimStateKey, Color, Frame, Point, Border, Align, 
     Layout, WidthRelative, HeightRelative, Rect,
 };
+use crate::{frame::RendGroup};
 use crate::font::FontSummary;
 use crate::image::ImageHandle;
 use crate::theme::{WidgetTheme};
@@ -10,6 +11,7 @@ use crate::window::WindowBuilder;
 pub struct Widget {
     // identifier for persistent state
     id: String,
+    rend_group: RendGroup,
 
     // TODO potentially move these out and store current parent data
     // in the frame for a small perf boost
@@ -55,6 +57,7 @@ impl Widget {
             border: Border::default(),
             size,
             id: String::new(),
+            rend_group: RendGroup::default(),
             anim_state: AnimState::normal(),
             visible: true,
             clip: Rect { pos: Point::default(), size },
@@ -110,6 +113,7 @@ impl Widget {
             border,
             size,
             id,
+            rend_group: RendGroup::default(),
             anim_state: AnimState::normal(),
             visible: true,
             clip: parent.clip,
@@ -151,6 +155,12 @@ impl Widget {
             Layout::Vertical => self.cursor.y += gap,
             Layout::Free => (),
         }
+    }
+
+    pub(crate) fn rend_group(&self) -> RendGroup { self.rend_group }
+
+    pub(crate) fn set_rend_group(&mut self, group: RendGroup) {
+        self.rend_group = group;
     }
 }
 
@@ -705,6 +715,12 @@ impl<'a> WidgetBuilder<'a> {
             self.frame.in_modal_tree = true;
         }
 
+        let prev_rend_group = self.frame.cur_render_group();
+
+        if self.data.next_render_group {
+            self.frame.next_render_group();
+        }
+
         let widget_index = self.frame.num_widgets();
         self.frame.push_widget(self.widget);
 
@@ -731,6 +747,10 @@ impl<'a> WidgetBuilder<'a> {
             (false, AnimState::disabled(), Point::default())
         };
 
+        if self.data.next_render_group {
+            self.frame.prev_render_group(prev_rend_group);
+        }
+
         // unset modal tree value only if this widget was the modal one
         if in_modal_tree {
             self.frame.in_modal_tree = false;
@@ -738,10 +758,6 @@ impl<'a> WidgetBuilder<'a> {
 
         if self.data.active {
             anim_state.add(AnimStateKey::Active);
-        }
-
-        if self.data.next_render_group {
-            self.frame.next_render_group();
         }
 
         self.frame.widget_mut(widget_index).anim_state = anim_state;
