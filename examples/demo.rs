@@ -293,6 +293,7 @@ fn stats_panel(ui: &mut Frame, character: &mut Character) {
     ui.label("points_available", format!("Points Remaining: {}", points_available));
 }
 
+// TODO modal to grey out the rest of the screen
 fn item_picker(ui: &mut Frame, character: &mut Character) {
     for item in ITEMS.iter() {
         let clicked = ui.start("item_button")

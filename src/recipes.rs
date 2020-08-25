@@ -15,6 +15,12 @@ impl Frame {
         self.start(theme).text(label).wants_mouse(true).finish()
     }
 
+    // TODO slider
+
+    // TODO tree
+
+    // TODO menubar
+
     pub fn combo_box<'a, T: Display>(&mut self, theme: &str, id: &str, current: T, values: &'a [T]) -> Option<&'a T> {
         let popup_id = format!("{}_popup", id);
         
@@ -36,7 +42,7 @@ impl Frame {
         .id(&popup_id)
         .screen_pos(rect.pos.x, rect.pos.y + rect.size.y)
         .initially_open(false)
-        .new_render_group_front()
+        .new_render_group()
         .scrollpane("cb_popup_content", |ui| {
             for value in values {
                 if ui.button("entry", value.to_string()).clicked {

@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::Instant;
 
-use crate::{Point, Error, Frame, Rect};
+use crate::{Point, Error, Frame, Rect, frame::{RendGroup, RendGroupDef}};
 use crate::widget::Widget;
 use crate::theme::ThemeSet;
 use crate::theme_definition::{ThemeDefinition, AnimState, AnimStateKey};
@@ -123,7 +123,11 @@ impl Default for PersistentState {
 
 pub struct ContextInternal {
     themes: ThemeSet,
-    mouse_taken_last_frame: Option<String>,
+    mouse_taken_last_frame: Option<(String, RendGroup)>,
+    mouse_in_rend_group_last_frame: Option<RendGroup>,
+    top_rend_group: RendGroup,
+    check_set_top_rend_group: Option<String>,
+
     modal: Option<Modal>,
 
     mouse_pressed_outside: [bool; 3],
@@ -169,6 +173,34 @@ impl ContextInternal {
         self.modal = Some(Modal::new(id));
     }
 
+    pub(crate) fn mouse_in_rend_group_last_frame(&self) -> Option<RendGroup> {
+        self.mouse_in_rend_group_last_frame
+    }
+
+    pub(crate) fn set_top_rend_group(&mut self, group: RendGroup) {
+        self.top_rend_group = group;
+    }
+
+    pub(crate) fn top_rend_group(&self) -> RendGroup { self.top_rend_group }
+
+    pub(crate) fn set_top_rend_group_id(&mut self, id: &str) {
+        self.check_set_top_rend_group = Some(id.to_string());
+    }
+
+    pub(crate) fn check_set_rend_group_top(&mut self, groups: &[RendGroupDef]) {
+        let id = match self.check_set_top_rend_group.take() {
+            None => return,
+            Some(id) => id,
+        };
+
+        for group in groups {
+            if group.id() == id {
+                self.top_rend_group = group.group();
+                break;
+            }
+        }
+    }
+
     pub(crate) fn base_time_millis_for(&self, id: &str) -> u32 {
         self.persistent_state.get(id).map_or(0, |state| state.base_time_millis)
     }
@@ -187,8 +219,8 @@ impl ContextInternal {
         self.keyboard_focus_widget.as_deref() == Some(id)
     }
 
-    pub(crate) fn mouse_taken_last_frame(&self) -> Option<&str> {
-        self.mouse_taken_last_frame.as_deref()
+    pub(crate) fn mouse_taken_last_frame_id(&self) -> Option<&str> {
+        self.mouse_taken_last_frame.as_ref().map(|(id, _)| id.as_ref())
     }
 
     pub(crate) fn scale_factor(&self) -> f32 { self.scale_factor }
@@ -227,7 +259,7 @@ impl ContextInternal {
         false
     }
 
-    pub(crate) fn next_frame(&mut self, mouse_taken: Option<String>) {
+    pub(crate) fn next_frame(&mut self, mouse_taken: Option<(String, RendGroup)>, mouse_in_rend_group: Option<RendGroup>) {
         let mut clear_modal = false;
         if let Some(modal) = self.modal.as_mut() {
             if modal.prevent_close {
@@ -245,6 +277,7 @@ impl ContextInternal {
         self.mouse_clicked = [false; 3];
         self.mouse_taken_last_frame = mouse_taken;
         self.last_mouse_pos = self.mouse_pos;
+        self.mouse_in_rend_group_last_frame = mouse_in_rend_group;
     }
 }
 
@@ -265,6 +298,9 @@ impl Context {
             mouse_pressed: [false; 3],
             mouse_clicked: [false; 3],
             mouse_taken_last_frame: None,
+            mouse_in_rend_group_last_frame: None,
+            top_rend_group: RendGroup::default(),
+            check_set_top_rend_group: None,
             mouse_pressed_outside: [false; 3],
             modal: None,
             time_millis: 0,

@@ -13,7 +13,7 @@ const MOUSE_NOT_TAKEN: (bool, AnimState, Point) =
     (false, AnimState::normal(), Point { x: 0.0, y: 0.0 });
 
 pub struct Frame {
-    mouse_taken: Option<String>,
+    mouse_taken: Option<(String, RendGroup)>,
     context: Context,
     widgets: Vec<Widget>,
     render_groups: Vec<RendGroupDef>,
@@ -39,7 +39,8 @@ impl Frame {
             widgets: vec![root],
             cur_rend_group,
             render_groups: vec![RendGroupDef {
-                ordering: 0,
+                rect: Rect::default(),
+                id: String::new(),
                 group: cur_rend_group,
                 start: 0,
                 num: 0,
@@ -78,10 +79,16 @@ impl Frame {
     pub(crate) fn check_mouse_taken(&mut self, index: usize) -> (bool, AnimState, Point) {
         let widget = &self.widgets[index];
 
-        let context = self.context.internal().borrow_mut();
+        let mut context = self.context.internal().borrow_mut();
 
         if context.has_modal() && !self.in_modal_tree {
             return MOUSE_NOT_TAKEN;
+        }
+
+        if let Some(group) = context.mouse_in_rend_group_last_frame() {
+            if widget.rend_group() != group {
+                return MOUSE_NOT_TAKEN;
+            }
         }
 
         if context.mouse_pressed_outside() || self.mouse_taken.is_some() ||
@@ -89,13 +96,17 @@ impl Frame {
             return MOUSE_NOT_TAKEN;
         }
 
-        let was_taken_last = context.mouse_taken_last_frame() == Some(widget.id());
+        let was_taken_last = context.mouse_taken_last_frame_id() == Some(widget.id());
 
         // check if we are dragging on this widget
         if context.mouse_pressed(0) {
             if was_taken_last {
-                self.mouse_taken = Some(widget.id().to_string());
+                self.mouse_taken = Some((widget.id().to_string(), widget.rend_group()));
                 let dragged = context.mouse_pos() - context.last_mouse_pos();
+
+                if context.mouse_pressed(0) {
+                    context.set_top_rend_group(widget.rend_group());
+                }
                 return (
                     context.mouse_clicked(0),
                     AnimState::new(AnimStateKey::Pressed),
@@ -111,7 +122,11 @@ impl Frame {
             return MOUSE_NOT_TAKEN;
         }
 
-        self.mouse_taken = Some(widget.id().to_string());
+        if context.mouse_pressed(0) {
+            context.set_top_rend_group(widget.rend_group());
+        }
+
+        self.mouse_taken = Some((widget.id().to_string(), widget.rend_group()));
         (
             was_taken_last && context.mouse_clicked(0),
             AnimState::new(AnimStateKey::Hover),
@@ -255,6 +270,7 @@ impl Frame {
         let id = id.into();
 
         let mut context = self.context.internal().borrow_mut();
+        context.set_top_rend_group_id(&id);
         context.state_mut(id.clone()).is_open = true;
         context.set_modal(id);
     }
@@ -267,7 +283,9 @@ impl Frame {
     }
 
     pub fn open<T: Into<String>>(&mut self, id: T) {
+        let id = id.into();
         let mut context = self.context.internal().borrow_mut();
+        context.set_top_rend_group_id(&id);
         context.state_mut(id).is_open = true;
     }
 
@@ -282,6 +300,7 @@ impl Frame {
     pub fn open_parent(&mut self) {
         let mut context = self.context.internal().borrow_mut();
         let id = self.widgets[self.parent_index].id();
+        context.set_top_rend_group_id(&id);
         context.state_mut(id).is_open = true;
     }
 
@@ -315,18 +334,14 @@ impl Frame {
         self.cur_rend_group = group;
     }
 
-    pub(crate) fn next_render_group(&mut self, ordering: RendGroupOrder) {
+    pub(crate) fn next_render_group(&mut self, rect: Rect, id: String) {
         let widgets_len = self.widgets.len();
         let index = self.render_groups.len() as u16;
         let cur_rend_group = RendGroup { index };
 
-        let ordering = match ordering {
-            RendGroupOrder::Front => -1,
-            RendGroupOrder::Back => index as i16,
-        };
-
         self.render_groups.push(RendGroupDef {
-            ordering,
+            rect,
+            id,
             group: cur_rend_group,
             start: widgets_len,
             num: 0,
@@ -335,19 +350,31 @@ impl Frame {
     }
 
     pub(crate) fn finish_frame(self) -> (Context, Vec<Widget>, Vec<RendGroupDef>) {
-        self.context.internal().borrow_mut().next_frame(self.mouse_taken);
+        let (top_rend_group, mouse_pos) = {
+            let mut context = self.context.internal().borrow_mut();
+
+            context.check_set_rend_group_top(&self.render_groups);
+
+            (context.top_rend_group(), context.mouse_pos())
+        };
 
         let mut render_groups = self.render_groups;
-        render_groups.sort_by_key(|group| group.ordering);
+        render_groups.sort_by_key(|group| {
+            if group.group == top_rend_group { 0 } else { 1 }
+        });
+
+        let mut mouse_in_rend_group = None;
+        for rend_group in &render_groups {
+            if rend_group.rect.is_inside(mouse_pos) {
+                mouse_in_rend_group = Some(rend_group.group);
+                break;
+            }
+        }
+
+        self.context.internal().borrow_mut().next_frame(self.mouse_taken, mouse_in_rend_group);
 
         (self.context, self.widgets, render_groups)
     }
-}
-
-#[derive(Copy, Clone)]
-pub(crate) enum RendGroupOrder {
-    Front,
-    Back,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
@@ -357,7 +384,8 @@ pub(crate) struct RendGroup {
 
 #[derive(Debug)]
 pub(crate) struct RendGroupDef {
-    ordering: i16,
+    rect: Rect,
+    id: String,
     group: RendGroup,
     start: usize,
     num: usize,
@@ -368,4 +396,7 @@ impl RendGroupDef {
         let group = self.group;
         widgets.iter().skip(self.start).filter(move |widget| widget.rend_group() == group).take(self.num + 1)
     }
+
+    pub(crate) fn id(&self) -> &str { &self.id }
+    pub(crate) fn group(&self) -> RendGroup { self.group }
 }
