@@ -52,23 +52,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let mut target = display.draw();
             target.clear_color(0.0, 0.0, 0.0, 0.0);
 
-            let thyme_bench = bench::start("thyme");
+            bench::run("thyme", || {
+                let mut frame = context.create_frame();
 
-            let frame_bench = bench::start("frame");
+                bench::run("frame", || {
+                    // show a custom cursor.  it automatically inherits mouse presses in its state
+                    frame.set_mouse_cursor("gui/cursor", Align::TopLeft);
+                    build_ui(&mut frame, &mut party);
+                });
 
-            let mut frame = context.create_frame();
-
-            // show a custom cursor.  it automatically inherits mouse presses in its state
-            frame.set_mouse_cursor("gui/cursor", Align::TopLeft);
-            build_ui(&mut frame, &mut party);
-
-            bench::end(frame_bench);
-
-            let draw_bench = bench::start("draw");
-            renderer.draw_frame(&mut target, frame).unwrap();
-            bench::end(draw_bench);
-
-            bench::end(thyme_bench);
+                bench::run("draw", || {
+                    renderer.draw_frame(&mut target, frame).unwrap();
+                });
+            });
 
             target.finish().unwrap();
 
