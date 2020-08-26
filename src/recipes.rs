@@ -37,7 +37,6 @@ impl Frame {
 
         let mut result = None;
 
-        // TODO combo box popup to show up on top
         self.start(&format!("{}_popup", id))
         .id(&popup_id)
         .screen_pos(rect.pos.x, rect.pos.y + rect.size.y)

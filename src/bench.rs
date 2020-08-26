@@ -1,45 +1,164 @@
+//! Simple benchmarking functionality for supporting thyme.
+//!
+//! Benchmarks consist of a moving average and associated statistics of a given
+//! set of timings.  Timings that are grouped together share the same tag.
+//! You can pass a block to be timed using [`run`](fn.run.html), or create a handle with
+//! [`start`](fn.start.html) and end the timing with [`end`](struct.Handle.html#method.end).
+//! Use [`stats`](fn.stats.html) to get a [`Stats`](struct.Stats.html), which is the
+//! primary interface for reporting on the timings.
+
 use std::time::{Duration, Instant};
 
 use parking_lot::{const_mutex, Mutex};
 
+const MOVING_AVG_LEN: usize = 30;
+
 static BENCH: Mutex<BenchSet> = const_mutex(BenchSet::new());
 
-/// A benchmarking handle created by `bench::start`.  `end` this to
+/// A benchmarking handle created by [`start`](fn.start.html).  [`end`](#method.end) this to
 /// finish the given benchmark timing
 pub struct Handle {
     index: usize
 }
 
 impl Handle {
+    /// Finish the timing associated with this handle.
     pub fn end(self) {
         end(self);
     }
 }
 
+/// Runs the specified closure `block` as a benchmark timing
+/// with the given `tag`.
 pub fn run<F: FnOnce()>(tag: &str, block: F) {
     let handle = start(tag);
     (block)();
     end(handle);
 }
 
+/// Starts a benchmark timing with the given `tag`.  You
+/// must [`end`](struct.Handle.html#method.end) the returned [`Handle`](struct.Handle.html) to complete
+/// the timing.
+#[must_use]
 pub fn start(tag: &str) -> Handle {
     let mut bench = BENCH.lock();
     bench.start(tag)
 }
 
-pub fn end(handle: Handle) {
-    let mut bench = BENCH.lock();
-    bench.end(handle);
-}
-
+/// Returns a `Stats` object for the benchmark timings
+/// associated with the given `tag`.
 pub fn stats(tag: &str) -> Stats {
     let bench = BENCH.lock();
     bench.stats(tag)
 }
 
+/// A convenience method to automatically generate a report
+/// String for the given `tag`.  The report will include all of the
+/// data in the [`Stats`](struct.Stats.html) associated with this `tag`,
+/// and be formatted with appropriate units.
 pub fn report(tag: &str) -> String {
     let bench = BENCH.lock();
     bench.report(tag)
+}
+
+fn end(handle: Handle) {
+    let mut bench = BENCH.lock();
+    bench.end(handle);
+}
+
+/// Statistics associated with a given set of benchmark timings.
+/// These are obtained with the `stats` method for a given tag.
+/// Statistics are for a moving average of the last N timings for the
+/// tag, where N is currently hardcoded to 30.
+#[derive(Debug, Copy, Clone)]
+pub struct Stats {
+    average_s: f32,
+    stdev_s: f32,
+    max_s: f32,
+    unit: Unit,
+}
+
+impl Default for Stats {
+    fn default() -> Self {
+        Stats {
+            average_s: 0.0,
+            stdev_s: 0.0,
+            max_s: 0.0,
+            unit: Unit::Seconds,
+        }
+    }
+}
+
+impl Stats {
+    /// Returns the average of the timings, in the current unit
+    /// of this `Stats`.
+    pub fn average(&self) -> f32 {
+        self.average_s * self.unit.multiplier()
+    }
+
+    /// Returns the standard devication of the timings, in the current unit
+    /// of this `Stats`.
+    pub fn stdev(&self) -> f32 {
+        self.stdev_s * self.unit.multiplier()
+    }
+
+    /// Returns the maximum of the timings, in the current unit
+    /// of this `Stats`.
+    pub fn max(&self) -> f32 {
+        self.max_s * self.unit.multiplier()
+    }
+
+    /// Returns the postfix string of the Unit associated with this
+    /// `Stats`, such as "s" for Seconds, "ms" for milliseconds, and
+    /// "µs" for microseconds.
+    pub fn unit_postfix(&self) -> &'static str {
+        self.unit.postfix()
+    }
+
+    /// Automatically picks an appropriate unit for this `Stats` based
+    /// on the size of the average value, and converts the stats to
+    /// use that unit.
+    pub fn pick_unit(self) -> Stats {
+        const CHANGE_VALUE: f32 = 0.0999999;
+        
+        if self.average_s > CHANGE_VALUE {
+            self.in_seconds()
+        } else if self.average_s * Unit::Millis.multiplier() > CHANGE_VALUE {
+            self.in_millis()
+        } else {
+            self.in_micros()
+        }
+    }
+
+    /// Converts this `Stats` to use seconds as a unit
+    pub fn in_seconds(self) -> Stats {
+        Stats {
+            average_s: self.average_s,
+            stdev_s: self.stdev_s,
+            max_s: self.max_s,
+            unit: Unit::Seconds,
+        }
+    }
+
+    /// Converts this `Stats` to use milliseconds as a unit
+    pub fn in_millis(self) -> Stats {
+        Stats {
+            average_s: self.average_s,
+            stdev_s: self.stdev_s,
+            max_s: self.max_s,
+            unit: Unit::Millis,
+        }
+    }
+
+    /// Converts this `Stats` to use microseconds as a unit
+    pub fn in_micros(self) -> Stats {
+        Stats {
+            average_s: self.average_s,
+            stdev_s: self.stdev_s,
+            max_s: self.max_s,
+            unit: Unit::Micros,
+        }
+    }
 }
 
 struct BenchSet {
@@ -101,82 +220,6 @@ impl BenchSet {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
-pub struct Stats {
-    average_s: f32,
-    stdev_s: f32,
-    max_s: f32,
-    unit: Unit,
-}
-
-impl Default for Stats {
-    fn default() -> Self {
-        Stats {
-            average_s: 0.0,
-            stdev_s: 0.0,
-            max_s: 0.0,
-            unit: Unit::Seconds,
-        }
-    }
-}
-
-impl Stats {
-    pub fn average(&self) -> f32 {
-        self.average_s * self.unit.multiplier()
-    }
-
-    pub fn stdev(&self) -> f32 {
-        self.stdev_s * self.unit.multiplier()
-    }
-
-    pub fn max(&self) -> f32 {
-        self.max_s * self.unit.multiplier()
-    }
-
-    pub fn unit_postfix(&self) -> &'static str {
-        self.unit.postfix()
-    }
-
-    pub fn pick_unit(self) -> Stats {
-        const CHANGE_VALUE: f32 = 0.0999999;
-        
-        if self.average_s > CHANGE_VALUE {
-            self.in_seconds()
-        } else if self.average_s * Unit::Millis.multiplier() > CHANGE_VALUE {
-            self.in_millis()
-        } else {
-            self.in_micros()
-        }
-    }
-
-    pub fn in_seconds(self) -> Stats {
-        Stats {
-            average_s: self.average_s,
-            stdev_s: self.stdev_s,
-            max_s: self.max_s,
-            unit: Unit::Seconds,
-        }
-    }
-
-    pub fn in_millis(self) -> Stats {
-        Stats {
-            average_s: self.average_s,
-            stdev_s: self.stdev_s,
-            max_s: self.max_s,
-            unit: Unit::Millis,
-        }
-    }
-
-    pub fn in_micros(self) -> Stats {
-        Stats {
-            average_s: self.average_s,
-            stdev_s: self.stdev_s,
-            max_s: self.max_s,
-            unit: Unit::Micros,
-        }
-    }
-}
-
 
 #[derive(Copy, Clone, Debug)]
 enum Unit {
@@ -210,8 +253,6 @@ struct Bench {
     history: Vec<Duration>,
     start: Option<Instant>,
 }
-
-const MOVING_AVG_LEN: usize = 30;
 
 impl Bench {
     fn new(tag: String) -> Bench {

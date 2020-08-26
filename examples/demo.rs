@@ -202,7 +202,6 @@ fn build_ui(ui: &mut Frame, party: &mut Party) {
 
                 ui.gap(10.0);
 
-                // TODO combo box
                 if let Some(race) = ui.combo_box("race_selector", "race_selector", character.race, Race::all()) {
                     character.race = *race;
                 }
