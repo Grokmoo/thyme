@@ -16,6 +16,28 @@ use crate::{Frame, Point, Color, Rect};
 
 const FONT_TEX_SIZE: u32 = 512;
 
+/// A Thyme [`Renderer`](trait.Renderer.html) for [`Glium`](https://github.com/glium/glium).
+///
+/// This adapter registers image and font data as OpenGL textures using glium, and renders each frame.
+/// After the UI has been built, the [`Frame`](struct.Frame.html) should be passed to the renderer
+/// for drawing.
+///
+/// This adapter is written with overall performance in mind and is fairly fast, able to render fairly complex
+/// UIs consisting of many widgets and text in less than 1 ms on moderately powerful GPUs.
+///
+/// Fonts are prerendered to a texture on the GPU, based on the ttf
+/// font data and the theme specified size.
+///
+/// Data is structured to minimize number of draw calls, with one to three draw calls per render group
+/// (created with [`WidgetBuilder.new_render_group`](struct.WidgetBuilder.html#method.new_render_group))
+/// being typical.  Unless you need UI groups where different widgets may overlap and change draw
+/// ordering frame-by-frame, a single render group will usually be enough for most frames
+/// of your UI.
+///
+/// Widget clipping is handled using `glClipDistance`, again to minimize draw calls.  Since the data to send
+/// to the GPU is constructed each frame in the immediate mode UI model, the amount of data is minimized
+/// by sending only a single `Vertex` for each Image, with the vertex components including the rectangular position and
+/// texture coordinates.  The actual individual on-screen vertices are then constructed with a Geometry shader.
 pub struct GliumRenderer {
     context: Rc<Context>,
     base_program: Program,
@@ -31,6 +53,7 @@ pub struct GliumRenderer {
 }
 
 impl GliumRenderer {
+    /// Creates a new [`Renderer`](trait.Renderer.html) to draw to the specified Glium facade.
     pub fn new<F: Facade>(facade: &F) -> Result<GliumRenderer, GliumError> {
         let context = Rc::clone(facade.get_context());
 
@@ -72,6 +95,7 @@ impl GliumRenderer {
         &self.textures[texture.id()]
     }
 
+    /// Draws the specified [`Frame`](struct.Frame.html) to the Glium surface, usually the Glium Frame.
     pub fn draw_frame<T: Surface>(&mut self, target: &mut T, frame: Frame) -> Result<(), GliumError> {
         let mouse_cursor = frame.mouse_cursor();
         let (context, widgets, render_groups) = frame.finish_frame();

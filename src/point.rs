@@ -3,6 +3,7 @@ use std::fmt;
 
 use serde::{Serialize, Deserialize, Deserializer, de::{self, Error, Visitor, MapAccess}};
 
+/// A struct representing a rectangular border around a Widget.
 #[derive(Serialize, Copy, Clone, Default, Debug, PartialEq)]
 pub struct Border {
     pub top: f32,
@@ -12,26 +13,32 @@ pub struct Border {
 }
 
 impl Border {
+    /// The vertical border, top plus bottom
     pub fn vertical(&self) -> f32 {
         self.top + self.bot
     }
 
+    /// The horizontal border, left plus right
     pub fn horizontal(&self) -> f32 {
         self.left + self.right
     }
     
+    /// The border on the top right corner
     pub fn tr(&self) -> Point {
         Point { x: self.right, y: self.top }
     }
 
+    /// The border on the top left corner
     pub fn tl(&self) -> Point {
         Point { x: self.left, y: self.top }
     }
 
+    /// The border on the bottom left corner
     pub fn bl(&self) -> Point {
         Point { x: self.left, y: self.bot }
     }
 
+    /// The border on the bottom right corner
     pub fn br(&self) -> Point {
         Point { x: self.right, y: self.bot }
     }
@@ -138,6 +145,8 @@ impl<'de> Deserialize<'de> for Border {
         deserializer.deserialize_map(BorderVisitor)
     }
 }
+
+/// A rectangular area, represented by a position and a size
 #[derive(Serialize, Deserialize, Copy, Clone, Default, Debug, PartialEq)]
 pub struct Rect {
     pub pos: Point,
@@ -145,6 +154,7 @@ pub struct Rect {
 }
 
 impl Rect {
+    /// Construct a new `Rect` with the specified position and size.
     pub fn new(pos: Point, size: Point) -> Rect {
         Rect {
             pos,
@@ -152,6 +162,8 @@ impl Rect {
         }
     }
 
+    /// Returns true if the specified point is inside (or on the edge of)
+    /// this rectangle; false otherwise
     pub fn is_inside(&self, pos: Point) -> bool {
         pos.x >= self.pos.x && pos.y >= self.pos.y &&
             pos.x <= self.pos.x + self.size.x && pos.y <= self.pos.y + self.size.y
@@ -204,6 +216,7 @@ impl Mul<f32> for Rect {
     }
 }
 
+/// A two-dimensional point, with `x` and `y` coordinates.
 #[derive(Serialize, Deserialize, Copy, Clone, Default, Debug, PartialEq)]
 pub struct Point {
     pub x: f32,
@@ -211,10 +224,12 @@ pub struct Point {
 }
 
 impl Point {
+    /// Creates a new point from the specified components.
     pub fn new(x: f32, y: f32) -> Point {
         Point { x, y }
     }
 
+    /// Returns a point with both components rounded to the nearest integer
     pub fn round(self) -> Point {
         Point {
             x: self.x.round(),

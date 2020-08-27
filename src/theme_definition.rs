@@ -85,6 +85,17 @@ pub enum ImageDefinitionKind {
     }
 }
 
+/// An `AnimState` consists of one or more (currently up to four) state keys,
+/// with each key representing a different state.
+/// 
+/// For example, a state
+/// could be [`Active`](enum.AnimStateKey.html#active) + [`Pressed`](enum.AnimStateKey.html#pressed)
+/// or [`Hover`](enum.AnimStateKey#hover).
+/// `AnimState`s are parsed from the theme file as strings in this format, i.e.
+/// `Active + Pressed`, `Normal`, `Hover`, are all valid.  The `+` character is used
+/// to concatenate multiple states, and whitespace is ignored.  The [`Normal`](enum.AnimStateKey.html#normal)
+/// key is special and can only be present by itself.
+/// `AnimState`s are used in Animated images in order to pick a particular image from a set.
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub struct AnimState {
     keys: [AnimStateKey; 4],
@@ -143,6 +154,7 @@ impl AnimState {
         AnimState { keys }
     }
 
+    /// Returns whether or not this `AnimState` contains the specified key.
     pub fn contains(&self, key: AnimStateKey) -> bool {
         for self_key in self.keys.iter() {
             if *self_key == key { return true; }
@@ -150,6 +162,8 @@ impl AnimState {
         false
     }
 
+    /// Adds the given state key to this `AnimState`.  Note that
+    /// adding `Normal` will have no effect.
     pub fn add(&mut self, to_add: AnimStateKey) {
         for key in self.keys.iter_mut() {
             if *key == AnimStateKey::Normal {
@@ -257,21 +271,44 @@ impl Serialize for AnimState {
     }
 }
 
+/// One component of an [`AnimState`](struct.AnimState.html)
+///
+/// This represents the animation state of a widget.  Animated images
+/// use this state to determine which image is used from a set of
+/// available images.
 #[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 #[serde(deny_unknown_fields)]
 pub enum AnimStateKey {
+    /// The mouse is hovering over the widget
     Hover,
+
+    /// The mouse is pressed on a widget
     Pressed,
+
+    /// The widget is disabled
     Disabled,
+
+    /// The widget has no special animation state.
     Normal,
+
+    /// The widget is activated.
     Active,
 }
 
+/// The Layout direction for a widget's children.
+///
+/// This only has effect is the child widget does not manually specify an alignment.
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[serde(deny_unknown_fields)]
 pub enum Layout {
+    /// Layout children horizontally, from left to right
     Horizontal,
+
+    /// Layout children vertically, from top to bottom
     Vertical,
+
+    /// Don't layout children in any order.  Children must specify manual alignments to
+    /// avoid overlap.
     Free,
 }
 
@@ -279,6 +316,11 @@ impl Default for Layout {
     fn default() -> Self { Layout::Horizontal }
 }
 
+/// Widget horizontal and vertical alignment.
+///
+/// `Left`, `Right`, and `Center` variants will center the widget
+/// vertically, while `Bot`, `Top`, and `Center` variants will
+/// center the widget horizontally.
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, Hash)]
 #[serde(deny_unknown_fields)]
 pub enum Align {
@@ -321,10 +363,14 @@ pub struct FontDefinition {
     pub size: f32,
 }
 
+/// What to compute the width of a widget relative to.
 #[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
 #[serde(deny_unknown_fields)]
 pub enum WidthRelative {
+    /// Width is equal to the `x` field of the widget's `size`.
     Normal,
+
+    /// Width is equal to the parent widget's inner width plus the `x` field of the widget's `size`.
     Parent,
 }
 
@@ -332,11 +378,17 @@ impl Default for WidthRelative {
     fn default() -> Self { WidthRelative::Normal }
 }
 
+/// What to compute the height of widget relative to.
 #[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
 #[serde(deny_unknown_fields)]
 pub enum HeightRelative {
+    /// Height is equal to the `y` field of the widget's `size`.
     Normal,
+
+    /// Height is equal to the parent widget's inner height plus the `y` field of the widget's `size`.
     Parent,
+
+    /// Height is equal to the line height of the widget's font plus the `y` field of the widget's `size`.
     FontLine,
 }
 
@@ -344,10 +396,25 @@ impl Default for HeightRelative {
     fn default() -> Self { HeightRelative::Normal }
 }
 
+/// A Color with red, green, and blue components, with each component stored as a `u8`.
+///
+/// Colors can be deserialized from strings consisting of either
+/// one of the predefined names: `white`, `black`, `red`, `green`,
+/// `blue`, `cyan`, `yellow`, or `magenta`.
+/// Or, the `#` character followed by a hex color code.  The hex code can either
+/// be 6 digits or 3 digits long.  In the 6 digit code, the first 2 digits specify
+/// the red component (from 0 to FF), the 2nd two the green component, and the 3rd two
+/// the blue component.  In the 3 digit code, the 1st digit specifies the red component,
+/// 2nd digit specifies green component, 3rd digit specifies blue component.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Color {
+    /// The red component
     pub r: u8,
+
+    /// The green component
     pub g: u8,
+
+    /// The blue component
     pub b: u8,
 }
 

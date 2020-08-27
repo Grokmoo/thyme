@@ -3,13 +3,21 @@ use std::num::NonZeroU16;
 use crate::{Color, Rect, Point, Error};
 use crate::font::{FontSource, Font};
 
+/// A trait to be implemented on the type to be used for Event handling.  See [`WinitIO`](struct.WinitIO.html)
+/// for an example implementation.  The IO handles events from an external source and passes them to the Thyme
+/// [`Context`](struct.Context.html).
 pub trait IO {
+    /// Returns the current window scale factor (1.0 for logical pixel size = physical pixel size).
     fn scale_factor(&self) -> f32;
 
+    /// Returns the current window size in logical pixels.
     fn display_size(&self) -> Point;
 }
 
+/// A trait to be implemented on the type to be used for rendering the UI.  See [`GliumRenderer`](struct.GliumRenderer.html)
+/// for an example implementation.  The `Renderer` takes a completed frame and renders the widget tree stored within it.
 pub trait Renderer {
+    /// Register a font with Thyme.  This method is called via the [`ContextBuilder`](struct.ContextBuilder.html).
     fn register_font(
         &mut self,
         handle: FontHandle,
@@ -18,6 +26,7 @@ pub trait Renderer {
         scale: f32,
     ) -> Result<Font, Error>;
 
+    /// Register a texture with Thyme.  This method is called via the [`ContextBuilder`](struct.ContextBuilder.html).
     fn register_texture(
         &mut self,
         handle: TextureHandle,

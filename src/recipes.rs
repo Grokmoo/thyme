@@ -126,7 +126,7 @@ impl Frame {
     }
 }
 
-pub fn scrollpane_content<'a, F: FnOnce(&mut Frame) + 'a>(content_id: &'a str, children: F) -> impl FnOnce(&mut Frame) + 'a {
+pub(crate) fn scrollpane_content<'a, F: FnOnce(&mut Frame) + 'a>(content_id: &'a str, children: F) -> impl FnOnce(&mut Frame) + 'a {
     move |ui| {
         let mut content_bounds = Rect::default();
 

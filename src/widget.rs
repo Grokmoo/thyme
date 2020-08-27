@@ -162,11 +162,26 @@ impl Widget {
     }
 }
 
+/// The current state of a widget on this frame, this is returned when you finish
+/// most widgets, such as with a call to [`WidgetBuilder.finish`](struct.WidgetBuilder.html#method.finish).
 pub struct WidgetState {
+    /// Whether this widget was drawn.  In general, if a widget is not visible, any children
+    /// were not created and closures, such as passed to [`WidgetBuilder.children`](struct.WidgetBuilder.html#method.children)
+    /// were not executed.
     pub visible: bool,
+
+    /// Whether the mouse is hovering over this widget on the current frame
     pub hovered: bool,
+
+    /// Whether the mouse is pressed on this widget on the current frame
     pub pressed: bool,
+
+    /// Whether the mouse clicked on this widget on the current frame.  This field will only be `true` once
+    /// per click.
     pub clicked: bool,
+
+    /// How far the mouse has been dragged on this widget, in logical pixels.  This will only be non-zero
+    /// when the mouse is pressed.
     pub dragged: Point,
 }
 
@@ -643,7 +658,7 @@ impl<'a> WidgetBuilder<'a> {
     /// Consumes this builder and adds a scrollpane widget to the current frame.
     /// The provided closure is called to add children to the scrollpane's content.
     pub fn scrollpane<F: FnOnce(&mut Frame)>(self, content_id: &str, f: F) -> WidgetState {
-        self.finish_with(Some(crate::scrollpane_content(content_id, f)))
+        self.finish_with(Some(crate::recipes::scrollpane_content(content_id, f)))
     }
 
     /// Consumes the builder and adds a widget to the current frame.  The

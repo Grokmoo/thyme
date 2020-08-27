@@ -10,6 +10,11 @@ use crate::theme_definition::{ThemeDefinition, AnimState, AnimStateKey};
 use crate::render::{Renderer, IO, TextureData, TextureHandle};
 use crate::font::FontSource;
 
+/// Structure to register resources and ultimately build the main Thyme [`Context`](struct.Context.html).
+///
+/// This will hold references to your chosen [`Renderer`](trait.Renderer.html) and [`IO`](trait.IO.html).
+/// You pass resources to it to register them with Thyme.  Once this process is complete, call
+/// [`build`](struct.ContextBuilder.html#method.build) to create your [`Context`](struct.Context.html).
 pub struct ContextBuilder<'a, R: Renderer, I: IO> {
     renderer: &'a mut R,
     io: &'a mut I,
@@ -20,6 +25,9 @@ pub struct ContextBuilder<'a, R: Renderer, I: IO> {
 }
 
 impl<'a, R: Renderer, I: IO> ContextBuilder<'a, R, I> {
+    /// Creates a new `ContextBuilder`, from the specified [`Renderer`](trait.Renderer.html) and [`IO`](trait.IO.html).  The theme for your UI will be deserialized from
+    /// `theme`.  For example, `theme` could be a [`serde_json Value`](https://docs.serde.rs/serde_json/value/enum.Value.html) or
+    /// [`serde_yaml Value`](https://docs.serde.rs/serde_yaml/enum.Value.html).
     pub fn new<T: serde::Deserializer<'a>>(theme: T, renderer: &'a mut R, io: &'a mut I) -> Result<ContextBuilder<'a, R, I>, T::Error> {
         let theme_def: ThemeDefinition = serde::Deserialize::deserialize(theme)?;
 
@@ -67,6 +75,8 @@ impl<'a, R: Renderer, I: IO> ContextBuilder<'a, R, I> {
         Ok(())
     }
 
+    /// Consumes this builder and releases the borrows on the [`Renderer`](trait.Renderer.html) and [`IO`](trait.IO.html), so they can
+    /// be used further.  Builds a [`Context`](struct.Context.html).
     pub fn build(self) -> Result<Context, Error> {
         let scale_factor = self.io.scale_factor();
         let display_size = self.io.display_size();
@@ -85,14 +95,35 @@ pub(crate) struct PersistentStateData {
     pub scroll: Point,
 }
 
+/// The internal state stored by Thyme for a given Widget that
+/// persists between frames.
+///
+/// Note that Thyme will generally be able to automatically generate
+/// unique IDs for many widgets such as buttons.  But, if you want to
+/// access this data for a particular widget you will need to specify
+/// a known ID for that widget.
 #[derive(Debug)]
 pub struct PersistentState {
+    /// Whether the widget will be shown
     pub is_open: bool,
+
+    /// An amount, in logical pixels that the widget has been resized by
     pub resize: Point,
+
+    /// An amount, in logical pizels that the widget has been moved by
     pub moved: Point,
+
+    /// An amount, in logical pixels that the internal content has been
+    /// scrolled by
     pub scroll: Point,
+
+    /// The "zero" time for timed images associated with this widget.
     pub base_time_millis: u32,
+
+    /// Any characters that have been sent to this widget from the keyboard
     pub characters: Vec<char>,
+
+    /// The text for this widget, overriding default text.
     pub text: Option<String>,
 }
 
@@ -281,6 +312,8 @@ impl ContextInternal {
     }
 }
 
+/// The main Thyme Context that holds internal [`PersistentState`](struct.PersistentState.html)
+/// and is responsible for creating [`Frames`](struct.Frame.html).
 pub struct Context {
     internal: Rc<RefCell<ContextInternal>>,
 }
@@ -313,6 +346,10 @@ impl Context {
         }
     }
 
+    /// Returns true if thyme wants to use the mouse in the current frame, generally
+    /// because the mouse is over a Thyme widget.  If this returns true, you probably
+    /// want Thyme to handle input this frame, while if it returns false, your application
+    /// or game logic should handle input.
     pub fn wants_mouse(&self) -> bool {
         let internal = self.internal.borrow();
         internal.mouse_taken_last_frame.is_some()
@@ -373,6 +410,9 @@ impl Context {
         internal.mouse_pos = pos;
     }
 
+    /// Creates a [`Frame`](struct.Frame.html), the main object that should pass through
+    /// your UI building functions and is responsible for constructing the widget tree.
+    /// This method should be called each frame you want to draw / interact with the UI.
     pub fn create_frame(&mut self) -> Frame {
         let now = Instant::now();
 
