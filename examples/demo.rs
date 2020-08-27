@@ -83,6 +83,9 @@ struct Party {
     editing_index: Option<usize>,
 }
 
+const MIN_AGE: f32 = 18.0;
+const DEFAULT_AGE: f32 = 25.0;
+const MAX_AGE: f32 = 50.0;
 const INITIAL_GP: u32 = 100;
 const MIN_STAT: u32 = 3;
 const MAX_STAT: u32 = 18;
@@ -90,6 +93,7 @@ const STAT_POINTS: u32 = 75;
 
 struct Character {
     name: String,
+    age: f32,
     stats: HashMap<Stat, u32>,
 
     race: Race,
@@ -101,6 +105,7 @@ impl Character {
     fn generate(index: usize) -> Character {
         Character {
             name: format!("Charname {}", index),
+            age: DEFAULT_AGE,
             stats: HashMap::default(),
             gp: INITIAL_GP,
             items: Vec::default(),
@@ -199,6 +204,12 @@ fn build_ui(ui: &mut Frame, party: &mut Party) {
                         character.name = new_name;
                     }
                 });
+
+                ui.gap(10.0);
+                ui.label("age_label", format!("Age: {}", character.age.round() as u32));
+                if let Some(age) = ui.horizontal_slider("age_slider", MIN_AGE, MAX_AGE, character.age) {
+                    character.age = age;
+                }
 
                 ui.gap(10.0);
 

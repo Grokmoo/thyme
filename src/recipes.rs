@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::{Frame, Point, Rect, WidgetState};
+use crate::{Align, Frame, Point, Rect, WidgetState};
 
 /// Specific widget builders and convenience methods
 impl Frame {
@@ -24,7 +24,75 @@ impl Frame {
         self.start(theme).text(label).wants_mouse(true).finish()
     }
 
-    // TODO slider
+    /// A simple vertical slider.  The slider button can be dragged by the user.  The position
+    /// of the button is based on the relative distance of `value` from `min` and `max`.
+    /// Returns the new value if the user moved the slider on this frame, None, otherwise.  Will
+    /// always return a value within [`min`, `max`] inclusive.  `max` must be greater than `min`.
+    pub fn vertical_slider(&mut self, theme: &str, min: f32, max: f32, value: f32) -> Option<f32> {
+        let mut inner = Rect::default();
+        let mut new_value = None;
+
+        self.start(theme)
+        .wants_mouse(true)
+        .trigger_layout_inner(&mut inner)
+        .children(|ui| {
+            ui.child("slider_bar");
+
+            let mut button_rect = Rect::default();
+            let builder = ui.start("slider_button").wants_mouse(true).align(Align::Left).trigger_layout(&mut button_rect);
+
+            let total_height = inner.size.y - button_rect.size.y;
+            let pos = total_height * (value - min) / (max - min);
+
+            let result = builder.pos(0.0, pos).finish();
+
+            if result.dragged.y != 0.0 {
+                let delta_y = result.dragged.y;
+
+                let next_pos = pos + delta_y;
+                let new_val = (max - min) * next_pos / total_height + min;
+
+                new_value = Some(new_val.min(max).max(min));
+            }
+        });
+
+        new_value
+    }
+
+    /// A simple horizontal slider.  The slider button can be dragged by the user.  The position
+    /// of the button is based on the relative distance of `value` from `min` and `max`.
+    /// Returns the new value if the user moved the slider on this frame, None, otherwise.  Will
+    /// always return a value within [`min`, `max`] inclusive.  `max` must be greater than `min`.
+    pub fn horizontal_slider(&mut self, theme: &str, min: f32, max: f32, value: f32) -> Option<f32> {
+        let mut inner = Rect::default();
+        let mut new_value = None;
+
+        self.start(theme)
+        .wants_mouse(true)
+        .trigger_layout_inner(&mut inner)
+        .children(|ui| {
+            ui.child("slider_bar");
+
+            let mut button_rect = Rect::default();
+            let builder = ui.start("slider_button").wants_mouse(true).align(Align::Left).trigger_layout(&mut button_rect);
+
+            let total_width = inner.size.x - button_rect.size.x;
+            let pos = total_width * (value - min) / (max - min);
+
+            let result = builder.pos(pos, 0.0).finish();
+
+            if result.dragged.x != 0.0 {
+                let delta_x = result.dragged.x;
+
+                let next_pos = pos + delta_x;
+                let new_val = (max - min) * next_pos / total_width + min;
+
+                new_value = Some(new_val.min(max).max(min));
+            }
+        });
+
+        new_value
+    }
 
     // TODO tree
 

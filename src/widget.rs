@@ -668,7 +668,7 @@ impl<'a> WidgetBuilder<'a> {
     /// Assuming these attributes are not changed after this method is
     /// called, these attributes will have their final values after this
     /// method returns.  The size and position are written to the passed
-    /// in rect.
+    /// in [`Rect`](struct.Rect.html).
     #[must_use]
     pub fn trigger_layout(mut self, rect: &mut Rect) -> WidgetBuilder<'a> {
         let (state_moved, state_resize) = {
@@ -682,6 +682,31 @@ impl<'a> WidgetBuilder<'a> {
 
         rect.pos = self.widget.pos;
         rect.size = self.widget.size;
+        self
+    }
+
+    /// Force the widget to layout its `size` and `position` immediately.
+    /// Assuming these attributes are not changed after this is method is
+    /// called, they will have their final values after this method returns.
+    /// The inner size and position (size and position adjusted by the
+    /// [`Border`](struct.Border.html) are written to the passed in
+    /// [`Rect`](struct.Rect.html)
+    #[must_use]
+    pub fn trigger_layout_inner(mut self, rect: &mut Rect) -> WidgetBuilder<'a> {
+        let (state_moved, state_resize) = {
+            let internal = self.frame.context_internal().borrow();
+            let state = internal.state(&self.widget.id);
+            (state.moved, state.resize)
+        };
+        if self.data.recalc_pos_size {
+            self.recalculate_pos_size(state_moved, state_resize);
+        }
+
+        rect.pos = self.widget.pos + self.widget.border.tl();
+        rect.size = Point::new(
+            self.widget.size.x - self.widget.border.horizontal(),
+            self.widget.size.y - self.widget.border.vertical(),
+        );
         self
     }
 

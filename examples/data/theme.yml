@@ -170,6 +170,19 @@ image_sets:
         position: [0, 102]
         grid_size_vert: [4, 5]
 widgets:
+  horizontal_slider:
+    size: [0, 15]
+    width_from: Parent
+    border: { top: 6, bot: 5, left: 5, right: 5 }
+    children:
+      slider_bar:
+        align: TopLeft
+        width_from: Parent
+        height_from: Parent
+        background: gui/slider_horizontal
+      slider_button:
+        from: button
+        size: [15, 15]
   combo_box:
     from: button
   combo_box_popup:
@@ -402,6 +415,11 @@ widgets:
         from: label
         width_from: Parent
         font: medium
+  age_slider:
+    from: horizontal_slider
+  age_label:
+    from: label
+    width_from: Parent
   race_selector:
     from: combo_box
     width_from: Parent
