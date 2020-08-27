@@ -379,6 +379,11 @@ each cell having the same size.
     grid_size: [16, 16]
 ```
 
+#### Composed Horizontal and Vertical
+There are also composed horizontal and composed vertical images, that consist of a 3x1 and 1x3 grid, respectively.  These
+are defined and used in the same manner as regular composed images, but use `grid_size_horiz` and `grid_size_vert` to
+differentiate the different types.
+
 #### Timed Images
 Timed images display one out of several frames, on a timer.  Timed images can repeat continuously (the default), or only display once,
 based on the value of the optional `once` parameter.  `frame_time_millis` is how long each frame is shown for, in milliseconds.  Each

@@ -163,6 +163,12 @@ image_sets:
       arrow_up:
         position: [235, 48]
         size: [12, 12]
+      slider_horizontal:
+        position: [0, 97]
+        grid_size_horiz: [5, 4]
+      slider_vertical:
+        position: [0, 102]
+        grid_size_vert: [4, 5]
 widgets:
   combo_box:
     from: button

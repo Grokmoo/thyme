@@ -16,6 +16,14 @@ enum ImageKind {
         tex_coords: [[TexCoord; 4]; 4],
         grid_size: [f32; 2],
     },
+    ComposedVertical {
+        tex_coords: [[TexCoord; 4]; 2],
+        grid_size: [f32; 2],
+    },
+    ComposedHorizontal {
+        tex_coords: [[TexCoord; 2]; 4],
+        grid_size: [f32; 2],
+    },
     Simple {
         tex_coords: [TexCoord; 2],
         fixed_size: Option<[f32; 2]>,
@@ -67,6 +75,26 @@ impl Image {
                     [params.size[0] * params.scale, params.size[1] * params.scale],
                     params.clip * params.scale
                 );
+            },
+            ImageKind::ComposedVertical { tex_coords, grid_size } => {
+                self.draw_composed_vertical(
+                    draw_list,
+                    tex_coords,
+                    [grid_size[0] * params.scale, grid_size[1] * params.scale],
+                    [params.pos[0] * params.scale, params.pos[1] * params.scale],
+                    [params.size[0] * params.scale, params.size[1] * params.scale],
+                    params.clip * params.scale
+                )
+            },
+            ImageKind::ComposedHorizontal { tex_coords, grid_size } => {
+                self.draw_composed_horizontal(
+                    draw_list,
+                    tex_coords,
+                    [grid_size[0] * params.scale, grid_size[1] * params.scale],
+                    [params.pos[0] * params.scale, params.pos[1] * params.scale],
+                    [params.size[0] * params.scale, params.size[1] * params.scale],
+                    params.clip * params.scale
+                )
             },
             ImageKind::Simple { tex_coords, fixed_size } => {
                 if let Some(size) = fixed_size {
@@ -124,6 +152,36 @@ impl Image {
                 let grid_size = [grid_size[0] as f32, grid_size[1] as f32];
                 base_size = Point::new(grid_size[0] * 3.0, grid_size[1] * 3.0);
                 ImageKind::Composed { tex_coords, grid_size }
+            },
+            ImageDefinitionKind::ComposedHorizontal { grid_size_horiz, position } => {
+                let mut tex_coords = [[TexCoord::default(); 2]; 4];
+                for y in 0..2 {
+                    #[allow(clippy::needless_range_loop)]
+                    for x in 0..4 {
+                        let x_val = position[0] + x as u32 * grid_size_horiz[0];
+                        let y_val = position[1] + y as u32 * grid_size_horiz[1];
+                        tex_coords[x][y] = texture.tex_coord(x_val, y_val);
+                    }
+                }
+                
+                let grid_size = [grid_size_horiz[0] as f32, grid_size_horiz[1] as f32];
+                base_size = Point::new(grid_size[0] * 3.0, grid_size[1]);
+                ImageKind::ComposedHorizontal { tex_coords, grid_size }
+            },
+            ImageDefinitionKind::ComposedVertical { grid_size_vert, position } => {
+                let mut tex_coords = [[TexCoord::default(); 4]; 2];
+                for y in 0..4 {
+                    #[allow(clippy::needless_range_loop)]
+                    for x in 0..2 {
+                        let x_val = position[0] + x as u32 * grid_size_vert[0];
+                        let y_val = position[1] + y as u32 * grid_size_vert[1];
+                        tex_coords[x][y] = texture.tex_coord(x_val, y_val);
+                    }
+                }
+                
+                let grid_size = [grid_size_vert[0] as f32, grid_size_vert[1] as f32];
+                base_size = Point::new(grid_size[0] * 3.0, grid_size[1]);
+                ImageKind::ComposedVertical { tex_coords, grid_size }
             },
             ImageDefinitionKind::Simple { size, position, stretch } => {
                 let tex1 = texture.tex_coord(position[0], position[1]);
@@ -200,6 +258,78 @@ impl Image {
             *tex,
             self.color,
             clip
+        );
+    }
+
+    fn draw_composed_horizontal<D: DrawList>(
+        &self,
+        draw_list: &mut D,
+        tex: &[[TexCoord; 2]; 4],
+        grid_size: [f32; 2],
+        pos: [f32; 2],
+        size: [f32; 2],
+        clip: Rect,
+    ) {
+        draw_list.push_rect(
+            pos,
+            [grid_size[0], size[1]],
+            [tex[0][0], tex[1][1]],
+            self.color,
+            clip,
+        );
+
+        if size[0] > 2.0 * grid_size[0] {
+            draw_list.push_rect(
+                [pos[0] + grid_size[0], pos[1]],
+                [size[0] - 2.0 * grid_size[0], size[1]],
+                [tex[1][0], tex[2][1]],
+                self.color,
+                clip,
+            );
+        }
+
+        draw_list.push_rect(
+            [pos[0] + size[0] - grid_size[0], pos[1]],
+            [grid_size[0], size[1]],
+            [tex[2][0], tex[3][1]],
+            self.color,
+            clip,
+        );
+    }
+
+    fn draw_composed_vertical<D: DrawList>(
+        &self,
+        draw_list: &mut D,
+        tex: &[[TexCoord; 4]; 2],
+        grid_size: [f32; 2],
+        pos: [f32; 2],
+        size: [f32; 2],
+        clip: Rect,
+    ) {
+        draw_list.push_rect(
+            pos,
+            [size[0], grid_size[1]],
+            [tex[0][0], tex[1][1]],
+            self.color,
+            clip,
+        );
+
+        if size[1] > 2.0 * grid_size[1] {
+            draw_list.push_rect(
+                [pos[0], pos[1] + grid_size[1]],
+                [size[0], size[1] - 2.0 * grid_size[1]],
+                [tex[0][1], tex[1][2]],
+                self.color,
+                clip,
+            );
+        }
+
+        draw_list.push_rect(
+            [pos[0], pos[1] + size[1] - grid_size[1]],
+            [size[0], grid_size[1]],
+            [tex[0][2], tex[1][3]],
+            self.color,
+            clip,
         );
     }
 

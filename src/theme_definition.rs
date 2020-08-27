@@ -66,6 +66,14 @@ pub enum ImageDefinitionKind {
         position: [u32; 2],
         grid_size: [u32; 2],
     },
+    ComposedVertical {
+        position: [u32; 2],
+        grid_size_vert: [u32; 2],
+    },
+    ComposedHorizontal {
+        position: [u32; 2],
+        grid_size_horiz: [u32; 2],
+    },
     Simple {
         position: [u32; 2],
         size: [u32; 2],
