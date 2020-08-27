@@ -245,6 +245,7 @@ pub struct WidgetTheme {
     // all fields are options instead of using default so
     // we can detect when to override them
     pub wants_mouse: Option<bool>,
+    pub wants_scroll: Option<bool>,
     pub text_align: Option<Align>,
     pub pos: Option<Point>,
     pub size: Option<Point>,
@@ -323,6 +324,7 @@ impl WidgetTheme {
             background,
             foreground,
             wants_mouse: def.wants_mouse,
+            wants_scroll: def.wants_scroll,
             text_align: def.text_align,
             pos: def.pos,
             size: def.size,
@@ -379,6 +381,7 @@ fn merge_from(
     to.from = from.from;
 
     if to.wants_mouse.is_none() { to.wants_mouse = from.wants_mouse; }
+    if to.wants_scroll.is_none() { to.wants_scroll = from.wants_scroll; }
     if to.font.is_none() { to.font = from.font; }
     if to.background.is_none() { to.background = from.background; }
     if to.foreground.is_none() { to.foreground = from.foreground; }

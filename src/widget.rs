@@ -83,6 +83,7 @@ impl Widget {
         let data = WidgetData {
             manual_pos,
             wants_mouse: theme.wants_mouse.unwrap_or_default(),
+            wants_scroll: theme.wants_scroll.unwrap_or_default(),
             raw_size,
             raw_pos,
             width_from,
@@ -285,6 +286,7 @@ fn pos(parent: &Widget, pos: Point, self_size: Point, align: Align) -> Point {
 pub(crate) struct WidgetData {
     manual_pos: bool,
     wants_mouse: bool,
+    wants_scroll: bool,
 
     raw_pos: Point,
     raw_size: Point,
@@ -401,12 +403,21 @@ impl<'a> WidgetBuilder<'a> {
         self
     }
 
-    /// Sets whether this widget will interact with the mouse.  By default, widget's will not interact with the mouse, so this is set to `true`
+    /// Sets whether this widget will interact with the mouse.  By default, widgets will not interact with the mouse, so this is set to `true`
     /// for buttons and similar.
     /// This may also be specified in the widget's [`theme`](struct.Context.html).
     #[must_use]
     pub fn wants_mouse(mut self, wants_mouse: bool) -> WidgetBuilder<'a> {
         self.data.wants_mouse = wants_mouse;
+        self
+    }
+
+    /// Sets whether this widget will receive mouse scrollwheel events.  By default, widgets will not receive scroll wheel events, so this is set
+    /// to `true` for scrollpanes.
+    /// This may also be specified in the widget's [`theme`](struct.Context.html).
+    #[must_use]
+    pub fn wants_scroll(mut self, wants_scroll: bool) -> WidgetBuilder<'a> {
+        self.data.wants_scroll = wants_scroll;
         self
     }
 
@@ -781,7 +792,7 @@ impl<'a> WidgetBuilder<'a> {
 
     // TODO add YAML sample
     pub fn scrollpane<F: FnOnce(&mut Frame)>(self, content_id: &str, children: F) -> WidgetState {
-        self.finish_with(Some(crate::recipes::scrollpane_content(content_id, children)))
+        self.wants_scroll(true).finish_with(Some(crate::recipes::scrollpane_content(content_id, children)))
     }
 
     /// Consumes the builder and adds a widget to the current frame.  The
@@ -879,7 +890,8 @@ impl<'a> WidgetBuilder<'a> {
         self.frame.set_max_child_bounds(old_max_child_bounds.max(self_bounds));
 
         let (clicked, mut anim_state, dragged) = if self.data.enabled && self.data.wants_mouse {
-            self.frame.check_mouse_taken(widget_index)
+            let mouse_state = self.frame.check_mouse_state(widget_index);
+            (mouse_state.clicked, mouse_state.anim, mouse_state.dragged)
         } else {
             (false, AnimState::disabled(), Point::default())
         };

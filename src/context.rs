@@ -173,6 +173,7 @@ pub struct ContextInternal {
     mouse_pos: Point,
     mouse_pressed: [bool; 3],
     mouse_clicked: [bool; 3],
+    mouse_wheel: Point,
 
     display_size: Point,
     scale_factor: f32,
@@ -307,6 +308,7 @@ impl ContextInternal {
             self.state_mut(modal.id).is_open = false;
         }
 
+        self.mouse_wheel = Point::default();
         self.mouse_clicked = [false; 3];
         self.mouse_taken_last_frame = mouse_taken;
         self.last_mouse_pos = self.mouse_pos;
@@ -488,6 +490,7 @@ methods on [`WidgetBuilder`](struct.WidgetBuilder.html) will take precedence ove
      background: gui/button
      foreground: gui/button_icon
      wants_mouse: true
+     wants_scroll: false
      pos: [10, 10]
      size: [100, 0]
      width_from: Normal
@@ -514,6 +517,7 @@ impl Context {
             last_mouse_pos: Point::default(),
             mouse_pressed: [false; 3],
             mouse_clicked: [false; 3],
+            mouse_wheel: Point::default(),
             mouse_taken_last_frame: None,
             mouse_in_rend_group_last_frame: None,
             top_rend_group: RendGroup::default(),
@@ -524,6 +528,8 @@ impl Context {
             start_instant: Instant::now(),
             keyboard_focus_widget: None,
         };
+
+        println!("{}", std::mem::size_of::<crate::WidgetState>());
 
         Context {
             internal: Rc::new(RefCell::new(internal))
@@ -551,6 +557,12 @@ impl Context {
     pub(crate) fn set_display_size(&mut self, size: Point) {
         let mut internal = self.internal.borrow_mut();
         internal.display_size = size;
+    }
+
+    pub(crate) fn add_mouse_wheel(&mut self, delta: Point) {
+        let mut internal = self.internal.borrow_mut();
+
+        internal.mouse_wheel = internal.mouse_wheel + delta;
     }
 
     pub(crate) fn set_mouse_pressed(&mut self, pressed: bool, index: usize) {

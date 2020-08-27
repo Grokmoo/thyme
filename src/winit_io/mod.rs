@@ -1,4 +1,4 @@
-use winit::event::{Event, WindowEvent, MouseButton, ElementState};
+use winit::event::{Event, WindowEvent, MouseButton, MouseScrollDelta, ElementState};
 use winit::event_loop::EventLoop;
 
 use crate::point::Point;
@@ -67,6 +67,17 @@ impl WinitIo {
                 };
 
                 context.set_mouse_pressed(pressed, index);
+            },
+            MouseWheel { delta, .. } => {
+                match delta {
+                    MouseScrollDelta::LineDelta(x, y) => {
+                        context.add_mouse_wheel(Point::new(*x, *y));
+                    }, MouseScrollDelta::PixelDelta(pos) => {
+                        let x = pos.x as f32;
+                        let y = pos.y as f32;
+                        context.add_mouse_wheel(Point::new(x, y));
+                    }
+                }
             },
             CursorMoved { position, .. } => {
                 context.set_mouse_pos((position.x as f32 / self.scale_factor, position.y as f32 / self.scale_factor).into());

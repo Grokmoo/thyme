@@ -9,8 +9,8 @@ use crate::{
 use crate::image::ImageHandle;
 use crate::widget::Widget;
 
-const MOUSE_NOT_TAKEN: (bool, AnimState, Point) =
-    (false, AnimState::normal(), Point { x: 0.0, y: 0.0 });
+const MOUSE_NOT_TAKEN: MouseState =
+    MouseState { clicked: false, anim: AnimState::normal(), dragged: Point { x: 0.0, y: 0.0 } };
 
 /// A Frame, holding the widget tree to be drawn on a given frame, and a reference to the
 /// Thyme [`Context`](struct.Context.html)
@@ -41,6 +41,12 @@ pub struct Frame {
 
     mouse_cursor: Option<(ImageHandle, Align)>,
     mouse_anim_state: AnimState,
+}
+
+pub(crate) struct MouseState {
+    pub clicked: bool,
+    pub anim: AnimState,
+    pub dragged: Point,
 }
 
 impl Frame {
@@ -89,7 +95,7 @@ impl Frame {
         &self.context.internal()
     }
 
-    pub(crate) fn check_mouse_taken(&mut self, index: usize) -> (bool, AnimState, Point) {
+    pub(crate) fn check_mouse_state(&mut self, index: usize) -> MouseState {
         let widget = &self.widgets[index];
 
         let mut context = self.context.internal().borrow_mut();
@@ -120,11 +126,11 @@ impl Frame {
                 if context.mouse_pressed(0) {
                     context.set_top_rend_group(widget.rend_group());
                 }
-                return (
-                    context.mouse_clicked(0),
-                    AnimState::new(AnimStateKey::Pressed),
+                return MouseState {
+                    clicked: context.mouse_clicked(0),
+                    anim: AnimState::new(AnimStateKey::Pressed),
                     dragged
-                );
+                };
             } else {
                 return MOUSE_NOT_TAKEN;
             }
@@ -140,11 +146,11 @@ impl Frame {
         }
 
         self.mouse_taken = Some((widget.id().to_string(), widget.rend_group()));
-        (
-            was_taken_last && context.mouse_clicked(0),
-            AnimState::new(AnimStateKey::Hover),
-            Point::default()
-        )
+        MouseState {
+            clicked: was_taken_last && context.mouse_clicked(0),
+            anim: AnimState::new(AnimStateKey::Hover),
+            dragged: Point::default()
+        }
     }
 
     pub(crate) fn max_child_bounds(&self) -> Rect { self.max_child_bounds }

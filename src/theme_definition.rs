@@ -27,6 +27,7 @@ pub struct WidgetThemeDefinition {
     // we can detect when to override them
     pub text_color: Option<Color>,
     pub wants_mouse: Option<bool>,
+    pub wants_scroll: Option<bool>,
     pub text_align: Option<Align>,
     pub pos: Option<Point>,
     pub size: Option<Point>,

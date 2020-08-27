@@ -226,6 +226,7 @@ impl Frame {
     /// the more customizable version.
     pub fn scrollpane<F: FnOnce(&mut Frame)>(&mut self, theme_id: &str, content_id: &str, children: F) {
         self.start(theme_id)
+        .wants_scroll(true)
         .scrollpane(content_id, children);
     }
 }
