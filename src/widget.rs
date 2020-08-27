@@ -298,6 +298,17 @@ pub(crate) struct WidgetData {
     next_render_group: bool,
 }
 
+/// A `WidgetBuilder` is used to customize widgets within your UI tree, following a builder pattern.
+///
+///Although there are several convenience methods on
+/// [`Frame`](struct.Frame.html) for simple [`buttons`](struct.Frame.html#method.button), [`labels`](struct.Frame.html#method.label),
+/// etc, widgets with more complex behavior will usually be created via [`Frame.start`](struct.Frame.html#method.start) and then
+/// customized using the methods here.  Note also that many methods here have an equivalent in the widget's [`theme`](struct.Context.html)
+/// definition.
+///
+/// Each method here takes the WidgetBuilder by value, modifies it, and then returns it, allowing you to use a builder pattern.
+/// The [`window`](#method.window) method will transform this into a [`WindowBuilder`](struct.WindowBuilder.html), while the
+/// [`finish`](#method.finish) and [`children`](#method.children) methods will complete the widget and add it to the frame's widget tree.
 pub struct WidgetBuilder<'a> {
     pub frame: &'a mut Frame,
     pub parent: usize,
@@ -307,7 +318,7 @@ pub struct WidgetBuilder<'a> {
 
 impl<'a> WidgetBuilder<'a> {
     #[must_use]
-    pub fn new(frame: &'a mut Frame, parent: usize, theme_id: String, base_theme: &str) -> WidgetBuilder<'a> {
+    pub(crate) fn new(frame: &'a mut Frame, parent: usize, theme_id: String, base_theme: &str) -> WidgetBuilder<'a> {
         let (data, widget) = {
             let context = std::rc::Rc::clone(&frame.context_internal());
             let context = context.borrow();
@@ -380,18 +391,28 @@ impl<'a> WidgetBuilder<'a> {
         self.frame.widget(self.parent)
     }
     
+    /// Specifies that this widget and its children should be part of a new Render Group.  Render groups are used to handle cases where
+    /// widgets may overlap, and determine input routing and draw order in those cases.  If your UI doesn't have moveable elements such as
+    /// windows, you should generally be ok to draw your entire UI in one render group, with the exception of modal popups.
+    /// [`Windows`](struct.WindowBuilder.html) make use of render groups.
     #[must_use]
     pub fn new_render_group(mut self) -> WidgetBuilder<'a> {
         self.data.next_render_group = true;
         self
     }
 
+    /// Sets whether this widget will interact with the mouse.  By default, widget's will not interact with the mouse, so this is set to `true`
+    /// for buttons and similar.
+    /// This may also be specified in the widget's [`theme`](struct.Context.html).
     #[must_use]
     pub fn wants_mouse(mut self, wants_mouse: bool) -> WidgetBuilder<'a> {
         self.data.wants_mouse = wants_mouse;
         self
     }
 
+    /// Sets an `id` for this widget.  This `id` is used internally to associate the widget with its [`PersistentState`](struct.PersistentState.html).
+    /// You will need to specify an `id` if you want to make changes to the [`PersistentState`](struct.PersistentState.html).  Otherwise,
+    /// Thyme can usually generate a unique internal ID for most elements.
     #[must_use]
     pub fn id<T: Into<String>>(mut self, id: T) -> WidgetBuilder<'a> {
         self.widget.id = id.into();
@@ -399,6 +420,9 @@ impl<'a> WidgetBuilder<'a> {
         self
     }
 
+    /// Specify whether this widget is initially `open`, or [`visible`](#method.visible).  By default,
+    /// widgets are initially open.  If set to false, the widget will not be shown until it is set to open
+    /// using one of the methods on [`Frame`](struct.Frame.html) to modify its [`PersistentState`](struct.PersistentState.html).
     #[must_use]
     pub fn initially_open(self, open: bool) -> WidgetBuilder<'a> {
         {
@@ -408,24 +432,36 @@ impl<'a> WidgetBuilder<'a> {
         self
     }
 
+    /// Specify a [`Color`](struct.Color.html) for the text of this widget to display.  The default
+    /// color is white.
+    /// This may also be specified in the widget's [`theme`](struct.Context.html).
     #[must_use]
     pub fn text_color(mut self, color: Color) -> WidgetBuilder<'a> {
         self.widget.text_color = color;
         self
     }
 
+    /// Specify the [`alignment`](enum.Align.html) of the widget's text within the widget's
+    /// inner area, as defined by its overall [`size`](#method.size) and [`border`](#method.border).
+    /// This may also be specified in the widget's [`theme`](struct.Context.html).
     #[must_use]
     pub fn text_align(mut self, align: Align) -> WidgetBuilder<'a> {
         self.widget.text_align = align;
         self
     }
 
+    /// Specify `text` to display for this widget.  The widget must have a [`font`](#method.font)
+    /// specified to render text.
+    /// This may also be specified in the widget's [`theme`](struct.Context.html).
     #[must_use]
     pub fn text<T: Into<String>>(mut self, text: T) -> WidgetBuilder<'a> {
         self.widget.text = Some(text.into());
         self
     }
 
+    /// Specify a `font` for any text rendered by this widget.  A widget must have a font
+    /// specified to render text.  The `font` must be registered in the theme's font definitions.
+    /// This may also be specified in the widget's [`theme`](struct.Context.html).
     #[must_use]
     pub fn font(mut self, font: &str) -> WidgetBuilder<'a> {
         let font = {
@@ -439,6 +475,10 @@ impl<'a> WidgetBuilder<'a> {
         self
     }
 
+    /// Specify a foreground image for this widget.  The image ID, `fg` must be registered in the theme's
+    /// image definitions.  The ID consists of "{image_set_id}/{image_id}".
+    /// Foreground images are drawn below text but above the background.
+    /// This may also be specified in the widget's [`theme`](struct.Context.html).
     #[must_use]
     pub fn foreground(mut self, fg: &str) -> WidgetBuilder<'a> {
         let fg = {
@@ -451,6 +491,10 @@ impl<'a> WidgetBuilder<'a> {
         self
     }
 
+    /// Specify a background image for this widget.  The image ID, `bg` must be registered in the theme's
+    /// image definitions.  The ID consists of "{image_set_id}/{image_id}".
+    /// Background images are drawn below text and any children.
+    /// This may also be specified in the widget's [`theme`](struct.Context.html).
     #[must_use]
     pub fn background(mut self, bg: &str) -> WidgetBuilder<'a> {
         let bg = {
@@ -463,34 +507,48 @@ impl<'a> WidgetBuilder<'a> {
         self
     }
 
+    /// Specifies the default alignment of children added to this widget.  See [`Align`](enum.Align.html).
+    /// This may be overridden by the child, either in the theme or by calling [`align`](#method.align).
+    /// This may also be specified in the widget's [`theme`](struct.Context.html).
     #[must_use]
     pub fn child_align(mut self, align: Align) -> WidgetBuilder<'a> {
         self.widget.child_align = align;
         self
     }
 
+    /// Specifies the spacing, in logical pixels, to use between children that are laid out in this widget.
+    /// This may also be specified in the widget's [`theme`](struct.Context.html).
     #[must_use]
     pub fn layout_spacing(mut self, spacing: Point) -> WidgetBuilder<'a> {
         self.widget.layout_spacing = spacing;
         self
     }
 
+    /// Specifies that the children of this widget should be laid out vertically.  See [`Layout`](enum.Layout.html).
+    /// This may also be specified in the widget's [`theme`](struct.Context.html).
     #[must_use]
     pub fn layout_horizontal(self) -> WidgetBuilder<'a> {
         self.layout(Layout::Horizontal)
     }
 
+    /// Specifies that the children of this widget should be laid out vertically.  See [`Layout`](enum.Layout.html).
+    /// This may also be specified in the widget's [`theme`](struct.Context.html).
     #[must_use]
     pub fn layout_vertical(self) -> WidgetBuilder<'a> {
         self.layout(Layout::Vertical)
     }
 
+    /// Specifies the `layout` for children of this widget.  See [`Layout`](enum.Layout.html).
+    /// This may also be specified in the widget's [`theme`](struct.Context.html).
     #[must_use]
     pub fn layout(mut self, layout: Layout) -> WidgetBuilder<'a> {
         self.widget.layout = layout;
         self
     }
 
+    /// Manually specify a position for this widget, basedon the specified
+    /// `x` and `y` logical pixel positions.  This position ignores alignment
+    /// or any other considerations.
     #[must_use]
     pub fn screen_pos(mut self, x: f32, y: f32) -> WidgetBuilder<'a> {
         self.data.raw_pos = Point { x, y };
@@ -501,6 +559,10 @@ impl<'a> WidgetBuilder<'a> {
         self
     }
 
+    /// Specify the position of the widget, with respect to its alignment within the parent.
+    /// The `x` and `` values are in logical pixels.
+    /// See [`align`](#method.align).
+    /// This may also be specified in the widget's [`theme`](struct.Context.html).
     #[must_use]
     pub fn pos(mut self, x: f32, y: f32) -> WidgetBuilder<'a> {
         self.data.raw_pos = Point { x, y } + self.parent().scroll;
@@ -509,6 +571,8 @@ impl<'a> WidgetBuilder<'a> {
         self
     }
 
+    /// Specify the alignment of this widget with respect to its parent.  See [`Align`](enum.Align.html).
+    /// This may also be specified in the widget's [`theme`](struct.Context.html).
     #[must_use]
     pub fn align(mut self, align: Align) -> WidgetBuilder<'a> {
         self.data.align = align;
@@ -517,6 +581,9 @@ impl<'a> WidgetBuilder<'a> {
         self
     }
     
+    /// Specify the widget's border size, which determines the inner size of the widget
+    /// relative to its [`size`](#method.size).  See [`Border`](struct.Border.html).
+    /// This may also be specified in the widget's [`theme`](struct.Context.html).
     #[must_use]
     pub fn border(mut self, border: Border) -> WidgetBuilder<'a> {
         self.widget.border = border;
@@ -524,6 +591,10 @@ impl<'a> WidgetBuilder<'a> {
         self
     }
 
+    /// Specify the widget's `size` in logical pixels.  This may or may not be an
+    /// absolute size, depending on [`WidthRelative`](enum.WidthRelative.html) and
+    /// [`HeightRelative`](enum.HeightRelative.html)
+    /// This may also be specified in the widget's [`theme`](struct.Context.html).
     #[must_use]
     pub fn size(mut self, x: f32, y: f32) -> WidgetBuilder<'a> {
         self.data.raw_size = Point { x, y };
@@ -531,6 +602,9 @@ impl<'a> WidgetBuilder<'a> {
         self
     }
 
+    /// Specify how to compute the widget's width from its [`size`](#method.size).
+    /// See [`WidthRelative`](enum.WidthRelative.html).
+    /// This may also be specified in the widget's [`theme`](struct.Context.html).
     #[must_use]
     pub fn width_from(mut self, from: WidthRelative) -> WidgetBuilder<'a> {
         self.data.width_from = from;
@@ -538,6 +612,9 @@ impl<'a> WidgetBuilder<'a> {
         self
     }
 
+    /// Specify how to compute the widget's height from its [`size`](#method.size).
+    /// See [`HeightRelative`](enum.HeightRelative.html)
+    /// This may also be specified in the widget's [`theme`](struct.Context.html).
     #[must_use]
     pub fn height_from(mut self, from: HeightRelative) -> WidgetBuilder<'a> {
         self.data.height_from = from;
@@ -545,6 +622,15 @@ impl<'a> WidgetBuilder<'a> {
         self
     }
 
+    /// Sets the widget's clip [`Rectangle`](struct.Rect.html).  By default,
+    /// a widget will have a clip rectangle set from its `size` and `position`,
+    /// calculated based on the theme and the various methods such as [`size`](#method.size),
+    /// [`pos`](#method.pos), [`width_from`](#method.width_from), [`height_from`](#method.height_from),
+    /// etc.  You can override that behavior with this method.  This is useful to display part of an image,
+    /// such as in a [`progress bar`](struct.Frame.html#method.progress_bar), or to limit the size of child
+    /// content, such as in a [`scrollpane`](#method.scrollpane).
+    /// Widgets always inherit their `clip` as the minimum extent of their parent's clip and their own clip.
+    /// See [`Rect.min`](struct.Rect.html#method.min).
     #[must_use]
     pub fn clip(mut self, clip: Rect) -> WidgetBuilder<'a> {
         let cur_clip = self.widget.clip;
@@ -552,18 +638,25 @@ impl<'a> WidgetBuilder<'a> {
         self
     }
 
+    /// Sets whether the widget's [`AnimState`](struct.AnimState.html) will
+    /// include the `active` [`AnimStateKey`](enum.AnimStateKey.html).
     #[must_use]
     pub fn active(mut self, active: bool) -> WidgetBuilder<'a> {
         self.data.active = active;
         self
     }
 
+    /// Sets whether this widget will be `visible`.  If the widget is not
+    /// visible, it will not be shown and any child closures (such as passed in
+    /// [`children`](#method.children)) will not be run.
     #[must_use]
     pub fn visible(mut self, visible: bool) -> WidgetBuilder<'a> {
         self.widget.visible = visible;
         self
     }
 
+    /// Sets whether this widget will be `enabled`.  If the widget is not
+    /// enabled, it will not interact with any user input.
     #[must_use]
     pub fn enabled(mut self, enabled: bool) -> WidgetBuilder<'a> {
         self.data.enabled = enabled;
@@ -648,7 +741,7 @@ impl<'a> WidgetBuilder<'a> {
 
     /// Turns this builder into a WindowBuilder.  You should use all `WidgetBuilder` methods
     /// before calling this method.  The window must still be completed with one of the
-    /// `WindowBuilder` methods.  You must pass a unique `id` for each each window
+    /// [`WindowBuilder`](struct.WindowBuilder.html) methods.  You must pass a unique `id` for each window
     /// created by your application.
     #[must_use]
     pub fn window(self, id: &str) -> WindowBuilder<'a> {
@@ -656,16 +749,21 @@ impl<'a> WidgetBuilder<'a> {
     }
 
     /// Consumes this builder and adds a scrollpane widget to the current frame.
-    /// The provided closure is called to add children to the scrollpane's content.
-    pub fn scrollpane<F: FnOnce(&mut Frame)>(self, content_id: &str, f: F) -> WidgetState {
-        self.finish_with(Some(crate::recipes::scrollpane_content(content_id, f)))
+    /// The scrollpane has horizontal and vertical scrollbars shown if the content
+    /// size is greater than the inner scrollpane size.  The `content_id` is the ID for the scrollpane's
+    /// content widget and must be unique.  The `children` closure is called and adds children to the scrollpane's
+    /// content, *not* directly to the scrollpane.
+
+    // TODO add YAML sample
+    pub fn scrollpane<F: FnOnce(&mut Frame)>(self, content_id: &str, children: F) -> WidgetState {
+        self.finish_with(Some(crate::recipes::scrollpane_content(content_id, children)))
     }
 
     /// Consumes the builder and adds a widget to the current frame.  The
     /// returned data includes information about the animation state and
     /// mouse interactions of the created element.
     /// If you wish this widget to have one or more child widgets, you should
-    /// call `children` instead.
+    /// call [`children`](#method.children) instead.
     pub fn finish(self) -> WidgetState {
         self.finish_with(None::<fn(&mut Frame)>)
     }
@@ -674,7 +772,8 @@ impl<'a> WidgetBuilder<'a> {
     /// returned data includes information about the animation state and
     /// mouse interactions of the created element.
     /// The provided closure is called to enable adding children to this widget.
-    /// If you don't want to add children, you can just call `finish` instead.
+    /// If you don't want to add children, you can just call
+    /// [`finish`](#method.finish) instead.
     pub fn children<F: FnOnce(&mut Frame)>(self, f: F) -> WidgetState {
         self.finish_with(Some(f))
     }

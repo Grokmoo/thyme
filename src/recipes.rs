@@ -2,15 +2,24 @@ use std::fmt::Display;
 
 use crate::{Frame, Point, Rect, WidgetState};
 
+/// Specific widget builders and convenience methods
 impl Frame {
+    /// The simplest way to construct a child widget.  The widget has no special behavior in code at all.
+    /// It is defined entirely based on its `theme`.
     pub fn child(&mut self, theme: &str) -> WidgetState {
         self.start(theme).finish()
     }
 
+    /// A simple label displaying the specified `text`, with no user interactivity.
+
+    // TODO yaml example
     pub fn label<T: Into<String>>(&mut self, theme: &str, text: T) {
         self.start(theme).text(text).finish();
     }
 
+    /// A simple button with a `label`.
+
+    // TODO yaml example
     pub fn button<T: Into<String>>(&mut self, theme: &str, label: T) -> WidgetState {
         self.start(theme).text(label).wants_mouse(true).finish()
     }
@@ -21,6 +30,11 @@ impl Frame {
 
     // TODO menubar
 
+    /// A drop down box. It displays its `current`ly active selection, and opens a modal popup to select a new
+    /// choice from the list of `values` when the user clicks on it.  The specified `id` must be unique.
+    /// The method will return a selected choice on the frame the user clicks on it, otherwise returning `None`.
+
+    // TODO yaml example
     pub fn combo_box<'a, T: Display>(&mut self, theme: &str, id: &str, current: T, values: &'a [T]) -> Option<&'a T> {
         let popup_id = format!("{}_popup", id);
         
@@ -37,6 +51,7 @@ impl Frame {
 
         let mut result = None;
 
+        // TODO popup will have clipping issues if this goes outside the parent
         self.start(&format!("{}_popup", id))
         .id(&popup_id)
         .screen_pos(rect.pos.x, rect.pos.y + rect.size.y)
@@ -54,10 +69,19 @@ impl Frame {
         result
     }
 
+    /// A simple toggle button that can be toggle on or off, based on the passed in `active` state.
+
+    // TODO provide YAML sample
     pub fn toggle_button<T: Into<String>>(&mut self, theme: &str, label: T, active: bool) -> WidgetState {
         self.start(theme).text(label).active(active).wants_mouse(true).finish()
     }
 
+    /// Creates a simple text input field.  The `id` that is passed in must be unique.
+    /// The text input will grab keyboard focus when the user clicks on it, allowing
+    /// the user to type text.  The return value will be `None` if the text didn't change
+    /// this frame, or will contain the current text displayed by the textbox if it did
+    /// change.
+    // TODO add a simple YAML example
     pub fn input_field(&mut self, theme: &str, id: &str) -> Option<String> {
         let mut text_out = None;
 
@@ -99,6 +123,10 @@ impl Frame {
         text_out
     }
 
+    /// Creates a simple progress bar.  The drawing will be clipped based on the size
+    /// of the widget and the passed in `frac`.
+
+    // TODO add YAML example
     pub fn progress_bar(&mut self, theme: &str, frac: f32) {
         self.start(theme)
         .children(|ui| {
@@ -111,6 +139,11 @@ impl Frame {
         });
     }
 
+    /// A convenience method to create a window with the specified `theme` and an `id` which
+    /// must be unique.  The specified closure is called to add `children` to the window.
+    /// The window will include a titlebar, close button, be moveable, and resizable.
+    /// See [`WindowBuilder`](struct.WindowBuilder.html) for more details and more
+    /// flexible window creation. 
     pub fn window<F: FnOnce(&mut Frame)>(&mut self, theme: &str, id: &str, children: F) {
         self
         .start(theme)
@@ -120,6 +153,9 @@ impl Frame {
         });
     }
 
+    /// Adds a simple scrollpane widget.
+    /// See [`WidgetBuilder.scrollpane`](struct.WidgetBuilder.html#method.scrollpane) for details and
+    /// the more customizable version.
     pub fn scrollpane<F: FnOnce(&mut Frame)>(&mut self, theme_id: &str, content_id: &str, children: F) {
         self.start(theme_id)
         .scrollpane(content_id, children);
@@ -129,6 +165,9 @@ impl Frame {
 pub(crate) fn scrollpane_content<'a, F: FnOnce(&mut Frame) + 'a>(content_id: &'a str, children: F) -> impl FnOnce(&mut Frame) + 'a {
     move |ui| {
         let mut content_bounds = Rect::default();
+
+        // TODO if horizontal and/or vertical scrollbars aren't present,
+        // change the scrollpane content size to fill up the available space
 
         ui.start("content")
         .id(content_id)

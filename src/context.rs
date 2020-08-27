@@ -27,7 +27,7 @@ pub struct ContextBuilder<'a, R: Renderer, I: IO> {
 impl<'a, R: Renderer, I: IO> ContextBuilder<'a, R, I> {
     /// Creates a new `ContextBuilder`, from the specified [`Renderer`](trait.Renderer.html) and [`IO`](trait.IO.html).  The theme for your UI will be deserialized from
     /// `theme`.  For example, `theme` could be a [`serde_json Value`](https://docs.serde.rs/serde_json/value/enum.Value.html) or
-    /// [`serde_yaml Value`](https://docs.serde.rs/serde_yaml/enum.Value.html).
+    /// [`serde_yaml Value`](https://docs.serde.rs/serde_yaml/enum.Value.html).  See [`Context`](struct.Context.html) for a discussion of the theme format.
     pub fn new<T: serde::Deserializer<'a>>(theme: T, renderer: &'a mut R, io: &'a mut I) -> Result<ContextBuilder<'a, R, I>, T::Error> {
         let theme_def: ThemeDefinition = serde::Deserialize::deserialize(theme)?;
 
@@ -104,26 +104,28 @@ pub(crate) struct PersistentStateData {
 /// a known ID for that widget.
 #[derive(Debug)]
 pub struct PersistentState {
-    /// Whether the widget will be shown
+    /// Whether the widget will be shown.  Defaults to true.
     pub is_open: bool,
 
-    /// An amount, in logical pixels that the widget has been resized by
+    /// An amount, in logical pixels that the widget has been resized by.  Default to zero.
     pub resize: Point,
 
-    /// An amount, in logical pizels that the widget has been moved by
+    /// An amount, in logical pizels that the widget has been moved by.  Defaults to zero.
     pub moved: Point,
 
     /// An amount, in logical pixels that the internal content has been
-    /// scrolled by
+    /// scrolled by.  Defaults to zero.
     pub scroll: Point,
 
-    /// The "zero" time for timed images associated with this widget.
+    /// The "zero" time for timed images associated with this widget.  Defaults to zero,
+    /// which is the internal [`Context`](struct.Context.html) init time.
     pub base_time_millis: u32,
 
-    /// Any characters that have been sent to this widget from the keyboard
+    /// Any characters that have been sent to this widget from the keyboard.  Defaults to
+    /// empty.  Widgets should typically drain this list as they work with input.
     pub characters: Vec<char>,
 
-    /// The text for this widget, overriding default text.
+    /// The text for this widget, overriding default text.  Defaults to `None`.
     pub text: Option<String>,
 }
 
@@ -312,8 +314,185 @@ impl ContextInternal {
     }
 }
 
-/// The main Thyme Context that holds internal [`PersistentState`](struct.PersistentState.html)
-/// and is responsible for creating [`Frames`](struct.Frame.html).
+/**
+The main Thyme Context that holds internal [`PersistentState`](struct.PersistentState.html)
+and is responsible for creating [`Frames`](struct.Frame.html).
+
+# Theme Definition
+The `Context` also holds the overall Theme.  The theme can be defined from any [`serde`](https://serde.rs/)
+compatible source, with the examples in this project using [`YAML`](https://yaml.org/).
+The theme has several sections: `fonts`, `image_sets`, and `widgets`.
+
+## Fonts
+Defining fonts is very simple.  The `fonts` section consists of a mapping, with `IDs` mapped
+to font data.  The font IDs are used elsewhere in the widgets section and in code when specifying
+a [`font`](struct.WidgetBuilder.html#method.font).
+
+The data consists of a `source`, which is a string which must match one of the fonts registered
+with the [`ContextBuilder`](struct.ContextBuilder.html#method.register_font_source), and a `size`
+in logical pixels.
+```yaml
+fonts:
+  medium:
+    source: roboto
+    size: 20
+  small:
+    source: roboto
+    size: 16
+```
+
+## Image Sets
+Images are defined as a series of `image_sets`.  Each image_set has an `id`, used as the first
+part of the ID of each image in the set.  The complete image ID is equal to `image_set_id/image_id`.
+Each image_set may be `source`d from a different image file.
+Each image file must be registered with [`ContextBuilder`](struct.ContextBuilder.html#method.register_image),
+under an ID matching the `source` id.
+```yaml
+image_sets:
+  source: gui
+  images:
+    ...
+```
+
+### Images
+Each image set can contain many `images`, which are defined as subsets of the overall image file in various ways.  The type of
+image for each image within the set is determined based on the parameters specified.
+
+#### Simple Images
+Simple images are defined by a position and size, in pixels, within the overall image.  The `stretch` field is optional.
+If false (the default), the image will be drawn at a fixed size.
+```yaml
+  progress_bar:
+    position: [100, 100]
+    size: [16, 16]
+    stretch: true
+```
+
+#### Composed Images
+Composed images consist of a 3 by 3 grid.  The corners are drawn at a fixed size, while the middle sections stretch along
+one axis.  The center grid image stretches to fill in the inner area of the image.  These images allow you to easily draw
+widgets with almost any size that maintain the same look.  The `grid_size` specifies the size of one of the 9 cells, with
+each cell having the same size.
+```yaml
+  button_normal:
+    position: [100, 100]
+    grid_size: [16, 16]
+```
+
+#### Timed Images
+Timed images display one out of several frames, on a timer.  Timed images can repeat continuously (the default), or only display once,
+based on the value of the optional `once` parameter.  `frame_time_millis` is how long each frame is shown for, in milliseconds.  Each
+`frame` is the `id` of an image within the current image set.  It can be a Simple Image or Composed Image.
+```yaml
+  button_flash:
+    frame_time_millis: 500
+    once: false
+    frames:
+      - button_normal
+      - button_bright
+```
+
+#### Animated Images
+Animated images display one of several sub images based on the [`AnimState`](struct.AnimState.html). of the parent widget.
+The referenced images are specified by `id`, and can include Simple, Composed, and Timed images.
+```yaml
+  button:
+    states:
+      Normal: button_normal
+      Hover: button_hover
+      Pressed: button_pressed
+      Active: button_active
+      Active + Hover: button_hover_active
+      Active + Pressed: button_pressed_active
+```
+
+## Widgets
+The widgets section defines themes for all widgets you will use in your UI.  Whenever you create a widget, such as through
+[`Frame.start`](struct.Frame.html#method.start), you specify a `theme_id`.  This `theme_id` must match one
+of the keys defined in this section.
+
+### Recursive definition
+Widget themes are defined recursively, and Thyme will first look for the exact recursive match, before falling back to the top level match.
+Each widget entry may have one or more `children`, with each child being a full widget definition in its own right.  The ID of each widget in the
+tree is computed as `{parent_id}/{child_id}`, recursively.
+
+For example, if you specified a `button` that is a child of a `content` that is in turn a child of `window`, the theme ID will be `window/content/button`.
+Thyme will first look for a theme at the full ID, i.e.
+```yaml
+  window:
+    children:
+      content:
+        children:
+          button
+```
+If that is not found, it will look for `button` at the top level.  The [`child_align`](struct.WidgetBuilder.html#method.child_align),
+[`layout`](struct.WidgetBuilder.html#method.layout), and [`layout_spacing`](struct.WidgetBuilder.html#method.layout_spacing) fields deal specifically with how
+the widget will layout its children.
+
+### Widget `from` attribute
+Each widget entry in the `widgets` section may have a `from` attribute, which instructs Thyme to copy the specified widget theme into this theme.
+This is resolved fully recursively and will copy all children, merging  where appropriate.  `from` attributes may also be defined recursively.
+Specifically defined attributes within a widget theme will override the `from` theme.
+
+For example, this definition:
+```yaml
+  button:
+    background: gui/button
+    size: [100, 25]
+  titlebar:
+    from: button
+    children:
+      label:
+        font: medium
+      close_button:
+        from: button
+        foreground: gui/close
+        size: [25, 25]
+  main_window_titlebar:
+    from: titlebar
+    children:
+      label:
+        text: "Main Window"
+```
+
+will interpret `main_window_titlebar` into the equivalent of this:
+```yaml
+  main_window_titlebar:
+    background: gui/button
+    size: [100, 25]
+    children:
+      label:
+        font: medium
+        text: "Main Window"
+      close_button:
+        background: gui/button
+        foregorund: gui/close
+        size: [25, 25]
+```
+
+### Widget Attributes
+Each widget theme has many optional attributes that may be defined in the theme file, UI building source code, or both.  Source code
+methods on [`WidgetBuilder`](struct.WidgetBuilder.html) will take precedence over items defined in the theme file.
+
+```yaml
+   complicated_button:
+     text: Hello
+     text_color: "#FFAA00"
+     text_align: Center
+     font: medium
+     background: gui/button
+     foreground: gui/button_icon
+     wants_mouse: true
+     pos: [10, 10]
+     size: [100, 0]
+     width_from: Normal
+     height_from: FontLine
+     border: { all: 5 }
+     align: TopLeft
+     child_align: Top
+     layout: Vertical
+     layout_spacing: 5
+**/
 pub struct Context {
     internal: Rc<RefCell<ContextInternal>>,
 }

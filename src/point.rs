@@ -4,6 +4,10 @@ use std::fmt;
 use serde::{Serialize, Deserialize, Deserializer, de::{self, Error, Visitor, MapAccess}};
 
 /// A struct representing a rectangular border around a Widget.
+/// In the theme file, border can be deserialzed as a standard mapping, or
+/// using `all: {value}` to specify all four values are the same, or
+/// `width` and `height` to specify `left` and `right` and `top` and `bot`,
+/// respectively.
 #[derive(Serialize, Copy, Clone, Default, Debug, PartialEq)]
 pub struct Border {
     pub top: f32,

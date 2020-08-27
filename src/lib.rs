@@ -11,6 +11,7 @@
 //! the renderer and then individual fonts for use in your UI are defined in the theme file.
 //! Widgets themselves can be defined fully in source code, with only some basic templates in the theme file, or
 //! you can largely leave only logic in the source, with layout, alignment, etc defined in the theme file.
+//! See [`Context`](struct.Context.html) for further discussion of the theme format.
 //!
 //! The best place to start is to look in the examples folder for some basic Thyme apps.  You can also copy the
 //! sample theme, image, and font files as a starting point for your projects.

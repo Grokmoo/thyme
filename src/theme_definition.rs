@@ -297,7 +297,7 @@ pub enum AnimStateKey {
 
 /// The Layout direction for a widget's children.
 ///
-/// This only has effect is the child widget does not manually specify an alignment.
+/// This only has effect if the child widget does not manually specify an alignment.
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[serde(deny_unknown_fields)]
 pub enum Layout {
@@ -316,11 +316,13 @@ impl Default for Layout {
     fn default() -> Self { Layout::Horizontal }
 }
 
-/// Widget horizontal and vertical alignment.
+/// Widget or text horizontal and vertical alignment.
 ///
-/// `Left`, `Right`, and `Center` variants will center the widget
+/// `Left`, `Right`, and `Center` variants will center the element
 /// vertically, while `Bot`, `Top`, and `Center` variants will
-/// center the widget horizontally.
+/// center the element horizontally.  The final position of a widget
+/// is calculated based on the parent position and size, this alignment
+/// and the child [`pos`](struct.WidgetBuilder.html#method.pos)
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, Hash)]
 #[serde(deny_unknown_fields)]
 pub enum Align {

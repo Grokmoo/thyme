@@ -12,6 +12,19 @@ use crate::widget::Widget;
 const MOUSE_NOT_TAKEN: (bool, AnimState, Point) =
     (false, AnimState::normal(), Point { x: 0.0, y: 0.0 });
 
+/// A Frame, holding the widget tree to be drawn on a given frame, and a reference to the
+/// Thyme [`Context`](struct.Context.html)
+///
+/// The frame is the main object that you pass along through your UI builder functions.  It allows
+/// you to construct [`WidgetBuilders`](struct.WidgetBuilder.html) both with full control and
+/// convenient helper methods.
+///
+/// Frame also contains a number of methods for manipulating the internal [`PersistentState`](struct.PersistentState.html)
+/// associated with a particular widget, with [`modify`](#method.modify) providing full control.
+///
+/// When building your UI, there will always be a current parent widget that widgets are currently being added to.  This
+/// starts at the root widget which has defaults for all parameters.  Each [`children`](struct.WidgetBuilder.html#method.children)
+/// closure you enter changes the associated parent widget.
 pub struct Frame {
     mouse_taken: Option<(String, RendGroup)>,
     context: Context,
@@ -160,16 +173,30 @@ impl Frame {
     }
 
     // ui builder methods
+
+    /// Adds a gap between the previous widget and the next to be specified, subject
+    /// to the current parent's layout requirement.
     pub fn gap(&mut self, gap: f32) {
         self.widgets[self.parent_index].gap(gap);
     }
 
+    /// Sets the current cursor position of the current parent widget to the specified value.
+    /// Normally, the cursor widget moves after each widget is placed based on the parent's
+    /// [`layout`](struct.WidgetBuilder.html#method.layout).
+    /// This has nothing to do with the mouse cursor.
     pub fn set_cursor(&mut self, x: f32, y: f32) {
         self.widgets[self.parent_index].set_cursor(x, y);
     }
 
+    /// Returns the current cursor position of the parent widget.  You can use this as a basis
+    /// for relative changes with [`set_cursor`](#method.set_cursor).
+    /// This has nothing to do with the mouse cursor.
     pub fn cursor(&self) -> Point { self.widgets[self.parent_index].cursor() }
 
+    /// Starts creating a new child widget within the current parent, using the specified `theme`.
+    /// See [`Context`](struct.Context.html) for a discussion of the theme format.  This method
+    /// returns a [`WidgetBuilder`](struct.WidgetBuilder.html) which can be used for fully
+    /// customizing the new widget.
     #[must_use]
     pub fn start(&mut self, theme: &str) -> WidgetBuilder {
         let parent = &self.widgets[self.parent_index];
@@ -202,29 +229,48 @@ impl Frame {
         self.mouse_anim_state = state;
     }
 
+    /// Causes Thyme to focus the keyboard on the widget with the specified `id`.  Keyboard
+    /// events will subsequently be sent to this widget, if it exists.  Only
+    /// one widget may have keyboard focus at a time.
     pub fn focus_keyboard<T: Into<String>>(&mut self, id: T) {
         let mut context = self.context.internal().borrow_mut();
         context.set_focus_keyboard(id.into());
     }
 
+    /// Returns whether or not the widget with the specified `id` currently has keyboard focus.
+    /// See [`focus_keyboard`](#method.focus_keyboard).
     pub fn is_focus_keyboard(&self, id: &str) -> bool {
         let context = self.context.internal().borrow();
         context.is_focus_keyboard(id)
     }
 
+    /// Returns a [`Rect`](struct.Rect.html) encompassing all children that have currently
+    /// been added to the parent widget, recursively.  This includes each widgets actual
+    /// final position and size.
     pub fn parent_max_child_bounds(&self) -> Rect { self.parent_max_child_bounds }
 
+    /// Returns the current internal time being used by Thyme.  This is useful
+    /// if you want to set a timer to start running based on the current frame,
+    /// using [`set_base_time_millis`](#method.set_base_time_millis).
     pub fn cur_time_millis(&self) -> u32 {
         let context = self.context.internal().borrow();
         context.time_millis()
     }
 
+    /// Sets the base time of the [`PersistentState`](struct.PersistentState.html) for the widget with the
+    /// specified `id` to the specified `time`.
+    /// This time should probably be based on something obtained from [`cur_time_millis`](#method.cur_time_millis).
+    /// or [`base_time_millis`](#method.base_time_millis).  The base time of a widget is used to specify the
+    /// zero time of an Timed images associated with that widget.
     pub fn set_base_time_millis<T: Into<String>>(&mut self, id: T, time: u32) {
         let mut context = self.context.internal().borrow_mut();
         let state = context.state_mut(id);
         state.base_time_millis = time;
     }
 
+    /// Sets the base time of the [`PersistentState`](struct.PersistentState.html) for the widget with the
+    /// specified `id` to the current internal time.
+    /// See [`set_base_time_millis`](#method.set_base_time_millis).
     pub fn set_base_time_now<T: Into<String>>(&mut self, id: T) {
         let mut context = self.context.internal().borrow_mut();
         let cur_time = context.time_millis();
@@ -232,40 +278,46 @@ impl Frame {
         state.base_time_millis = cur_time;
     }
 
-    /// Returns the current time in millis minus the base time millis for the
-    /// widget with the specified ID.  If the base time millis has not been set,
-    /// will return the current time millis
+    /// Returns the current base time in millis of the [`PersistentState`](struct.PersistentState.html) for the
+    /// widget with the current `id`.
     pub fn base_time_millis(&self, id: &str) -> u32 {
         let context = self.context.internal().borrow();
         context.state(id).base_time_millis
     }
     
+    /// Sets the internal `scroll` of the [`PersistentState`](struct.PersistentState.html) for
+    /// the widget with the specified `id`.  Useful for [`Scrollpanes`](struct.WidgetBuilder.html#method.scrollpane).
     pub fn scroll(&self, id: &str) -> Point {
         let context = self.context.internal().borrow();
         context.state(id).scroll
     }
 
+    /// Modifies the internal `scroll` of the widget with the specified `id` by the specified `x` and `y` amounts.
+    /// See [`scroll`](#method.scroll)
     pub fn change_scroll<T: Into<String>>(&mut self, id: T, x: f32, y: f32) {
         let mut context = self.context.internal().borrow_mut();
         let state = context.state_mut(id);
         state.scroll = state.scroll + Point { x, y }
     }
 
-    pub fn offset_time_millis(&self, id: &str) -> i32 {
-        let context = self.context.internal().borrow();
-        context.time_millis() as i32 - context.state(id).base_time_millis as i32
-    }
-
+    /// Returns the current `text` associated with the [`PersistentState`](struct.PersistentState.html) of
+    /// the widget with the specified `id`.  Useful for [`input fields`](#method.input_field).
     pub fn text_for(&self, id: &str) -> Option<String> {
         let context = self.context.internal().borrow();
         context.state(id).text.clone()
     }
 
+    /// Returns whether the widget with the specified `id` is open in its [`PersistentState`](struct.PersistentState.html).
+    /// If not open, widgets are not visible.
     pub fn is_open(&self, id: &str) -> bool {
         let context = self.context.internal().borrow();
         context.state(id).is_open
     }
 
+    /// Opens the widget with the specified `id` as a modal.  This modifies the [`PersistentState`](struct.PersistentState.html)
+    /// associated with that widget, as well as setting the overall Thyme modal to the specified widget.
+    /// When a modal is open, only the modal and its children may receive input.  There may be only one modal open at a time.
+    /// If the specified `id` is closed, i.e. via [`close`](#method.close), the modal state ends.
     pub fn open_modal<T: Into<String>>(&mut self, id: T) {
         let id = id.into();
 
@@ -275,6 +327,7 @@ impl Frame {
         context.set_modal(id);
     }
 
+    /// Sets the currently open modal, if there is one, to close if the mouse is clicked outside of the modal's area.
     pub fn close_modal_on_click_outside(&mut self) {
         let mut context = self.context.internal().borrow_mut();
         context.mut_modal(|modal| {
@@ -282,6 +335,8 @@ impl Frame {
         });
     }
 
+    /// Opens the widget with the specified `id`.  This modifies the [`PersistentState`](struct.PersistentState.html).
+    /// See [`is_open`](#method.is_open)
     pub fn open<T: Into<String>>(&mut self, id: T) {
         let id = id.into();
         let mut context = self.context.internal().borrow_mut();
@@ -289,6 +344,8 @@ impl Frame {
         context.state_mut(id).is_open = true;
     }
 
+    /// Closes the widget with the specified `id`.  This modifies the [`PersistentState`](struct.PersistentState.html).
+    /// See [`is_open`](#method.is_open).  If the widget was the current modal, resets Thyme so there is no longer a modal.
     pub fn close<T: Into<String>>(&mut self, id: T) {
         let id = id.into();
 
@@ -297,6 +354,7 @@ impl Frame {
         context.state_mut(id).is_open = false;
     }
 
+    /// Opens the current parent widget.  See [`open`](#method.open).
     pub fn open_parent(&mut self) {
         let mut context = self.context.internal().borrow_mut();
         let id = self.widgets[self.parent_index].id();
@@ -304,6 +362,7 @@ impl Frame {
         context.state_mut(id).is_open = true;
     }
 
+    /// Closes the current parent widget.  See [`close`](#method.close).
     pub fn close_parent(&mut self) {
         let mut context = self.context.internal().borrow_mut();
         let id = self.widgets[self.parent_index].id();
@@ -311,12 +370,19 @@ impl Frame {
         context.state_mut(id).is_open = false;
     }
 
+    /// Completely clears all [`PersistentState`](struct.PersistentState.html) associated with the 
+    /// specified `id`, resetting it to its default state.
+    /// This includies clearing the modal state if the `id` is the current modal.
     pub fn clear(&mut self, id: &str) {
         let mut context = self.context.internal().borrow_mut();
         context.clear_modal_if_match(id);
         context.clear_state(id);
     }
 
+    /// Gets a mutable reference to the [`PersistentState`](struct.PersistentState.html) associated with
+    /// the `id`, and calls the passed in closure, `f`, allowing you to modify it in arbitrary ways.  This
+    /// is more efficient than calling several individual methods in a row, such as [`open`](#method.open),
+    /// [`scroll`](#method.scroll), etc.
     pub fn modify<T: Into<String>, F: FnOnce(&mut PersistentState)>(&mut self, id: T, f: F) {
         let mut context = self.context.internal().borrow_mut();
         (f)(context.state_mut(id));

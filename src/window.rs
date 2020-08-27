@@ -1,5 +1,19 @@
 use crate::{Frame, widget::WidgetBuilder, WidgetState, Point};
 
+/// A [`WidgetBuilder`](struct.WidgetBuilder.html) specifically for creating windows.
+///
+/// Windows can have a titlebar, close button, move, and resizing capabilities.  Each window
+/// is automatically part of its own [`render group`](struct.WidgetBuilder.html#method.new_render_group)
+/// and will automatically come on top of other widgets when clicked on.  You can create a `WindowBuilder`
+/// from a [`WidgetBuilder`](struct.WidgetBuilder.html) by calling [`window`](struct.WidgetBuilder.html#method.window)
+/// after any calls to general purpose widget layout.
+///
+/// There is also a [`window method on Frame`](struct.Frame.html#method.window) as a convenience for simple cases.
+///
+/// Once you are finished setting up the window, you call [`children`](#method.children) to add children and add the widget
+/// to the frame
+
+// TODO add theme yaml sample here
 pub struct WindowBuilder<'a> {
     builder: WidgetBuilder<'a>,
     state: WindowState,
@@ -13,24 +27,31 @@ impl<'a> WindowBuilder<'a> {
         }
     }
 
+    /// Specifies whether the created window should show a titlebar.
     #[must_use]
     pub fn with_titlebar(mut self, with_titlebar: bool) -> WindowBuilder<'a> {
         self.state.with_titlebar = with_titlebar;
         self
     }
 
+    /// Specifies whether the created window should have a close button.
     #[must_use]
     pub fn with_close_button(mut self, with_close_button: bool) -> WindowBuilder<'a> {
         self.state.with_close_button = with_close_button;
         self
     }
 
+    /// Specifies whether the user should be able to move the created window
+    /// by dragging the mouse.  Note that if the [`titlebar`](#method.with_titlebar) is not shown, there
+    /// will be no way to move the window regardless of this setting.
     #[must_use]
     pub fn moveable(mut self, moveable: bool) -> WindowBuilder<'a> {
         self.state.moveable = moveable;
         self
     }
 
+    /// Specifies whether the user should be able to resize the created window.
+    /// If false, the resize handle will not be shown.
     #[must_use]
     pub fn resizable(mut self, resizable: bool) -> WindowBuilder<'a> {
         self.state.resizable = resizable;
