@@ -169,7 +169,13 @@ image_sets:
       slider_vertical:
         position: [0, 102]
         grid_size_vert: [4, 5]
+      greyed_out:
+        position: [17, 98]
+        size: [5, 5]
+        fill: Stretch
 widgets:
+  greyed_out:
+    background: gui/greyed_out
   horizontal_slider:
     size: [0, 15]
     width_from: Parent

@@ -71,6 +71,15 @@ impl<'a> WindowBuilder<'a> {
         }
     }
 
+    /// Specifies that this window will not use a new render group.  This can
+    /// be useful in some cases where you want to handle grouping yourself.
+    /// See [`WidgetBuilder.new_render_group`](struct.WidgetBuilder.html#method.new_render_group)
+    #[must_use]
+    pub fn cancel_render_group(mut self) -> WindowBuilder<'a> {
+        self.builder.set_next_render_group(false);
+        self
+    }
+
     /// Specifies whether the created window should show a titlebar.
     #[must_use]
     pub fn with_titlebar(mut self, with_titlebar: bool) -> WindowBuilder<'a> {
@@ -112,6 +121,8 @@ impl<'a> WindowBuilder<'a> {
         let id = builder.widget.id().to_string();
 
         builder.children(|ui| {
+            (children)(ui);
+
             let drag_move = if state.with_titlebar {
                 let result = ui.start("titlebar")
                 .children(|ui| {
@@ -149,8 +160,6 @@ impl<'a> WindowBuilder<'a> {
                     });
                 }
             }
-
-            (children)(ui);
         })
     }
 }

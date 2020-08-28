@@ -207,6 +207,11 @@ impl Frame {
 
     // ui builder methods
 
+    /// Returns the current window display size, in logical pixels.
+    pub fn display_size(&self) -> Point {
+        self.context_internal().borrow().display_size()
+    }
+
     /// Adds a gap between the previous widget and the next to be specified, subject
     /// to the current parent's layout requirement.
     pub fn gap(&mut self, gap: f32) {

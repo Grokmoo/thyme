@@ -235,6 +235,9 @@ fn build_ui(ui: &mut Frame, party: &mut Party) {
         });
 
         ui.window("item_picker", "item_picker", |ui| {
+            let display_size = ui.display_size();
+
+            ui.start("greyed_out").unclip().size(display_size.x, display_size.y).screen_pos(0.0, 0.0).finish();
             item_picker(ui, character);
         });
     }
@@ -299,7 +302,6 @@ fn stats_panel(ui: &mut Frame, character: &mut Character) {
     ui.label("points_available", format!("Points Remaining: {}", points_available));
 }
 
-// TODO modal to grey out the rest of the screen
 fn item_picker(ui: &mut Frame, character: &mut Character) {
     for item in ITEMS.iter() {
         let clicked = ui.start("item_button")

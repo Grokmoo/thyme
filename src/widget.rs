@@ -312,9 +312,9 @@ pub(crate) struct WidgetData {
 /// The [`window`](#method.window) method will transform this into a [`WindowBuilder`](struct.WindowBuilder.html), while the
 /// [`finish`](#method.finish) and [`children`](#method.children) methods will complete the widget and add it to the frame's widget tree.
 pub struct WidgetBuilder<'a> {
-    pub frame: &'a mut Frame,
-    pub parent: usize,
-    pub widget: Widget,
+    pub(crate) frame: &'a mut Frame,
+    pub(crate) parent: usize,
+    pub(crate) widget: Widget,
     data: WidgetData,    
 }
 
@@ -391,7 +391,11 @@ impl<'a> WidgetBuilder<'a> {
     fn parent(&self) -> &Widget {
         self.frame.widget(self.parent)
     }
-    
+
+    pub(crate) fn set_next_render_group(&mut self, val: bool) {
+        self.data.next_render_group = val;
+    }
+
     /// Specifies that this widget and its children should be part of a new Render Group.  Render groups are used to handle cases where
     /// widgets may overlap, and determine input routing and draw order in those cases.  If your UI doesn't have moveable elements such as
     /// windows, you should generally be ok to draw your entire UI in one render group, with the exception of modal popups.
@@ -596,6 +600,11 @@ impl<'a> WidgetBuilder<'a> {
     #[must_use]
     pub fn size(mut self, x: f32, y: f32) -> WidgetBuilder<'a> {
         self.data.raw_size = Point { x, y };
+
+        // usually, setting the size here will have no effect since we will recalculate anyway.
+        // but in some cases involving manual positioning this is needed
+        self.widget.size = Point { x, y };
+
         self.data.recalc_pos_size = true;
         self
     }
@@ -633,6 +642,15 @@ impl<'a> WidgetBuilder<'a> {
     pub fn clip(mut self, clip: Rect) -> WidgetBuilder<'a> {
         let cur_clip = self.widget.clip;
         self.widget.clip = cur_clip.min(clip);
+        self
+    }
+
+    /// Removes all constraints from the widget's clip [`Rectangle`](struct.Rect.html).  This will
+    /// allow the widget to render outside of its parent's area.  See [`clip`](#method.clip)
+    #[must_use]
+    pub fn unclip(mut self) -> WidgetBuilder<'a> {
+        let display_size = self.frame.context_internal().borrow().display_size();
+        self.widget.clip = Rect::new(Point::default(), display_size);
         self
     }
 
