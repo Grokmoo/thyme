@@ -1,3 +1,7 @@
+# A minimal theme with definitions for the provided example fonts and "gui-minimal" image.
+# It includes definitions for all of the basic types of widgets.
+# This file works standalone or can be included in a larger theme.
+
 fonts:
   medium:
     source: roboto
@@ -8,25 +12,59 @@ fonts:
 image_sets:
   gui:
     source: gui
+    scale: 1.0
     images:
+      cursor_normal:
+        position: [66, 97]
+        size: [21, 21]
+      cursor_pressed:
+        position: [89, 106]
+        size: [21, 21]
+      cursor:
+        states:
+          Normal: cursor_normal
+          Hover: cursor_normal
+          Pressed: cursor_pressed
       window_bg:
         position: [0, 0]
         grid_size: [32, 32]
       small_button_normal:
-        position: [207, 0]
+        position: [110, 0]
         grid_size: [5, 5]
       small_button_hover:
-        position: [207, 15]
+        position: [110, 15]
         grid_size: [5, 5]
       small_button_pressed:
-        position: [207, 30]
+        position: [110, 30]
         grid_size: [5, 5]
       small_button_disabled:
-        position: [207, 45]
+        position: [110, 45]
         grid_size: [5, 5]
       small_button_active:
-        position: [207, 60]
+        position: [110, 60]
         grid_size: [5, 5]
+      small_button_black:
+        position: [110, 75]
+        grid_size: [5, 5]
+      small_button_flash1:
+        position: [110, 90]
+        grid_size: [5, 5]
+      small_button_flash2:
+        position: [110, 105]
+        grid_size: [5, 5]
+      small_button_normal_flash:
+        frame_time_millis: 200
+        frames:
+          - small_button_flash1
+          - small_button_flash2
+          - small_button_flash1
+          - small_button_normal
+      input_field:
+        states:
+          Normal: small_button_black
+          Hover: small_button_hover
+          Pressed: small_button_pressed
+          Disabled: small_button_disabled
       small_button:
         states:
           Normal: small_button_normal
@@ -36,14 +74,23 @@ image_sets:
           Active: small_button_active
           Active + Hover: small_button_active
           Active + Pressed: small_button_pressed
+      small_button_flash:
+        states:
+          Normal: small_button_normal_flash
+          Hover: small_button_hover
+          Pressed: small_button_pressed
+          Disabled: small_button_disabled
+          Active: small_button_active
+          Active + Hover: small_button_active
+          Active + Pressed: small_button_pressed
       close_icon_normal:
-        position: [223, 0]
+        position: [97, 66]
         size: [12, 12]
       close_icon_pressed:
-        position: [223, 12]
+        position: [97, 78]
         size: [12, 12]
       close_icon_disabled:
-        position: [223, 24]
+        position: [97, 90]
         size: [12, 12]
       close_icon:
         states:
@@ -51,17 +98,20 @@ image_sets:
           Hover: close_icon_normal
           Pressed: close_icon_pressed
           Disabled: close_icon_disabled
+      progress_bar:
+        position: [50, 96]
+        grid_size: [5, 12]
       window_handle_normal:
-        position: [194, 0]
+        position: [97, 0]
         size: [12, 12]
       window_handle_hover:
-        position: [194, 12]
+        position: [97, 12]
         size: [12, 12]
       window_handle_pressed:
-        position: [194, 24]
+        position: [97, 24]
         size: [12, 12]
       window_handle_disabled:
-        position: [194, 36]
+        position: [97, 36]
         size: [12, 12]
       window_handle:
         states:
@@ -69,7 +119,168 @@ image_sets:
           Hover: window_handle_hover
           Pressed: window_handle_pressed
           Disabled: window_handle_disabled
+      caret_on:
+        position: [97, 49]
+        size: [2, 16]
+        fill: Stretch
+      caret_off:
+        position: [100, 49]
+        size: [2, 16]
+        fill: Stretch
+      caret:
+        frame_time_millis: 500
+        frames:
+          - caret_on
+          - caret_off
+      arrow_right:
+        position: [24, 97]
+        size: [12, 12]
+      arrow_left:
+        position: [24, 109]
+        size: [12, 12]
+      arrow_down:
+        position: [36, 97]
+        size: [12, 12]
+      arrow_up:
+        position: [36, 109]
+        size: [12, 12]
+      slider_horizontal:
+        position: [0, 97]
+        grid_size_horiz: [5, 4]
+      slider_vertical:
+        position: [0, 102]
+        grid_size_vert: [4, 5]
+      greyed_out:
+        position: [17, 98]
+        size: [5, 5]
+        fill: Stretch
 widgets:
+  greyed_out:
+    background: gui/greyed_out
+  horizontal_slider:
+    size: [0, 15]
+    width_from: Parent
+    border: { top: 6, bot: 5, left: 5, right: 5 }
+    children:
+      slider_bar:
+        align: TopLeft
+        width_from: Parent
+        height_from: Parent
+        background: gui/slider_horizontal
+      slider_button:
+        from: button
+        size: [15, 15]
+  combo_box:
+    from: button
+  combo_box_popup:
+    from: scrollpane
+    width_from: Parent
+    height_from: Normal
+    size: [0, 75]
+    background: gui/small_button_normal
+    children:
+      content:
+        size: [-15, 0]
+        children:
+          entry:
+            from: button
+            width_from: Parent
+            size: [0, 25]
+      scrollbar_vertical:
+        size: [20, 30]
+  scrollpane:
+    width_from: Parent
+    height_from: Parent
+    border: { all: 5 }
+    children:
+      content:
+        height_from: Parent
+        width_from: Parent
+        align: TopLeft
+        layout: Vertical
+        size: [-15, -15]
+        child_align: TopLeft
+      scrollbar_horizontal:
+        from: scrollbar_horizontal
+      scrollbar_vertical:
+        from: scrollbar_vertical
+  scroll_button:
+    wants_mouse: true
+    background: gui/small_button
+    size: [20, 20]
+    border: { all: 4 }
+  scrollbar_horizontal:
+    size: [10, 20]
+    pos: [-5, -5]
+    align: BotLeft
+    width_from: Parent
+    children:
+      left:
+        from: scroll_button
+        align: Left
+        foreground: gui/arrow_left
+      right:
+        from: scroll_button
+        align: Right
+        pos: [20, 0]
+        foreground: gui/arrow_right
+      scroll:
+        wants_mouse: true
+        background: gui/small_button
+        align: Left
+        border: { all: 4 }
+  scrollbar_vertical:
+    size: [20, 10]
+    pos: [-5, -5]
+    align: TopRight
+    height_from: Parent
+    children:
+      up:
+        from: scroll_button
+        align: Top
+        foreground: gui/arrow_up
+      down:
+        from: scroll_button
+        align: Bot
+        foreground: gui/arrow_down
+        pos: [0, 20]
+      scroll:
+        wants_mouse: true
+        background: gui/small_button
+        align: Top
+        border: { all: 4 }
+  progress_bar:
+    size: [100, 24]
+    background: gui/small_button_normal
+    border: { width: 4 }
+    child_align: TopLeft
+    children:
+      bar:
+        background: gui/progress_bar
+        width_from: Parent
+        height_from: Parent
+  input_field:
+    font: small
+    border: { height: 4, width: 5 }
+    background: gui/input_field
+    text_align: Left
+    wants_mouse: true
+    size: [150, 24]
+    child_align: TopLeft
+    children:
+      caret:
+        size: [2, -2]
+        height_from: Parent
+        background: gui/caret
+  textbox:
+    font: small
+    border: { width: 5 }
+    text_align: Left
+    size: [0, 150]
+    width_from: Parent
+  bg_label:
+    from: label
+    background: gui/small_button_normal
   label:
     font: small
     border: { width: 5 }
@@ -88,7 +299,6 @@ widgets:
     size: [150, 24]
     border: { all: 5 }
   window:
-    font: small
     background: gui/window_bg
     wants_mouse: true
     layout: Vertical
@@ -100,15 +310,18 @@ widgets:
       titlebar:
         wants_mouse: true
         background: gui/small_button
-        size: [0, 30]
-        pos: [0, -30]
+        size: [10, 30]
+        pos: [-6, -36]
+        border: { all: 5 }
         width_from: Parent
         child_align: Center
+        align: TopLeft
         children:
           title:
             from: label
-            text: "Window"
+            text: "Main Window"
             font: medium
+            width_from: Parent
           close:
             wants_mouse: true
             background: gui/small_button

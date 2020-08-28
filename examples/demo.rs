@@ -12,15 +12,20 @@ use thyme::{Frame, Align, bench, ShowElement};
 
 /// A simple party creator and character sheet for an RPG.
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // initialize very basic logger so error messages go to stdout
+    // initialize our very basic logger so error messages go to stdout
     thyme::log::init_all().unwrap();
 
     // load assets
     let font_src = include_bytes!("data/fonts/Roboto-Medium.ttf");
-    let image_src = include_bytes!("data/images/gui.png");
+    let image_src = include_bytes!("data/images/gui-minimal.png");
     let image = image::load_from_memory(image_src).unwrap().to_rgba();
-    let theme_src = include_str!("data/theme.yml");
-    let theme: serde_yaml::Value = serde_yaml::from_str(theme_src)?;
+
+    // a very simple method of splitting up our theme into two files for readability
+    let theme_base_src = include_str!("data/theme-minimal.yml");
+    let theme_demo_src = include_str!("data/theme.yml");
+    let theme_src = format!("{}\n{}", theme_base_src, theme_demo_src);
+
+    let theme: serde_yaml::Value = serde_yaml::from_str(&theme_src)?;
     let window_size = [1280.0, 720.0];
 
     // create glium display
@@ -278,6 +283,18 @@ fn stats_panel(ui: &mut Frame, character: &mut Character) {
     let points_available: u32 = STAT_POINTS - points_used;
 
     ui.child("title");
+
+    let frac = ((ui.cur_time_millis() - ui.base_time_millis("stat_roll")) as f32 / 1000.0).min(1.0);
+
+    let roll = ui.start("roll_button")
+    .enabled(frac > 0.99)
+    .children(|ui| {
+        ui.progress_bar("progress_bar", frac);
+    });
+
+    if roll.clicked {
+        ui.set_base_time_now("stat_roll");
+    }
 
     for stat in Stat::iter() {
         let value = character.stats.entry(stat).or_insert(10);
