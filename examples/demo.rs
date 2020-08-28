@@ -8,7 +8,7 @@ use glium::glutin::{
 };
 use glium::{Display, Surface};
 
-use thyme::{Frame, Align, bench};
+use thyme::{Frame, Align, bench, ShowElement};
 
 /// A simple party creator and character sheet for an RPG.
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -330,7 +330,10 @@ fn inventory_panel(ui: &mut Frame, character: &mut Character) {
         ui.label("gold", format!("{} Gold", character.gp));
     });
     
-    ui.scrollpane("items_panel", "items_content", |ui| {
+    ui.start("items_panel")
+    .scrollpane("items_content")
+    .show_vertical_scrollbar(ShowElement::Always)
+    .children(|ui| {
         items_panel(ui, character);
     });
 }
