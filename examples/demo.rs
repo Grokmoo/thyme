@@ -12,6 +12,7 @@ use thyme::{Frame, Align, bench, ShowElement};
 
 /// A simple party creator and character sheet for an RPG.
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // initialize very basic logger so error messages go to stdout
     thyme::log::init_all().unwrap();
 
     // load assets

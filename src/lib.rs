@@ -7,7 +7,8 @@ however the advantage is full flexibility and control over the ultimate appearan
 
 To use Thyme, you need the core library, a renderer (one based on [Glium](https://github.com/glium/glium) is included),
 event handling support (one based on [winit](https://github.com/rust-windowing/winit) is included), and a theme definition
-with associated images and fonts.
+with associated images and fonts.  Thyme logs errors using the [`log`](https://github.com/rust-lang/log) crate.  A very
+simple logger that sends messages to stdout is included to help you get started.
 
 All thyme widgets are drawn using images, with the image data registered with the renderer, and then individual
 widget components defined within that image within the theme file.  Likewise, `ttf` fonts are registered with
