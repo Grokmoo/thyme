@@ -64,7 +64,7 @@ impl ThemeSet {
                     ImageDefinitionKind::Animated { .. } => animated_images.push((image_id, image_def)),
                     ImageDefinitionKind::Timed { .. } => timed_images.push((image_id, image_def)),
                     _ => {
-                        let image = Image::new(&image_id, image_def, texture, &images_in_set)?;
+                        let image = Image::new(&image_id, image_def, texture, &images_in_set, set.scale)?;
                         images_in_set.insert(image_id, image);
                     }
                 }
@@ -72,13 +72,13 @@ impl ThemeSet {
 
             // now parse timed images
             for (id, image_def) in timed_images {
-                let image = Image::new(&id, image_def, texture, &images_in_set)?;
+                let image = Image::new(&id, image_def, texture, &images_in_set, set.scale)?;
                 images_in_set.insert(id, image);
             }
 
             // now parse animated images
             for (id, image_def) in animated_images {
-                let image = Image::new(&id, image_def, texture, &images_in_set)?;
+                let image = Image::new(&id, image_def, texture, &images_in_set, set.scale)?;
                 images_in_set.insert(id, image);
             }
 

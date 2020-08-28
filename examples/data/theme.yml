@@ -8,6 +8,7 @@ fonts:
 image_sets:
   gui:
     source: gui
+    scale: 1.0
     images:
       cursor_normal:
         position: [224, 64]

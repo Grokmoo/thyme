@@ -159,7 +159,8 @@ impl Image {
         image_id: &str,
         def: ImageDefinition,
         texture: &TextureData,
-        others: &HashMap<String, Image>
+        others: &HashMap<String, Image>,
+        scale: f32,
     )-> Result<Image, Error> {
         let base_size;
         let kind = match def.kind {
@@ -174,7 +175,7 @@ impl Image {
                     }
                 }
 
-                let grid_size = [grid_size[0] as f32, grid_size[1] as f32];
+                let grid_size = [grid_size[0] as f32 * scale, grid_size[1] as f32 * scale];
                 base_size = Point::new(grid_size[0] * 3.0, grid_size[1] * 3.0);
                 ImageKind::Composed { tex_coords, grid_size }
             },
@@ -189,7 +190,7 @@ impl Image {
                     }
                 }
                 
-                let grid_size = [grid_size_horiz[0] as f32, grid_size_horiz[1] as f32];
+                let grid_size = [grid_size_horiz[0] as f32 * scale, grid_size_horiz[1] as f32 * scale];
                 base_size = Point::new(grid_size[0] * 3.0, grid_size[1]);
                 ImageKind::ComposedHorizontal { tex_coords, grid_size }
             },
@@ -204,14 +205,14 @@ impl Image {
                     }
                 }
                 
-                let grid_size = [grid_size_vert[0] as f32, grid_size_vert[1] as f32];
+                let grid_size = [grid_size_vert[0] as f32 * scale, grid_size_vert[1] as f32 * scale];
                 base_size = Point::new(grid_size[0] * 3.0, grid_size[1]);
                 ImageKind::ComposedVertical { tex_coords, grid_size }
             },
             ImageDefinitionKind::Simple { size, position, fill } => {
                 let tex1 = texture.tex_coord(position[0], position[1]);
                 let tex2 = texture.tex_coord(position[0] + size[0], position[1] + size[1]);
-                base_size = Point::new(size[0] as f32, size[1] as f32);
+                base_size = Point::new(size[0] as f32 * scale, size[1] as f32 * scale);
                 ImageKind::Simple { tex_coords: [tex1, tex2], base_size: base_size.into(), fill }
             },
             ImageDefinitionKind::Timed { frame_time_millis, frames, once } => {

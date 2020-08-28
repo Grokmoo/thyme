@@ -47,8 +47,14 @@ pub struct WidgetThemeDefinition {
 #[serde(deny_unknown_fields)]
 pub struct ImageSet {
     pub source: String,
+
+    #[serde(default="f32_one")]
+    pub scale: f32,
+
     pub images: HashMap<String, ImageDefinition>,
 }
+
+fn f32_one() -> f32 { 1.0 }
 
 #[derive(Serialize, Deserialize)]
 pub struct ImageDefinition {

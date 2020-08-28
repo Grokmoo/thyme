@@ -59,9 +59,15 @@ under an ID matching the `source` id.
 ```yaml
 image_sets:
   source: gui
+  scale: 1
   images:
     ...
 ```
+
+The image_set `scale` is used to pre-scale all images in that set by a given factor.  With a scale of 1 (the default),
+all images will be drawn at 1 image pixel to 1 physical screen pixel when the display has a scale factor of 1, but 1 image pixel to
+2 physical screen pixels on a hi-dpi display with a scale factor of 2.  By setting the scale factor of the image set to 0.5, you
+can use the full resolution on hi-dpi displays, but you will need twice the image resolution to get the same UI size.
 
 ### Images
 Each image set can contain many `images`, which are defined as subsets of the overall image file in various ways.  The type of
