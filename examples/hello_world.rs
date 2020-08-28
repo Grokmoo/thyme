@@ -41,7 +41,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let mut ui = context.create_frame();
 
-            ui.window("window", "window", |ui| {
+            ui.window("window", |ui| {
                 ui.gap(20.0);
         
                 ui.button("label", "Hello, World!");

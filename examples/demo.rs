@@ -197,7 +197,7 @@ fn build_ui(ui: &mut Frame, party: &mut Party) {
     if let Some(index) = party.editing_index {
         let character = &mut party.members[index];
 
-        ui.window("character_window", "character_window", |ui| {
+        ui.window("character_window", |ui| {
             ui.scrollpane("pane", "character_content", |ui| {
                 ui.start("name_panel")
                 .children(|ui| {
@@ -234,7 +234,7 @@ fn build_ui(ui: &mut Frame, party: &mut Party) {
             });
         });
 
-        ui.window("item_picker", "item_picker", |ui| {
+        ui.window("item_picker", |ui| {
             let display_size = ui.display_size();
 
             ui.start("greyed_out").unclip().size(display_size.x, display_size.y).screen_pos(0.0, 0.0).finish();

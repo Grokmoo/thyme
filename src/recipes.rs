@@ -320,15 +320,17 @@ impl Frame {
         });
     }
 
-    /// A convenience method to create a window with the specified `theme` and an `id` which
-    /// must be unique.  The specified closure is called to add `children` to the window.
+    /// A convenience method to create a window with the specified `theme`.  The `theme` is also
+    /// used for the window ID, which must be unique in your application. If this is not the case,
+    /// you should use the full [`WindowBuilder`](struct.WindowBuilder.html) form.
+    /// The specified closure is called to add `children` to the window.
     /// The window will include a titlebar, close button, be moveable, and resizable.
     /// See [`WindowBuilder`](struct.WindowBuilder.html) for more details and more
     /// flexible window creation. 
-    pub fn window<F: FnOnce(&mut Frame)>(&mut self, theme: &str, id: &str, children: F) {
+    pub fn window<F: FnOnce(&mut Frame)>(&mut self, theme: &str, children: F) {
         self
         .start(theme)
-        .window(id)
+        .window(theme)
         .children(|ui| {
             (children)(ui);
         });
