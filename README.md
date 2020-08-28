@@ -20,7 +20,14 @@ cargo run --example demo
 
 ### Starting your own project
 
-See the [hello_world](examples/hello_world.rs) example for the bare minimum to get started using Glium.  As a starting point, you can copy the [data](examples/data) folder into your own project and import the resources there, as in the example.
+Add the following to your Cargo.toml file:
+
+```toml
+[dependencies]
+thyme = "0.1"
+```
+
+See the [hello_glium](examples/hello_glium.rs) example for the bare minimum to get started using Glium.  As a starting point, you can copy the [data](examples/data) folder into your own project and import the resources there, as in the example.
 
 ## [Documentation](docs.rs/thyme)
 
