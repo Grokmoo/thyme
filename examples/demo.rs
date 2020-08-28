@@ -12,6 +12,8 @@ use thyme::{Frame, Align, bench, ShowElement};
 
 /// A simple party creator and character sheet for an RPG.
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    thyme::log::init_all().unwrap();
+
     // load assets
     let font_src = include_bytes!("data/fonts/Roboto-Medium.ttf");
     let image_src = include_bytes!("data/images/gui.png");

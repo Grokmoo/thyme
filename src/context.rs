@@ -45,13 +45,16 @@ impl<'a, R: Renderer, I: IO> ContextBuilder<'a, R, I> {
     /// of the full binary for a valid TTF or OTF file.
     /// Once the font has been registered, it can be accessed in your theme file via the font `source`.
     pub fn register_font_source<T: Into<String>>(&mut self, id: T, data: Vec<u8>) -> Result<(), Error> {
+        let id = id.into();
+        log::debug!("Registering font source '{}'", id);
+
         let font = match rusttype::Font::try_from_vec(data) {
             Some(font) => font,
             None => return Err(
-                Error::FontSource(format!("Unable to parse '{}' as ttf", id.into()))
+                Error::FontSource(format!("Unable to parse '{}' as ttf", id))
             )
         };
-        self.font_sources.insert(id.into(), FontSource { font });
+        self.font_sources.insert(id, FontSource { font });
 
         Ok(())
     }
@@ -67,9 +70,12 @@ impl<'a, R: Renderer, I: IO> ContextBuilder<'a, R, I> {
         data: &[u8],
         dimensions: (u32, u32),
     ) -> Result<(), Error> {
+        let id = id.into();
+        log::debug!("Registering texture '{}'", id);
+
         let handle = self.next_texture_handle;
         let data = self.renderer.register_texture(handle, data, dimensions)?;
-        self.textures.insert(id.into(), data);
+        self.textures.insert(id, data);
         self.next_texture_handle = handle.next();
 
         Ok(())
@@ -78,6 +84,7 @@ impl<'a, R: Renderer, I: IO> ContextBuilder<'a, R, I> {
     /// Consumes this builder and releases the borrows on the [`Renderer`](trait.Renderer.html) and [`IO`](trait.IO.html), so they can
     /// be used further.  Builds a [`Context`](struct.Context.html).
     pub fn build(self) -> Result<Context, Error> {
+        log::info!("Building Thyme Context");
         let scale_factor = self.io.scale_factor();
         let display_size = self.io.display_size();
         let textures = self.textures;
@@ -356,8 +363,6 @@ impl Context {
             start_instant: Instant::now(),
             keyboard_focus_widget: None,
         };
-
-        println!("{}", std::mem::size_of::<crate::WidgetState>());
 
         Context {
             internal: Rc::new(RefCell::new(internal))

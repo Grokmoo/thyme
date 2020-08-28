@@ -209,6 +209,7 @@ methods on [`WidgetBuilder`](struct.WidgetBuilder.html) will take precedence ove
 !*/
 
 pub mod bench;
+pub mod log;
 
 mod context;
 mod font;
