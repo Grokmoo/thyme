@@ -59,6 +59,19 @@ pub struct ImageDefinition {
     pub kind: ImageDefinitionKind,
 }
 
+#[derive(Serialize, Deserialize, Copy, Clone)]
+pub enum ImageFill {
+    None,
+    Stretch,
+    Repeat,
+}
+
+impl Default for ImageFill {
+    fn default() -> Self {
+        ImageFill::None
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(untagged)]
 #[serde(deny_unknown_fields)]
@@ -80,7 +93,7 @@ pub enum ImageDefinitionKind {
         size: [u32; 2],
 
         #[serde(default)]
-        stretch: bool,
+        fill: ImageFill,
     },
     Timed {
         frame_time_millis: u32,

@@ -141,11 +141,11 @@ image_sets:
       caret_on:
         position: [194, 49]
         size: [2, 16]
-        stretch: true
+        fill: Stretch
       caret_off:
         position: [197, 49]
         size: [2, 16]
-        stretch: true
+        fill: Stretch
       caret:
         frame_time_millis: 500
         frames:

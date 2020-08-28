@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::{Error};
 use crate::render::{TexCoord, DrawList, TextureHandle, TextureData};
 use crate::{Rect, Color, AnimState, Point};
-use crate::theme_definition::{ImageDefinition, ImageDefinitionKind};
+use crate::theme_definition::{ImageFill, ImageDefinition, ImageDefinitionKind};
 
 #[derive(Copy, Clone)]
 pub struct ImageHandle {
@@ -26,7 +26,8 @@ enum ImageKind {
     },
     Simple {
         tex_coords: [TexCoord; 2],
-        fixed_size: Option<[f32; 2]>,
+        base_size: [f32; 2],
+        fill: ImageFill,
     },
     Timed {
         frame_time_millis: u32,
@@ -96,23 +97,47 @@ impl Image {
                     params.clip * params.scale
                 )
             },
-            ImageKind::Simple { tex_coords, fixed_size } => {
-                if let Some(size) = fixed_size {
-                    self.draw_simple(
-                        draw_list,
-                        tex_coords,
-                        [params.pos[0] * params.scale, params.pos[1] * params.scale],
-                        [size[0] * params.scale, size[1] * params.scale],
-                        params.clip * params.scale
-                    );
-                } else {
-                    self.draw_simple(
-                        draw_list,
-                        tex_coords,
-                        [params.pos[0] * params.scale, params.pos[1] * params.scale],
-                        [params.size[0] * params.scale, params.size[1] * params.scale],
-                        params.clip * params.scale
-                    );
+            ImageKind::Simple { tex_coords, base_size, fill } => {
+                let clip = params.clip * params.scale;
+                match fill {
+                    ImageFill::None => {
+                        self.draw_simple(
+                            draw_list,
+                            tex_coords,
+                            [params.pos[0] * params.scale, params.pos[1] * params.scale],
+                            [base_size[0] * params.scale, base_size[1] * params.scale],
+                            clip,
+                        );
+                    }, ImageFill::Stretch => {
+                        self.draw_simple(
+                            draw_list,
+                            tex_coords,
+                            [params.pos[0] * params.scale, params.pos[1] * params.scale],
+                            [params.size[0] * params.scale, params.size[1] * params.scale],
+                            clip,
+                        );
+                    }, ImageFill::Repeat => {
+                        
+                        let mut y = params.pos[1];
+                        loop {
+                            let mut x = params.pos[0];
+                            loop {
+                                self.draw_simple(
+                                    draw_list,
+                                    tex_coords,
+                                    [x * params.scale, y * params.scale],
+                                    [base_size[0] * params.scale, base_size[1] * params.scale],
+                                    clip,
+                                );
+
+                                x += base_size[0];
+                                if x >= params.size[0] - params.pos[0] { break; }
+                            }
+
+                            y += base_size[1];
+                            if y >= params.size[1] - params.pos[1] { break; }
+                        }
+                    }
                 }
             },
             ImageKind::Timed { frame_time_millis, frames, once } => {
@@ -183,12 +208,11 @@ impl Image {
                 base_size = Point::new(grid_size[0] * 3.0, grid_size[1]);
                 ImageKind::ComposedVertical { tex_coords, grid_size }
             },
-            ImageDefinitionKind::Simple { size, position, stretch } => {
+            ImageDefinitionKind::Simple { size, position, fill } => {
                 let tex1 = texture.tex_coord(position[0], position[1]);
                 let tex2 = texture.tex_coord(position[0] + size[0], position[1] + size[1]);
-                let fixed_size = if !stretch { Some([size[0] as f32, size[1] as f32]) } else { None };
                 base_size = Point::new(size[0] as f32, size[1] as f32);
-                ImageKind::Simple { tex_coords: [tex1, tex2], fixed_size }
+                ImageKind::Simple { tex_coords: [tex1, tex2], base_size: base_size.into(), fill }
             },
             ImageDefinitionKind::Timed { frame_time_millis, frames, once } => {
                 let mut size = Point::default();

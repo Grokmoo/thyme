@@ -67,13 +67,14 @@ Each image set can contain many `images`, which are defined as subsets of the ov
 image for each image within the set is determined based on the parameters specified.
 
 #### Simple Images
-Simple images are defined by a position and size, in pixels, within the overall image.  The `stretch` field is optional.
-If false (the default), the image will be drawn at a fixed size.
+Simple images are defined by a position and size, in pixels, within the overall image.  The `fill` field is optional, with valid
+values of `None` (default) - image is drawn at fixed size, `Stretch` - image is stretched to fill an area, `Repeat` - image repeats
+over an area.
 ```yaml
   progress_bar:
     position: [100, 100]
     size: [16, 16]
-    stretch: true
+    fill: Stretch
 ```
 
 #### Composed Images
