@@ -5,6 +5,7 @@ use crate::{
 use crate::{frame::{RendGroup}, font::FontSummary, image::ImageHandle};
 use crate::theme::{WidgetTheme};
 use crate::window::WindowBuilder;
+use crate::scrollpane::ScrollpaneBuilder;
 
 pub struct Widget {
     // identifier for persistent state
@@ -784,15 +785,13 @@ impl<'a> WidgetBuilder<'a> {
         WindowBuilder::new(self.id(id).new_render_group())
     }
 
-    // TODO full featured scrollpane builder like window builder
-    pub fn scrollpane<F: FnOnce(&mut Frame)>(self, content_id: &str, children: F) {
-        let mut min_scroll = Point::default();
-        let mut max_scroll = Point::default();
-        let mut delta = Point::default();
-
-        self.wants_scroll(true).finish_with(
-            Some(crate::recipes::scrollpane_content(content_id, children, &mut min_scroll, &mut max_scroll, &mut delta))
-        );
+    /// Turns this builder into a [`ScrollpaneBuilder`](struct.ScrollpaneBuilder.html).  You should use all
+    /// `WidgetBuilder` methods before calling this method.  The scrollpane must still be completed
+    /// with one of the methods on [`ScrollpaneBuilder`](struct.ScrollpaneBuilder.html).  You must pass a unique
+    /// `content_id` for the scrollpane's content.
+    #[must_use]
+    pub fn scrollpane(self, content_id: &str) -> ScrollpaneBuilder<'a> {
+        ScrollpaneBuilder::new(self.wants_scroll(true), content_id)
     }
 
     /// Consumes the builder and adds a widget to the current frame.  The
@@ -801,7 +800,7 @@ impl<'a> WidgetBuilder<'a> {
     /// If you wish this widget to have one or more child widgets, you should
     /// call [`children`](#method.children) instead.
     pub fn finish(self) -> WidgetState {
-        self.finish_with(None::<fn(&mut Frame)>)
+        self.finish_with(None::<fn(&mut Frame)>).1
     }
 
     /// Consumes the builder and adds a widget to the current frame.  The
@@ -811,11 +810,11 @@ impl<'a> WidgetBuilder<'a> {
     /// If you don't want to add children, you can just call
     /// [`finish`](#method.finish) instead.
     pub fn children<F: FnOnce(&mut Frame)>(self, f: F) -> WidgetState {
-        self.finish_with(Some(f))
+        self.finish_with(Some(f)).1
     }
 
-    fn finish_with<F: FnOnce(&mut Frame)>(mut self, f: Option<F>) -> WidgetState {
-        if !self.widget.visible { return WidgetState::hidden(); }
+    pub(crate) fn finish_with<F: FnOnce(&mut Frame)>(mut self, f: Option<F>) -> (&'a mut Frame, WidgetState) {
+        if !self.widget.visible { return (self.frame, WidgetState::hidden()); }
 
         let (state, text, in_modal_tree) = {
             let internal = self.frame.context_internal().borrow();
@@ -840,7 +839,7 @@ impl<'a> WidgetBuilder<'a> {
 
         if !state.is_open {
             self.widget.visible = false;
-            return WidgetState::hidden();
+            return (self.frame, WidgetState::hidden());
         }
 
         if self.data.recalc_pos_size {
@@ -943,6 +942,6 @@ impl<'a> WidgetBuilder<'a> {
             }
         }
         
-        state
+        (self.frame, state)
     }
 }
