@@ -314,7 +314,6 @@ widgets:
     size: [150, 24]
     border: { all: 5 }
   window:
-    font: small
     background: gui/window_bg
     wants_mouse: true
     layout: Vertical

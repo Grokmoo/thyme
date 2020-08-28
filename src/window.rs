@@ -1,19 +1,63 @@
 use crate::{Frame, widget::WidgetBuilder, WidgetState, Point};
 
-/// A [`WidgetBuilder`](struct.WidgetBuilder.html) specifically for creating windows.
-///
-/// Windows can have a titlebar, close button, move, and resizing capabilities.  Each window
-/// is automatically part of its own [`render group`](struct.WidgetBuilder.html#method.new_render_group)
-/// and will automatically come on top of other widgets when clicked on.  You can create a `WindowBuilder`
-/// from a [`WidgetBuilder`](struct.WidgetBuilder.html) by calling [`window`](struct.WidgetBuilder.html#method.window)
-/// after any calls to general purpose widget layout.
-///
-/// There is also a [`window method on Frame`](struct.Frame.html#method.window) as a convenience for simple cases.
-///
-/// Once you are finished setting up the window, you call [`children`](#method.children) to add children and add the widget
-/// to the frame
+/**
+A [`WidgetBuilder`](struct.WidgetBuilder.html) specifically for creating windows.
 
-// TODO add theme yaml sample here
+Windows can have a titlebar, close button, move, and resizing capabilities.  Each window
+is automatically part of its own [`render group`](struct.WidgetBuilder.html#method.new_render_group)
+and will automatically come on top of other widgets when clicked on.  You can create a `WindowBuilder`
+from a [`WidgetBuilder`](struct.WidgetBuilder.html) by calling [`window`](struct.WidgetBuilder.html#method.window)
+after any calls to general purpose widget layout.
+
+There is also a [`window method on Frame`](struct.Frame.html#method.window) as a convenience for simple cases.
+
+Once you are finished setting up the window, you call [`children`](#method.children) to add children and add the widget
+to the frame.
+
+## Theme definition
+An example of a theme definition for a window:
+
+```yaml
+  window:
+    background: gui/window_bg
+    wants_mouse: true
+    layout: Vertical
+    layout_spacing: [5, 5]
+    border: { left: 5, right: 5, top: 35, bot: 5 }
+    size: [300, 400]
+    child_align: Top
+    children:
+      titlebar:
+        wants_mouse: true
+        background: gui/small_button
+        size: [10, 30]
+        pos: [-6, -36]
+        border: { all: 5 }
+        width_from: Parent
+        child_align: Center
+        align: TopLeft
+        children:
+          title:
+            from: label
+            text: "Main Window"
+            font: medium
+            width_from: Parent
+          close:
+            wants_mouse: true
+            background: gui/small_button
+            foreground: gui/close_icon
+            size: [20, 20]
+            border: { all: 4 }
+            align: TopRight
+      handle:
+        wants_mouse: true
+        background: gui/window_handle
+        size: [12, 12]
+        align: BotRight
+        pos: [-1, -1]
+```
+
+**/
 pub struct WindowBuilder<'a> {
     builder: WidgetBuilder<'a>,
     state: WindowState,

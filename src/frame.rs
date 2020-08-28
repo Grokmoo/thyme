@@ -223,7 +223,7 @@ impl Frame {
     pub fn cursor(&self) -> Point { self.widgets[self.parent_index].cursor() }
 
     /// Starts creating a new child widget within the current parent, using the specified `theme`.
-    /// See [`Context`](struct.Context.html) for a discussion of the theme format.  This method
+    /// See [`the crate root`](index.html) for a discussion of the theme format.  This method
     /// returns a [`WidgetBuilder`](struct.WidgetBuilder.html) which can be used for fully
     /// customizing the new widget.
     #[must_use]

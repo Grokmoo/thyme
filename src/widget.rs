@@ -182,8 +182,7 @@ pub struct WidgetState {
     /// per click.
     pub clicked: bool,
 
-    /// How far the mouse has been dragged or scrolled on this widget, in logical pixels.  This will only be non-zero
-    /// when the mouse is pressed.
+    /// How far the mouse has been dragged or scrolled on this widget, in logical pixels.
     pub moved: Point,
 }
 

@@ -196,7 +196,6 @@ fn build_ui(ui: &mut Frame, party: &mut Party) {
         let character = &mut party.members[index];
 
         ui.window("character_window", "character_window", |ui| {
-            // TODO scroll with mouse wheel
             ui.scrollpane("pane", "character_content", |ui| {
                 ui.start("name_panel")
                 .children(|ui| {
@@ -233,7 +232,6 @@ fn build_ui(ui: &mut Frame, party: &mut Party) {
             });
         });
 
-        // TODO window draw order
         ui.window("item_picker", "item_picker", |ui| {
             item_picker(ui, character);
         });

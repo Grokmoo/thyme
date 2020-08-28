@@ -1,17 +1,84 @@
 use crate::{Frame, widget::WidgetBuilder, Rect, Point};
 
-/// A [`WidgetBuilder`](struct.WidgetBuilder.html) specifically for creating scrollpanes.
-///
-/// Create this using [`WidgetBuilder.scrollpane`](struct.WidgetBuilder.html#method.scrollpane).
-/// Scrollpanes can have fairly complex behavior, and can include optional horizontal and vertical scrollbars.
-/// Scrollbars are, by default, only shown when the content size exceeds the pane's inner size.
-/// There is also a [`scrollpane method`](struct.Frame.html#method.scrollpane) on `Frame` as a convenience for simple cases.
-///
-/// Once you are finished setting up the scrollpane, you call [`children`](#method.children) to add children to the scrollpane
-/// content and add the widget to the frame.  Note that the children are added to the scrollpane's content, *not* directly to
-/// the scrollpane itself.
+/**
+A [`WidgetBuilder`](struct.WidgetBuilder.html) specifically for creating scrollpanes.
 
-// TODO add theme yaml sample here
+Create this using [`WidgetBuilder.scrollpane`](struct.WidgetBuilder.html#method.scrollpane).
+Scrollpanes can have fairly complex behavior, and can include optional horizontal and vertical scrollbars.
+Scrollbars are, by default, only shown when the content size exceeds the pane's inner size.
+There is also a [`scrollpane method`](struct.Frame.html#method.scrollpane) on `Frame` as a convenience for simple cases.
+
+Once you are finished setting up the scrollpane, you call [`children`](#method.children) to add children to the scrollpane
+content and add the widget to the frame.  Note that the children are added to the scrollpane's content, *not* directly to
+the scrollpane itself.
+
+## Theme definition
+An example of a theme definition for a scrollpane:
+
+```yaml
+  scrollpane:
+    width_from: Parent
+    height_from: Parent
+    border: { all: 5 }
+    children:
+      content:
+        height_from: Parent
+        width_from: Parent
+        align: TopLeft
+        layout: Vertical
+        size: [-15, -15]
+        child_align: TopLeft
+      scrollbar_horizontal:
+        from: scrollbar_horizontal
+      scrollbar_vertical:
+        from: scrollbar_vertical
+  scroll_button:
+    wants_mouse: true
+    background: gui/small_button
+    size: [20, 20]
+    border: { all: 4 }
+  scrollbar_horizontal:
+    size: [10, 20]
+    pos: [-5, -5]
+    align: BotLeft
+    width_from: Parent
+    children:
+      left:
+        from: scroll_button
+        align: Left
+        foreground: gui/arrow_left
+      right:
+        from: scroll_button
+        align: Right
+        pos: [20, 0]
+        foreground: gui/arrow_right
+      scroll:
+        wants_mouse: true
+        background: gui/small_button
+        align: Left
+        border: { all: 4 }
+  scrollbar_vertical:
+    size: [20, 10]
+    pos: [-5, -5]
+    align: TopRight
+    height_from: Parent
+    children:
+      up:
+        from: scroll_button
+        align: Top
+        foreground: gui/arrow_up
+      down:
+        from: scroll_button
+        align: Bot
+        foreground: gui/arrow_down
+        pos: [0, 20]
+      scroll:
+        wants_mouse: true
+        background: gui/small_button
+        align: Top
+        border: { all: 4 }
+```
+**/
 pub struct ScrollpaneBuilder<'a> {
     builder: WidgetBuilder<'a>,
     state: ScrollpaneState,

@@ -10,24 +10,63 @@ impl Frame {
         self.start(theme).finish()
     }
 
-    /// A simple label displaying the specified `text`, with no user interactivity.
+    /**
+    A simple label displaying the specified `text`, with no user interactivity.
 
-    // TODO yaml example
+    An example theme definition:
+    ```yaml
+    label:
+      font: small
+      border: { width: 5 }
+      text_align: Center
+      height_from: FontLine
+    ```
+    **/
     pub fn label<T: Into<String>>(&mut self, theme: &str, text: T) {
         self.start(theme).text(text).finish();
     }
 
-    /// A simple button with a `label`.
+    /**
+    A simple button with a text `label`.
 
-    // TODO yaml example
+    An example theme definition:
+    ```yaml
+    button:
+      font: small
+      wants_mouse: true
+      background: gui/small_button
+      text_align: Center
+      size: [150, 24]
+      border: { all: 5 }
+    ```
+    **/
     pub fn button<T: Into<String>>(&mut self, theme: &str, label: T) -> WidgetState {
         self.start(theme).text(label).wants_mouse(true).finish()
     }
 
-    /// A simple vertical slider.  The slider button can be dragged by the user.  The position
-    /// of the button is based on the relative distance of `value` from `min` and `max`.
-    /// Returns the new value if the user moved the slider on this frame, None, otherwise.  Will
-    /// always return a value within [`min`, `max`] inclusive.  `max` must be greater than `min`.
+    /**
+    A simple vertical slider.  The slider button can be dragged by the user.  The position
+    of the button is based on the relative distance of `value` from `min` and `max`.
+    Returns the new value if the user moved the slider on this frame, None, otherwise.  Will
+    always return a value within [`min`, `max`] inclusive.  `max` must be greater than `min`.
+
+    An example theme definition:
+    ```yaml
+    vertical_slider:
+      size: [15, 0]
+      height_from: Parent
+      border: { top: 6, bot: 5, left: 5, right: 5 }
+      children:
+        slider_bar:
+          align: TopLeft
+          width_from: Parent
+          height_from: Parent
+          background: gui/slider_vertical
+        slider_button:
+          from: button
+          size: [15, 15]
+    ```
+    **/
     pub fn vertical_slider(&mut self, theme: &str, min: f32, max: f32, value: f32) -> Option<f32> {
         let mut inner = Rect::default();
         let mut new_value = None;
@@ -59,10 +98,29 @@ impl Frame {
         new_value
     }
 
-    /// A simple horizontal slider.  The slider button can be dragged by the user.  The position
-    /// of the button is based on the relative distance of `value` from `min` and `max`.
-    /// Returns the new value if the user moved the slider on this frame, None, otherwise.  Will
-    /// always return a value within [`min`, `max`] inclusive.  `max` must be greater than `min`.
+    /**
+    A simple horizontal slider.  The slider button can be dragged by the user.  The position
+    of the button is based on the relative distance of `value` from `min` and `max`.
+    Returns the new value if the user moved the slider on this frame, None, otherwise.  Will
+    always return a value within [`min`, `max`] inclusive.  `max` must be greater than `min`.
+
+    An example theme definition:
+    ```yaml
+    horizontal_slider:
+      size: [0, 15]
+      width_from: Parent
+      border: { top: 6, bot: 5, left: 5, right: 5 }
+      children:
+        slider_bar:
+          align: TopLeft
+          width_from: Parent
+          height_from: Parent
+          background: gui/slider_horizontal
+        slider_button:
+          from: button
+          size: [15, 15]
+    ```
+    **/
     pub fn horizontal_slider(&mut self, theme: &str, min: f32, max: f32, value: f32) -> Option<f32> {
         let mut inner = Rect::default();
         let mut new_value = None;
@@ -98,11 +156,33 @@ impl Frame {
 
     // TODO menubar
 
-    /// A drop down box. It displays its `current`ly active selection, and opens a modal popup to select a new
-    /// choice from the list of `values` when the user clicks on it.  The specified `id` must be unique.
-    /// The method will return a selected choice on the frame the user clicks on it, otherwise returning `None`.
+    /**
+    A drop down box. It displays its currently active selection (`current`), and opens a modal popup to select a new
+    choice from the list of `values` when the user clicks on it.  The specified `id` must be unique.
+    The method will return a selected choice on the frame the user clicks on it, otherwise returning `None`.
 
-    // TODO yaml example
+    An example theme definition;  See [`ScrollpaneBuilder`](struct.ScrollpaneBuilder.html) for the scrollpane example.
+    ```yaml
+    combo_box:
+      from: button
+    combo_box_popup:
+      from: scrollpane
+      width_from: Parent
+      height_from: Normal
+      size: [0, 75]
+      background: gui/small_button_normal
+      children:
+        content:
+          size: [-15, 0]
+          children:
+            entry:
+              from: button
+              width_from: Parent
+              size: [0, 25]
+        scrollbar_vertical:
+          size: [20, 30]
+    ```
+    **/
     pub fn combo_box<'a, T: Display>(&mut self, theme: &str, id: &str, current: T, values: &'a [T]) -> Option<&'a T> {
         let popup_id = format!("{}_popup", id);
         
@@ -139,18 +219,36 @@ impl Frame {
     }
 
     /// A simple toggle button that can be toggle on or off, based on the passed in `active` state.
-
-    // TODO provide YAML sample
+    ///
+    /// See [`button`](#method.button) for a YAML example.
     pub fn toggle_button<T: Into<String>>(&mut self, theme: &str, label: T, active: bool) -> WidgetState {
         self.start(theme).text(label).active(active).wants_mouse(true).finish()
     }
 
-    /// Creates a simple text input field.  The `id` that is passed in must be unique.
-    /// The text input will grab keyboard focus when the user clicks on it, allowing
-    /// the user to type text.  The return value will be `None` if the text didn't change
-    /// this frame, or will contain the current text displayed by the textbox if it did
-    /// change.
-    // TODO add a simple YAML example
+    /**
+    Creates a simple text input field.  The `id` that is passed in must be unique.
+    The text input will grab keyboard focus when the user clicks on it, allowing
+    the user to type text.  The return value will be `None` if the text didn't change
+    this frame, or will contain the current text displayed by the textbox if it did
+    change.
+
+    An example YAML theme definition:
+    ```yaml
+    input_field:
+      font: small
+      border: { height: 4, width: 5 }
+      background: gui/input_field
+      text_align: Left
+      wants_mouse: true
+      size: [150, 24]
+      child_align: TopLeft
+      children:
+        caret:
+          size: [2, -2]
+          height_from: Parent
+          background: gui/caret
+    ```
+    **/
     pub fn input_field(&mut self, theme: &str, id: &str) -> Option<String> {
         let mut text_out = None;
 
@@ -192,10 +290,24 @@ impl Frame {
         text_out
     }
 
-    /// Creates a simple progress bar.  The drawing will be clipped based on the size
-    /// of the widget and the passed in `frac`.
+    /**
+    Creates a simple progress bar.  The drawing will be clipped based on the size
+    of the widget and the passed in `frac`.
 
-    // TODO add YAML example
+    An example YAML theme definition:
+    ```yaml
+    progress_bar:
+      size: [100, 24]
+      background: gui/button
+      border: { width: 27 }
+      child_align: TopLeft
+      children:
+        bar:
+          background: gui/progress_bar
+          width_from: Parent
+          height_from: Parent
+    ```
+    **/
     pub fn progress_bar(&mut self, theme: &str, frac: f32) {
         self.start(theme)
         .children(|ui| {
