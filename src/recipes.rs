@@ -46,8 +46,8 @@ impl Frame {
 
             let result = builder.pos(0.0, pos).finish();
 
-            if result.dragged.y != 0.0 {
-                let delta_y = result.dragged.y;
+            if result.moved.y != 0.0 {
+                let delta_y = result.moved.y;
 
                 let next_pos = pos + delta_y;
                 let new_val = (max - min) * next_pos / total_height + min;
@@ -81,8 +81,8 @@ impl Frame {
 
             let result = builder.pos(pos, 0.0).finish();
 
-            if result.dragged.x != 0.0 {
-                let delta_x = result.dragged.x;
+            if result.moved.x != 0.0 {
+                let delta_x = result.moved.x;
 
                 let next_pos = pos + delta_x;
                 let new_val = (max - min) * next_pos / total_width + min;
@@ -222,16 +222,36 @@ impl Frame {
     }
 
     /// Adds a simple scrollpane widget.
-    /// See [`WidgetBuilder.scrollpane`](struct.WidgetBuilder.html#method.scrollpane) for details and
-    /// the more customizable version.
+    /// The scrollpane has horizontal and vertical scrollbars shown if the content
+    /// size is greater than the inner scrollpane size.  The `content_id` is the ID for the scrollpane's
+    /// content widget and must be unique.  The `children` closure is called and adds children to the scrollpane's
+    /// content, *not* directly to the scrollpane.
     pub fn scrollpane<F: FnOnce(&mut Frame)>(&mut self, theme_id: &str, content_id: &str, children: F) {
-        self.start(theme_id)
-        .wants_scroll(true)
-        .scrollpane(content_id, children);
+        let mut min_scroll = Point::default();
+        let mut max_scroll = Point::default();
+        let mut delta = Point::default();
+
+        let result = self.start(theme_id).wants_scroll(true).children(
+            crate::recipes::scrollpane_content(content_id, children, &mut min_scroll, &mut max_scroll, &mut delta)
+        );
+
+        // set the scroll every frame to bound it, in case it was modified externally
+        self.modify(content_id, |state| {
+            let min = min_scroll + state.scroll;
+            let max = max_scroll + state.scroll;
+
+            state.scroll = (state.scroll + delta + result.moved).max(min).min(max);
+        });
     }
 }
 
-pub(crate) fn scrollpane_content<'a, F: FnOnce(&mut Frame) + 'a>(content_id: &'a str, children: F) -> impl FnOnce(&mut Frame) + 'a {
+pub(crate) fn scrollpane_content<'a, F: FnOnce(&mut Frame) + 'a>(
+    content_id: &'a str,
+    children: F,
+    min_scroll: &'a mut Point,
+    max_scroll: &'a mut Point,
+    delta: &'a mut Point,
+) -> impl FnOnce(&mut Frame) + 'a {
     move |ui| {
         let mut content_bounds = Rect::default();
 
@@ -290,7 +310,7 @@ pub(crate) fn scrollpane_content<'a, F: FnOnce(&mut Frame) + 'a>(content_id: &'a
                 .finish();
 
                 if result.pressed {
-                    delta_scroll.x -= result.dragged.x / width_frac;
+                    delta_scroll.x -= result.moved.x / width_frac;
                 }
             });
         }
@@ -333,19 +353,13 @@ pub(crate) fn scrollpane_content<'a, F: FnOnce(&mut Frame) + 'a>(content_id: &'a
                 .finish();
 
                 if result.pressed {
-                    delta_scroll.y -= result.dragged.y / height_frac;
+                    delta_scroll.y -= result.moved.y / height_frac;
                 }
             });
         }
 
-        if delta_scroll != Point::default() {
-            let min_scroll = content_max - pane_max;
-            let max_scroll = content_min - pane_min;
-            let delta = delta_scroll.max(min_scroll).min(max_scroll);
-
-            ui.modify(content_id, |state| {
-                state.scroll = state.scroll + delta;
-            });
-        }
+        *min_scroll = content_max - pane_max;
+        *max_scroll = content_min - pane_min;
+        *delta = delta_scroll;
     }
 }

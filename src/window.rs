@@ -83,7 +83,7 @@ impl<'a> WindowBuilder<'a> {
                 });
 
                 if state.moveable && result.pressed {
-                    result.dragged
+                    result.moved
                 } else {
                     Point::default()
                 }
@@ -101,7 +101,7 @@ impl<'a> WindowBuilder<'a> {
                 let result = ui.button("handle", "");
                 if result.pressed {
                     ui.modify(&id, |state| {
-                        state.resize = state.resize + result.dragged;
+                        state.resize = state.resize + result.moved;
                     });
                 }
             }

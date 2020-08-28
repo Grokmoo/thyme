@@ -253,6 +253,12 @@ impl ContextInternal {
         self.keyboard_focus_widget.as_deref() == Some(id)
     }
 
+    pub(crate) fn take_mouse_wheel(&mut self) -> Point {
+        let result = self.mouse_wheel;
+        self.mouse_wheel = Point::default();
+        result
+    }
+
     pub(crate) fn mouse_taken_last_frame_id(&self) -> Option<&str> {
         self.mouse_taken_last_frame.as_ref().map(|(id, _)| id.as_ref())
     }

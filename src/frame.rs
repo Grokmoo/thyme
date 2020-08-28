@@ -95,6 +95,29 @@ impl Frame {
         &self.context.internal()
     }
 
+    pub(crate) fn check_mouse_wheel(&mut self, index: usize) -> Option<Point> {
+        let widget = &self.widgets[index];
+
+        let mut context = self.context.internal().borrow_mut();
+
+        if context.has_modal() && !self.in_modal_tree {
+            return None;
+        }
+
+        if let Some(group) = context.mouse_in_rend_group_last_frame() {
+            if widget.rend_group() != group {
+                return None;
+            }
+        }
+
+        let bounds = Rect::new(widget.pos(), widget.size());
+        if !bounds.is_inside(context.mouse_pos()) {
+            return None;
+        }
+
+        Some(context.take_mouse_wheel())
+    }
+
     pub(crate) fn check_mouse_state(&mut self, index: usize) -> MouseState {
         let widget = &self.widgets[index];
 

@@ -181,9 +181,9 @@ pub struct WidgetState {
     /// per click.
     pub clicked: bool,
 
-    /// How far the mouse has been dragged on this widget, in logical pixels.  This will only be non-zero
+    /// How far the mouse has been dragged or scrolled on this widget, in logical pixels.  This will only be non-zero
     /// when the mouse is pressed.
-    pub dragged: Point,
+    pub moved: Point,
 }
 
 impl WidgetState {
@@ -193,11 +193,11 @@ impl WidgetState {
             hovered: false,
             pressed: false,
             clicked: false,
-            dragged: Point::default(),
+            moved: Point::default(),
         }
     }
 
-    fn new(anim_state: AnimState, clicked: bool, dragged: Point) -> WidgetState {
+    fn new(anim_state: AnimState, clicked: bool, moved: Point) -> WidgetState {
         let (hovered, pressed) = if anim_state.contains(AnimStateKey::Pressed) {
             (true, true)
         } else if anim_state.contains(AnimStateKey::Hover) {
@@ -211,7 +211,7 @@ impl WidgetState {
             hovered,
             pressed,
             clicked,
-            dragged,
+            moved,
         }
     }
 }
@@ -784,15 +784,15 @@ impl<'a> WidgetBuilder<'a> {
         WindowBuilder::new(self.id(id).new_render_group())
     }
 
-    /// Consumes this builder and adds a scrollpane widget to the current frame.
-    /// The scrollpane has horizontal and vertical scrollbars shown if the content
-    /// size is greater than the inner scrollpane size.  The `content_id` is the ID for the scrollpane's
-    /// content widget and must be unique.  The `children` closure is called and adds children to the scrollpane's
-    /// content, *not* directly to the scrollpane.
+    // TODO full featured scrollpane builder like window builder
+    pub fn scrollpane<F: FnOnce(&mut Frame)>(self, content_id: &str, children: F) {
+        let mut min_scroll = Point::default();
+        let mut max_scroll = Point::default();
+        let mut delta = Point::default();
 
-    // TODO add YAML sample
-    pub fn scrollpane<F: FnOnce(&mut Frame)>(self, content_id: &str, children: F) -> WidgetState {
-        self.wants_scroll(true).finish_with(Some(crate::recipes::scrollpane_content(content_id, children)))
+        self.wants_scroll(true).finish_with(
+            Some(crate::recipes::scrollpane_content(content_id, children, &mut min_scroll, &mut max_scroll, &mut delta))
+        );
     }
 
     /// Consumes the builder and adds a widget to the current frame.  The
@@ -889,12 +889,19 @@ impl<'a> WidgetBuilder<'a> {
 
         self.frame.set_max_child_bounds(old_max_child_bounds.max(self_bounds));
 
-        let (clicked, mut anim_state, dragged) = if self.data.enabled && self.data.wants_mouse {
+        let (clicked, mut anim_state, mut dragged) = if self.data.enabled && self.data.wants_mouse {
             let mouse_state = self.frame.check_mouse_state(widget_index);
             (mouse_state.clicked, mouse_state.anim, mouse_state.dragged)
         } else {
             (false, AnimState::disabled(), Point::default())
         };
+
+        if self.data.wants_scroll {
+            if let Some(wheel) = self.frame.check_mouse_wheel(widget_index) {
+                dragged.x += wheel.x;
+                dragged.y += wheel.y;
+            }
+        }
 
         if self.data.next_render_group {
             self.frame.prev_render_group(prev_rend_group);
