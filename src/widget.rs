@@ -323,14 +323,13 @@ impl<'a> WidgetBuilder<'a> {
     pub(crate) fn new(frame: &'a mut Frame, parent: usize, theme_id: String, base_theme: &str) -> WidgetBuilder<'a> {
         let (data, widget) = {
             let context = std::rc::Rc::clone(&frame.context_internal());
-            let context = context.borrow();
+            let mut context = context.borrow_mut();
             let theme = match context.themes().theme(&theme_id) {
                 None => {
                     match context.themes().theme(base_theme) {
                         None => {
-                            // TODO remove unwrap
-                            println!("Unable to locate theme either at {} or {}", theme_id, base_theme);
-                            panic!();
+                            context.log(log::Level::Error, format!("Unable to locate theme either at {} or {}", theme_id, base_theme));
+                            context.themes().default_theme()
                         }, Some(theme) => theme,
                     }
                 }, Some(theme) => theme,
@@ -475,11 +474,7 @@ impl<'a> WidgetBuilder<'a> {
     /// This may also be specified in the widget's [`theme`](struct.Context.html).
     #[must_use]
     pub fn font(mut self, font: &str) -> WidgetBuilder<'a> {
-        let font = {
-            let context = self.frame.context_internal();
-            let context = context.borrow();
-            context.themes().find_font(Some(font))
-        };
+        let font = self.frame.context().find_font(font);
 
         self.widget.font = font;
         self.data.recalc_pos_size = true;
@@ -492,11 +487,7 @@ impl<'a> WidgetBuilder<'a> {
     /// This may also be specified in the widget's [`theme`](struct.Context.html).
     #[must_use]
     pub fn foreground(mut self, fg: &str) -> WidgetBuilder<'a> {
-        let fg = {
-            let context = self.frame.context_internal();
-            let context = context.borrow();
-            context.themes().find_image(Some(fg))
-        };
+        let fg = self.frame.context().find_image(fg);
 
         self.widget.foreground = fg;
         self
@@ -508,11 +499,7 @@ impl<'a> WidgetBuilder<'a> {
     /// This may also be specified in the widget's [`theme`](struct.Context.html).
     #[must_use]
     pub fn background(mut self, bg: &str) -> WidgetBuilder<'a> {
-        let bg = {
-            let context = self.frame.context_internal();
-            let context = context.borrow();
-            context.themes().find_image(Some(bg))
-        };
+        let bg = self.frame.context().find_image(bg);
 
         self.widget.background = bg;
         self

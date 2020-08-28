@@ -1,10 +1,12 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::Instant;
 
 use crate::{Point, Error, Frame, Rect, frame::{RendGroup, RendGroupDef}};
+use crate::font::FontSummary;
 use crate::widget::Widget;
+use crate::image::ImageHandle;
 use crate::theme::ThemeSet;
 use crate::theme_definition::{ThemeDefinition, AnimState, AnimStateKey};
 use crate::render::{Renderer, IO, TextureData, TextureHandle};
@@ -187,9 +189,18 @@ pub struct ContextInternal {
 
     start_instant: Instant,
     time_millis: u32,
+
+    errors: HashSet<String>,
 }
 
 impl ContextInternal {
+    pub(crate) fn log(&mut self, level: log::Level, error: String) {
+        if self.errors.contains(&error) { return; }
+
+        log::log!(level, "{}", error);
+        self.errors.insert(error);
+    }
+
     pub(crate) fn mut_modal<F: FnOnce(&mut Modal)>(&mut self, f: F) {
         if let Some(modal) = self.modal.as_mut() {
             (f)(modal);
@@ -362,10 +373,33 @@ impl Context {
             time_millis: 0,
             start_instant: Instant::now(),
             keyboard_focus_widget: None,
+            errors: HashSet::new(),
         };
 
         Context {
             internal: Rc::new(RefCell::new(internal))
+        }
+    }
+
+    // Finds the specified font and appropriately logs any error in this context.
+    pub(crate) fn find_font(&self, id: &str) -> Option<FontSummary> {
+        let mut internal = self.internal.borrow_mut();
+        match internal.themes().find_font(Some(id)) {
+            None => {
+                internal.log(log::Level::Error, format!("Unable to find font '{}' for widget", id));
+                None
+            }, Some(handle) => Some(handle)
+        }
+    }
+
+    // Finds the specified image and appropriately logs any error in this context.
+    pub(crate) fn find_image(&self, id: &str) -> Option<ImageHandle> {
+        let mut internal = self.internal.borrow_mut();
+        match internal.themes().find_image(Some(id)) {
+            None => {
+                internal.log(log::Level::Error, format!("Unable to find image '{}' for widget", id));
+                None
+            }, Some(handle) => Some(handle),
         }
     }
 

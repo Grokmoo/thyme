@@ -99,7 +99,14 @@ impl ThemeSet {
         // build the set of themes
         let mut theme_handles = HashMap::new();
         let mut themes = Vec::new();
-        let mut handle_index = 0;
+
+        // create the default theme
+        let default_handle = WidgetThemeHandle { id: 0 };
+        let default_id = "default";
+        themes.push(WidgetTheme::create_default(default_id, default_handle));
+        theme_handles.insert(default_id.to_string(), default_handle);
+
+        let mut handle_index = 1;
         for (theme_id, theme) in definition.widgets {
             WidgetTheme::create(
                 "",
@@ -173,6 +180,11 @@ impl ThemeSet {
         })
     }
 
+    pub(crate) fn default_theme(&self) -> &WidgetTheme {
+        // This is always manually created
+        &self.themes[0]
+    }
+
     pub fn theme(&self, id: &str) -> Option<&WidgetTheme> {
         self.handle(id).map(|handle| &self.themes[handle.id as usize])
     }
@@ -187,8 +199,6 @@ impl ThemeSet {
             Some(id) => {
                 match self.font_handles.get(id) {
                     None => {
-                        // TODO warn earlier and only once instead of on every frame
-                        log::warn!("Invalid font when drawing: '{}'", id);
                         None
                     }, Some(font_sum) => {
                         Some(*font_sum)
@@ -208,8 +218,6 @@ impl ThemeSet {
             Some(id) => {
                 match self.image_handles.get(id) {
                     None => {
-                        // TODO warn earlier and only once instead of every frame like this will
-                        log::warn!("Invalid image when drawing: '{}'", id);
                         None
                     }, Some(image) => Some(*image),
                 }
@@ -260,6 +268,34 @@ pub struct WidgetTheme {
 }
 
 impl WidgetTheme {
+    fn create_default(id: &'static str, handle: WidgetThemeHandle) -> WidgetTheme {
+        WidgetTheme {
+            from: None,
+            full_id: id.to_string(),
+            id: id.to_string(),
+            parent_handle: None,
+            handle,
+            text: None,
+            text_color: None,
+            font: None,
+            background: None,
+            foreground: None,
+            wants_mouse: None,
+            wants_scroll: None,
+            text_align: None,
+            pos: None,
+            size: None,
+            width_from: None,
+            height_from: None,
+            border: None,
+            align: None,
+            child_align: None,
+            layout: None,
+            layout_spacing: None,
+            children: Vec::new(),
+        }
+    }
+
     #[allow(clippy::too_many_arguments)]
     fn create(
         parent_id: &str,

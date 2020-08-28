@@ -91,6 +91,10 @@ impl Frame {
         output
     }
 
+    pub(crate) fn context(&self) -> &Context {
+        &self.context
+    }
+
     pub(crate) fn context_internal(&self) -> &Rc<RefCell<ContextInternal>> {
         &self.context.internal()
     }
@@ -246,8 +250,7 @@ impl Frame {
     /// is called multiple times, the last call will take effect.  The image will automatically inherit
     /// `Normal` and `Pressed` animation states.  See `set_mouse_state` to override this behavior.
     pub fn set_mouse_cursor(&mut self, image: &str, align: Align) {
-        let context = self.context.internal().borrow();
-        let image = context.themes().find_image(Some(image));
+        let image = self.context.find_image(image);
         self.mouse_cursor = image.map(|image| (image, align));
     }
 
