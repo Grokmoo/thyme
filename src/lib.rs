@@ -131,6 +131,8 @@ differentiate the different types.
 Timed images display one out of several frames, on a timer.  Timed images can repeat continuously (the default), or only display once,
 based on the value of the optional `once` parameter.  `frame_time_millis` is how long each frame is shown for, in milliseconds.  Each
 `frame` is the `id` of an image within the current image set.  It can be a Simple Image or Composed Image.
+
+In this example, each frame is displayed for 500 milliseconds in an endless cycle.
 ```yaml
   button_flash:
     frame_time_millis: 500
@@ -155,7 +157,9 @@ The referenced images are specified by `id`, and can include Simple, Composed, a
 ```
 
 Images which contain references to other images are parsed in a particular order - `Collected`, then `Animated`, then
-`Timed`.  This means an `Animated` image may reference a `Collected` image, but not the other way around.
+`Timed`.  This means an `Animated` image may reference a `Collected` image, but not the other way around.  All of these
+image types may contain references to the basic image types - `Simple`, `Composed`, `ComposedHorizontal`, and
+`ComposedVertical`.
 
 ## Widgets
 The widgets section defines themes for all widgets you will use in your UI.  Whenever you create a widget, such as through
