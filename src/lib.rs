@@ -264,6 +264,7 @@ mod render;
 mod theme_definition;
 mod point;
 mod scrollpane;
+mod wgpu_backend;
 mod widget;
 mod window;
 mod winit_io;
@@ -277,6 +278,7 @@ pub use theme_definition::{AnimStateKey, AnimState, Align, Color, Layout, WidthR
 pub use window::WindowBuilder;
 pub use winit_io::WinitIo;
 pub use glium_backend::GliumRenderer;
+pub use wgpu_backend::WgpuRenderer;
 pub use render::{IO, Renderer};
 
 /// A generic error that can come from a variety of internal sources.

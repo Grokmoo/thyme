@@ -1,9 +1,4 @@
-use glium::glutin::{
-    self,
-    event::{Event, WindowEvent},
-    event_loop::{ControlFlow, EventLoop}, window::WindowBuilder
-};
-use glium::{Display, Surface};
+use winit::{event::{Event, WindowEvent}, event_loop::{ControlFlow, EventLoop}, window::WindowBuilder, dpi::LogicalSize};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // initialize very basic logger so error messages go to stdout
@@ -17,17 +12,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let theme: serde_yaml::Value = serde_yaml::from_str(theme_src)?;
     let window_size = [1280.0, 720.0];
 
-    // create glium display
+    // create winit window
     let event_loop = EventLoop::new();
-    let context = glutin::ContextBuilder::new();
-    let builder = WindowBuilder::new()
-        .with_title("Thyme Glium Demo")
-        .with_inner_size(glutin::dpi::LogicalSize::new(window_size[0], window_size[1]));
-    let display = Display::new(builder, context, &event_loop)?;
+    let window = WindowBuilder::new()
+        .with_title("Thyme WGPU Demo")
+        .with_inner_size(LogicalSize::new(window_size[0], window_size[1]))
+        .build(&event_loop);
+
+    // TODO setup WGPU
 
     // create thyme backend
     let mut io = thyme::WinitIo::new(&event_loop, window_size.into());
-    let mut renderer = thyme::GliumRenderer::new(&display)?;
+    let mut renderer = thyme::WgpuRenderer::new();
     let mut context_builder = thyme::ContextBuilder::new(theme, &mut renderer, &mut io)?;
 
     // register resources in thyme and create the context
@@ -39,8 +35,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // run main loop
     event_loop.run(move |event, _, control_flow| match event {
         Event::MainEventsCleared => {
-            let mut target = display.draw();
-            target.clear_color(0.0, 0.0, 0.0, 0.0);
+            // TODO renderer setup
 
             let mut ui = context.create_frame();
 
@@ -50,9 +45,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ui.button("label", "Hello, World!");
             });
 
-            renderer.draw_frame(&mut target, ui).unwrap();
-
-            target.finish().unwrap();
+            // TODO renderer draw
         }
         Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => *control_flow = ControlFlow::Exit,
         event => {
