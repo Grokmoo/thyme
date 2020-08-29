@@ -55,6 +55,7 @@ impl ThemeSet {
                 Error::Theme(format!("Unable to locate texture {}", set.source))
             )?;
 
+            let mut collected_images: Vec<(String, ImageDefinition)> = Vec::new();
             let mut timed_images: Vec<(String, ImageDefinition)> = Vec::new();
             let mut animated_images: Vec<(String, ImageDefinition)> = Vec::new();
 
@@ -63,11 +64,18 @@ impl ThemeSet {
                 match image_def.kind {
                     ImageDefinitionKind::Animated { .. } => animated_images.push((image_id, image_def)),
                     ImageDefinitionKind::Timed { .. } => timed_images.push((image_id, image_def)),
+                    ImageDefinitionKind::Collected { .. } => collected_images.push((image_id, image_def)),
                     _ => {
                         let image = Image::new(&image_id, image_def, texture, &images_in_set, set.scale)?;
                         images_in_set.insert(image_id, image);
                     }
                 }
+            }
+
+            // now parse collected images
+            for (id, image_def) in collected_images {
+                let image = Image::new(&id, image_def, texture, &images_in_set, set.scale)?;
+                images_in_set.insert(id, image);
             }
 
             // now parse timed images

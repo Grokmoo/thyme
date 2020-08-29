@@ -79,9 +79,19 @@ impl Default for ImageFill {
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CollectedSubImage {
+    pub position: [i32; 2],
+    pub size: [i32; 2],
+}
+
+#[derive(Serialize, Deserialize)]
 #[serde(untagged)]
 #[serde(deny_unknown_fields)]
 pub enum ImageDefinitionKind {
+    Collected {
+        sub_images: HashMap<String, CollectedSubImage>,
+    },
     Composed {
         position: [u32; 2],
         grid_size: [u32; 2],

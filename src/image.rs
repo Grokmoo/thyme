@@ -11,7 +11,17 @@ pub struct ImageHandle {
 }
 
 #[derive(Clone)]
+pub struct SubImage {
+    image: Image,
+    pos: Point,
+    size: Point,
+}
+
+#[derive(Clone)]
 enum ImageKind {
+    Collected {
+        sub_images: Vec<SubImage>,
+    },
     Composed {
         tex_coords: [[TexCoord; 4]; 4],
         grid_size: [f32; 2],
@@ -67,6 +77,37 @@ impl Image {
         params: ImageDrawParams,
     ) {
         match &self.kind {
+            ImageKind::Collected { sub_images } => {
+                for sub_image in sub_images {
+                    let image = &sub_image.image;
+                    let x = if sub_image.pos.x >= 0.0 {
+                        params.pos[0] + sub_image.pos.x
+                    } else {
+                        params.pos[0] + params.size[0] + sub_image.pos.x
+                    };
+
+                    let y = if sub_image.pos.y >= 0.0 {
+                        params.pos[1] + sub_image.pos.y
+                    } else {
+                        params.pos[1] + params.size[1] + sub_image.pos.y
+                    };
+
+                    let w = params.size[0] + sub_image.size.x;
+                    let h = params.size[1] + sub_image.size.y;
+                    let clip = params.clip.min(Rect::new(Point::new(x, y), Point::new(w, h)));
+
+                    let sub_params = ImageDrawParams {
+                        pos: [x, y],
+                        size: [w, h],
+                        anim_state: params.anim_state,
+                        clip,
+                        time_millis: params.time_millis,
+                        scale: params.scale,
+                    };
+
+                    image.draw(draw_list, sub_params);
+                }
+            },
             ImageKind::Composed { tex_coords, grid_size } => {
                 self.draw_composed(
                     draw_list,
@@ -117,7 +158,6 @@ impl Image {
                             clip,
                         );
                     }, ImageFill::Repeat => {
-                        
                         let mut y = params.pos[1];
                         loop {
                             let mut x = params.pos[0];
@@ -214,6 +254,23 @@ impl Image {
                 let tex2 = texture.tex_coord(position[0] + size[0], position[1] + size[1]);
                 base_size = Point::new(size[0] as f32 * scale, size[1] as f32 * scale);
                 ImageKind::Simple { tex_coords: [tex1, tex2], base_size: base_size.into(), fill }
+            },
+            ImageDefinitionKind::Collected { sub_images } => {
+                let mut size = Point::default();
+                let mut images_out = Vec::new();
+                for (id, sub_image_def) in sub_images {
+                    let image = find_image_in_set(image_id, others, &id)?;
+                    size = size.max(image.base_size);
+
+                    images_out.push(SubImage {
+                        image,
+                        pos: Point::new(sub_image_def.position[0] as f32, sub_image_def.position[1] as f32),
+                        size: Point::new(sub_image_def.size[0] as f32, sub_image_def.size[1] as f32),
+                    })
+                }
+
+                base_size = size;
+                ImageKind::Collected { sub_images: images_out }
             },
             ImageDefinitionKind::Timed { frame_time_millis, frames, once } => {
                 let mut size = Point::default();

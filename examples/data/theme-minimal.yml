@@ -26,8 +26,20 @@ image_sets:
           Hover: cursor_normal
           Pressed: cursor_pressed
       window_bg:
+        sub_images:
+          window_bg_base:
+            position: [0, 0]
+            size: [0, 0]
+          window_fill:
+            position: [5, 5]
+            size: [-10, -10]
+      window_bg_base:
         position: [0, 0]
         grid_size: [32, 32]
+      window_fill:
+        position: [128, 0]
+        size: [128, 128]
+        fill: Repeat
       small_button_normal:
         position: [110, 0]
         grid_size: [5, 5]

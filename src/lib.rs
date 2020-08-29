@@ -84,11 +84,38 @@ over an area.
     fill: Stretch
 ```
 
+#### Collected Images
+Collected images allow you to define an image that consists of one or more sub images, fairly arbitrarily.  Each sub image includes
+the image it references, a position, and a size.  Both position and size may be positive or negative.  When drawing, the size of the
+sub image is calculated as the main size of the image being drawn plus the sub image size.  For the position, the calculation is similar
+except that for each x and y position component, a negative position means to add the main image position plus main image size plus
+sub image position.  This allows you to offset sub-images with respect to any of the top, bottom, left, or right of the main image.
+
+In this example, `window_bg_base` is a composed image.  Assuming it is transparent in the center, the collected image `window_bg` will draw
+the `window_bg_base` frame around a repeating tile of the `window_fill` image.
+```yaml
+  window_bg:
+    sub_images:
+      window_bg_base:
+        position: [0, 0]
+        size: [0, 0]
+      window_fill:
+        position: [5, 5]
+        size: [-10, -10]
+  window_bg_base:
+    position: [0, 0]
+    grid_size: [32, 32]
+  window_fill:
+    position: [128, 0]
+    size: [128, 128]
+    fill: Repeat
+```
+
 #### Composed Images
-Composed images consist of a 3 by 3 grid.  The corners are drawn at a fixed size, while the middle sections stretch along
-one axis.  The center grid image stretches to fill in the inner area of the image.  These images allow you to easily draw
-widgets with almost any size that maintain the same look.  The `grid_size` specifies the size of one of the 9 cells, with
-each cell having the same size.
+Composed images are a common special case of collected images., consisting of an even 3 by 3 grid.  The corners are drawn at a fixed
+size, while the middle sections stretch along one axis.  The center grid image stretches to fill in the inner area of the image.
+These images allow you to easily draw widgets with almost any size that maintain the same look.  The `grid_size` specifies the size
+of one of the 9 cells, with each cell having the same size.
 ```yaml
   button_normal:
     position: [100, 100]
@@ -126,6 +153,9 @@ The referenced images are specified by `id`, and can include Simple, Composed, a
       Active + Hover: button_hover_active
       Active + Pressed: button_pressed_active
 ```
+
+Images which contain references to other images are parsed in a particular order - `Collected`, then `Animated`, then
+`Timed`.  This means an `Animated` image may reference a `Collected` image, but not the other way around.
 
 ## Widgets
 The widgets section defines themes for all widgets you will use in your UI.  Whenever you create a widget, such as through
