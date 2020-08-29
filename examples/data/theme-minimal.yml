@@ -269,8 +269,7 @@ widgets:
     children:
       bar:
         background: gui/progress_bar
-        width_from: Parent
-        height_from: Parent
+        size_from: [Parent, Parent]
   input_field:
     font: small
     border: { height: 4, width: 5 }
@@ -297,8 +296,7 @@ widgets:
     font: small
     border: { width: 5 }
     text_align: Center
-    height_from: FontLine
-    width_from: Parent
+    size_from: [Parent, FontLine]
   window_handle:
     wants_mouse: true
     background: gui/window_handle

@@ -354,6 +354,12 @@ impl WidgetTheme {
             None
         };
 
+        let (width_from, height_from) = if let Some((width_from, height_from)) = def.size_from {
+            (Some(width_from), Some(height_from))
+        } else {
+            (def.width_from, def.height_from)
+        };
+
         let handle = WidgetThemeHandle { id: *handle_index };
         *handle_index += 1;
         let theme = WidgetTheme {
@@ -372,8 +378,8 @@ impl WidgetTheme {
             text_align: def.text_align,
             pos: def.pos,
             size: def.size,
-            width_from: def.width_from,
-            height_from: def.height_from,
+            width_from,
+            height_from,
             align: def.align,
             child_align: def.child_align,
             border: def.border,

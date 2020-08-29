@@ -408,7 +408,7 @@ impl<'a> WidgetBuilder<'a> {
 
     /// Sets whether this widget will interact with the mouse.  By default, widgets will not interact with the mouse, so this is set to `true`
     /// for buttons and similar.
-    /// This may also be specified in the widget's [`theme`](struct.Context.html).
+    /// This may also be specified in the widget's [`theme`](index.html).
     #[must_use]
     pub fn wants_mouse(mut self, wants_mouse: bool) -> WidgetBuilder<'a> {
         self.data.wants_mouse = wants_mouse;
@@ -417,7 +417,7 @@ impl<'a> WidgetBuilder<'a> {
 
     /// Sets whether this widget will receive mouse scrollwheel events.  By default, widgets will not receive scroll wheel events, so this is set
     /// to `true` for scrollpanes.
-    /// This may also be specified in the widget's [`theme`](struct.Context.html).
+    /// This may also be specified in the widget's [`theme`](index.html).
     #[must_use]
     pub fn wants_scroll(mut self, wants_scroll: bool) -> WidgetBuilder<'a> {
         self.data.wants_scroll = wants_scroll;
@@ -448,7 +448,7 @@ impl<'a> WidgetBuilder<'a> {
 
     /// Specify a [`Color`](struct.Color.html) for the text of this widget to display.  The default
     /// color is white.
-    /// This may also be specified in the widget's [`theme`](struct.Context.html).
+    /// This may also be specified in the widget's [`theme`](index.html).
     #[must_use]
     pub fn text_color(mut self, color: Color) -> WidgetBuilder<'a> {
         self.widget.text_color = color;
@@ -457,7 +457,7 @@ impl<'a> WidgetBuilder<'a> {
 
     /// Specify the [`alignment`](enum.Align.html) of the widget's text within the widget's
     /// inner area, as defined by its overall [`size`](#method.size) and [`border`](#method.border).
-    /// This may also be specified in the widget's [`theme`](struct.Context.html).
+    /// This may also be specified in the widget's [`theme`](index.html).
     #[must_use]
     pub fn text_align(mut self, align: Align) -> WidgetBuilder<'a> {
         self.widget.text_align = align;
@@ -466,7 +466,7 @@ impl<'a> WidgetBuilder<'a> {
 
     /// Specify `text` to display for this widget.  The widget must have a [`font`](#method.font)
     /// specified to render text.
-    /// This may also be specified in the widget's [`theme`](struct.Context.html).
+    /// This may also be specified in the widget's [`theme`](index.html).
     #[must_use]
     pub fn text<T: Into<String>>(mut self, text: T) -> WidgetBuilder<'a> {
         self.widget.text = Some(text.into());
@@ -475,7 +475,7 @@ impl<'a> WidgetBuilder<'a> {
 
     /// Specify a `font` for any text rendered by this widget.  A widget must have a font
     /// specified to render text.  The `font` must be registered in the theme's font definitions.
-    /// This may also be specified in the widget's [`theme`](struct.Context.html).
+    /// This may also be specified in the widget's [`theme`](index.html).
     #[must_use]
     pub fn font(mut self, font: &str) -> WidgetBuilder<'a> {
         let font = self.frame.context().find_font(font);
@@ -488,7 +488,7 @@ impl<'a> WidgetBuilder<'a> {
     /// Specify a foreground image for this widget.  The image ID, `fg` must be registered in the theme's
     /// image definitions.  The ID consists of "{image_set_id}/{image_id}".
     /// Foreground images are drawn below text but above the background.
-    /// This may also be specified in the widget's [`theme`](struct.Context.html).
+    /// This may also be specified in the widget's [`theme`](index.html).
     #[must_use]
     pub fn foreground(mut self, fg: &str) -> WidgetBuilder<'a> {
         let fg = self.frame.context().find_image(fg);
@@ -500,7 +500,7 @@ impl<'a> WidgetBuilder<'a> {
     /// Specify a background image for this widget.  The image ID, `bg` must be registered in the theme's
     /// image definitions.  The ID consists of "{image_set_id}/{image_id}".
     /// Background images are drawn below text and any children.
-    /// This may also be specified in the widget's [`theme`](struct.Context.html).
+    /// This may also be specified in the widget's [`theme`](index.html).
     #[must_use]
     pub fn background(mut self, bg: &str) -> WidgetBuilder<'a> {
         let bg = self.frame.context().find_image(bg);
@@ -511,7 +511,7 @@ impl<'a> WidgetBuilder<'a> {
 
     /// Specifies the default alignment of children added to this widget.  See [`Align`](enum.Align.html).
     /// This may be overridden by the child, either in the theme or by calling [`align`](#method.align).
-    /// This may also be specified in the widget's [`theme`](struct.Context.html).
+    /// This may also be specified in the widget's [`theme`](index.html).
     #[must_use]
     pub fn child_align(mut self, align: Align) -> WidgetBuilder<'a> {
         self.widget.child_align = align;
@@ -519,7 +519,7 @@ impl<'a> WidgetBuilder<'a> {
     }
 
     /// Specifies the spacing, in logical pixels, to use between children that are laid out in this widget.
-    /// This may also be specified in the widget's [`theme`](struct.Context.html).
+    /// This may also be specified in the widget's [`theme`](index.html).
     #[must_use]
     pub fn layout_spacing(mut self, spacing: Point) -> WidgetBuilder<'a> {
         self.widget.layout_spacing = spacing;
@@ -527,21 +527,21 @@ impl<'a> WidgetBuilder<'a> {
     }
 
     /// Specifies that the children of this widget should be laid out vertically.  See [`Layout`](enum.Layout.html).
-    /// This may also be specified in the widget's [`theme`](struct.Context.html).
+    /// This may also be specified in the widget's [`theme`](index.html).
     #[must_use]
     pub fn layout_horizontal(self) -> WidgetBuilder<'a> {
         self.layout(Layout::Horizontal)
     }
 
     /// Specifies that the children of this widget should be laid out vertically.  See [`Layout`](enum.Layout.html).
-    /// This may also be specified in the widget's [`theme`](struct.Context.html).
+    /// This may also be specified in the widget's [`theme`](index.html).
     #[must_use]
     pub fn layout_vertical(self) -> WidgetBuilder<'a> {
         self.layout(Layout::Vertical)
     }
 
     /// Specifies the `layout` for children of this widget.  See [`Layout`](enum.Layout.html).
-    /// This may also be specified in the widget's [`theme`](struct.Context.html).
+    /// This may also be specified in the widget's [`theme`](index.html).
     #[must_use]
     pub fn layout(mut self, layout: Layout) -> WidgetBuilder<'a> {
         self.widget.layout = layout;
@@ -564,7 +564,7 @@ impl<'a> WidgetBuilder<'a> {
     /// Specify the position of the widget, with respect to its alignment within the parent.
     /// The `x` and `` values are in logical pixels.
     /// See [`align`](#method.align).
-    /// This may also be specified in the widget's [`theme`](struct.Context.html).
+    /// This may also be specified in the widget's [`theme`](index.html).
     #[must_use]
     pub fn pos(mut self, x: f32, y: f32) -> WidgetBuilder<'a> {
         self.data.raw_pos = Point { x, y } + self.parent().scroll;
@@ -574,7 +574,7 @@ impl<'a> WidgetBuilder<'a> {
     }
 
     /// Specify the alignment of this widget with respect to its parent.  See [`Align`](enum.Align.html).
-    /// This may also be specified in the widget's [`theme`](struct.Context.html).
+    /// This may also be specified in the widget's [`theme`](index.html).
     #[must_use]
     pub fn align(mut self, align: Align) -> WidgetBuilder<'a> {
         self.data.align = align;
@@ -585,7 +585,7 @@ impl<'a> WidgetBuilder<'a> {
     
     /// Specify the widget's border size, which determines the inner size of the widget
     /// relative to its [`size`](#method.size).  See [`Border`](struct.Border.html).
-    /// This may also be specified in the widget's [`theme`](struct.Context.html).
+    /// This may also be specified in the widget's [`theme`](index.html).
     #[must_use]
     pub fn border(mut self, border: Border) -> WidgetBuilder<'a> {
         self.widget.border = border;
@@ -596,7 +596,7 @@ impl<'a> WidgetBuilder<'a> {
     /// Specify the widget's `size` in logical pixels.  This may or may not be an
     /// absolute size, depending on [`WidthRelative`](enum.WidthRelative.html) and
     /// [`HeightRelative`](enum.HeightRelative.html)
-    /// This may also be specified in the widget's [`theme`](struct.Context.html).
+    /// This may also be specified in the widget's [`theme`](index.html).
     #[must_use]
     pub fn size(mut self, x: f32, y: f32) -> WidgetBuilder<'a> {
         self.data.raw_size = Point { x, y };
@@ -611,7 +611,8 @@ impl<'a> WidgetBuilder<'a> {
 
     /// Specify how to compute the widget's width from its [`size`](#method.size).
     /// See [`WidthRelative`](enum.WidthRelative.html).
-    /// This may also be specified in the widget's [`theme`](struct.Context.html).
+    /// This may also be specified in the widget's [`theme`](index.html).  You may also
+    /// specify this using [`size_from`](#method.size_from).
     #[must_use]
     pub fn width_from(mut self, from: WidthRelative) -> WidgetBuilder<'a> {
         self.data.width_from = from;
@@ -621,10 +622,23 @@ impl<'a> WidgetBuilder<'a> {
 
     /// Specify how to compute the widget's height from its [`size`](#method.size).
     /// See [`HeightRelative`](enum.HeightRelative.html)
-    /// This may also be specified in the widget's [`theme`](struct.Context.html).
+    /// This may also be specified in the widget's [`theme`](index.html).  You may also
+    /// specify this using [`size_from`](#method.size_from).
     #[must_use]
     pub fn height_from(mut self, from: HeightRelative) -> WidgetBuilder<'a> {
         self.data.height_from = from;
+        self.data.recalc_pos_size = true;
+        self
+    }
+
+    /// Specify how to compute the widget's height and width from its [`size`](#method.size).
+    /// See [`WidthRelative`](enum.WidthRelative.html) and [`HeightRelative`](enum.HeightRelative.html).
+    /// This may also be specified in the widget's [`theme`](index.html).  You may also specify this
+    /// using [`width_from`](#method.width_from) and [`height_from`](#method.height_from)
+    #[must_use]
+    pub fn size_from(mut self, width_from: WidthRelative, height_from: HeightRelative) -> WidgetBuilder<'a> {
+        self.data.width_from = width_from;
+        self.data.height_from = height_from;
         self.data.recalc_pos_size = true;
         self
     }

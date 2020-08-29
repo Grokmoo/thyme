@@ -31,6 +31,7 @@ pub struct WidgetThemeDefinition {
     pub text_align: Option<Align>,
     pub pos: Option<Point>,
     pub size: Option<Point>,
+    pub size_from: Option<(WidthRelative, HeightRelative)>,
     pub width_from: Option<WidthRelative>,
     pub height_from: Option<HeightRelative>,
     pub border: Option<Border>,
