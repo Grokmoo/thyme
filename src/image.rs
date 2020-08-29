@@ -171,11 +171,11 @@ impl Image {
                                 );
 
                                 x += base_size[0];
-                                if x >= params.size[0] - params.pos[0] { break; }
+                                if x >= params.size[0] + params.pos[0] { break; }
                             }
 
                             y += base_size[1];
-                            if y >= params.size[1] - params.pos[1] { break; }
+                            if y >= params.size[1] + params.pos[1] { break; }
                         }
                     }
                 }
