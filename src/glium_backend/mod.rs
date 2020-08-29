@@ -273,9 +273,9 @@ impl Renderer for GliumRenderer {
             minify_filter: MinifySamplerFilter::Linear,
             magnify_filter: MagnifySamplerFilter::Nearest,
             wrap_function: (
-                SamplerWrapFunction::Repeat,
-                SamplerWrapFunction::Repeat,
-                SamplerWrapFunction::Repeat,
+                SamplerWrapFunction::Clamp,
+                SamplerWrapFunction::Clamp,
+                SamplerWrapFunction::Clamp,
             ),
             ..Default::default()
         };
