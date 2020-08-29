@@ -1,3 +1,7 @@
 Base theme taken and expanded upon from "Sci-Fi User Interface" by Buch
 https://opengameart.org/content/sci-fi-user-interface
 https://opengameart.org/users/buch
+
+Repeat fill texture taken from "Seamless Textures" by arikel
+https://opengameart.org/content/seamless-textures
+https://opengameart.org/users/arikel
