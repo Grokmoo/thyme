@@ -11,10 +11,8 @@ use glium::index::PrimitiveType;
 
 use crate::{image::ImageDrawParams};
 use crate::render::{TexCoord, DrawList, DrawMode, Renderer, TextureHandle, TextureData, FontHandle};
-use crate::font::{Font, FontSource, FontChar};
+use crate::font::{Font, FontSource, FontTextureWriter};
 use crate::{Frame, Point, Color, Rect};
-
-const FONT_TEX_SIZE: u32 = 512;
 
 /// A Thyme [`Renderer`](trait.Renderer.html) for [`Glium`](https://github.com/glium/glium).
 ///
@@ -295,45 +293,16 @@ impl Renderer for GliumRenderer {
     ) -> Result<Font, crate::Error> {
         let font = &source.font;
 
-        // TODO size font texture appropriately
-        let mut data = vec![0u8; (FONT_TEX_SIZE * FONT_TEX_SIZE) as usize];
-        let font_scale = rusttype::Scale { x: size * scale, y: size * scale };
+        let writer = FontTextureWriter::new(font, size, scale);
 
-        let mut characters = Vec::new();
-        let mut writer = FontTextureWriter {
-            tex_x: 0,
-            tex_y: 0,
-            data: &mut data,
-            font: &font,
-            font_scale,
-            max_row_height: 0,
-        };
-
-        for _ in 0..32 {
-            characters.push(FontChar::default());
-        }
-
-        // write ASCII printable characters
-        for i in 32..=126 {
-            let font_char = writer.add_char(i);
-            characters.push(font_char);
-        }
-
-        for _ in 127..161 {
-            characters.push(FontChar::default());
-        }
-
-        for i in 161..=255 {
-            let font_char = writer.add_char(i);
-            characters.push(font_char);
-        }
+        let writer_out = writer.write(handle)?;
 
         let font_tex = Texture2d::with_format(
             &self.context,
             RawImage2d {
-                data: Cow::Owned(data),
-                width: FONT_TEX_SIZE,
-                height: FONT_TEX_SIZE,
+                data: Cow::Owned(writer_out.data),
+                width: writer_out.tex_width,
+                height: writer_out.tex_height,
                 format: glium::texture::ClientFormat::U8,
             },
             glium::texture::UncompressedFloatFormat::U8,
@@ -357,78 +326,7 @@ impl Renderer for GliumRenderer {
             sampler,
         });
 
-        let v_metrics = font.v_metrics(font_scale);
-
-        let font_out = Font::new(
-            handle,
-            characters,
-            v_metrics.ascent - v_metrics.descent + v_metrics.line_gap,
-            v_metrics.ascent,
-        );
-
-        Ok(font_out)
-    }
-}
-
-struct FontTextureWriter<'a> {
-    tex_x: u32,
-    tex_y: u32,
-    data: &'a mut [u8],
-    font: &'a rusttype::Font<'a>,
-    font_scale: rusttype::Scale,
-    max_row_height: u32,
-}
-
-impl<'a> FontTextureWriter<'a> {
-    fn add_char(
-        &mut self,
-        i: usize,
-    ) -> FontChar {
-        let c: char = i as u8 as char;
-
-        let glyph = self.font.glyph(c)
-            .scaled(self.font_scale)
-            .positioned(rusttype::Point { x: 0.0, y: 0.0 });
-
-        // compute the glyph size.  use a minimum size of (1,1) for spaces
-        let y_offset = glyph.pixel_bounding_box().map_or(0.0, |bb| bb.min.y as f32);
-        let bounding_box = glyph.pixel_bounding_box()
-            .map_or((1, 1), |bb| (bb.width() as u32, bb.height() as u32));
-        
-        if self.tex_x + bounding_box.0 >= FONT_TEX_SIZE {
-            // move to next row
-            self.tex_x = 0;
-            self.tex_y = self.tex_y + self.max_row_height + 1;
-            self.max_row_height = 0;
-        }
-
-        self.max_row_height = self.max_row_height.max(bounding_box.1);
-
-        glyph.draw(|x, y, val| {
-            let index = (self.tex_x + x) + (self.tex_y + y) * FONT_TEX_SIZE;
-            let value = (val * 255.0).round() as u8;
-            self.data[index as usize] = value;
-        });
-
-        let tex_coords = [
-            TexCoord::new(
-                self.tex_x as f32 / FONT_TEX_SIZE as f32,
-                self.tex_y as f32 / FONT_TEX_SIZE as f32
-            ),
-            TexCoord::new(
-                (self.tex_x + bounding_box.0) as f32 / FONT_TEX_SIZE as f32,
-                (self.tex_y + bounding_box.1) as f32 / FONT_TEX_SIZE as f32
-            ),
-        ];
-
-        self.tex_x += bounding_box.0 + 1;
-
-        FontChar {
-            size: (bounding_box.0 as f32, bounding_box.1 as f32).into(),
-            tex_coords,
-            x_advance: glyph.unpositioned().h_metrics().advance_width,
-            y_offset,
-        }
+        Ok(writer_out.font)
     }
 }
 

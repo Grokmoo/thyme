@@ -274,3 +274,141 @@ impl<'a, D: DrawList> FontRenderer<'a, D> {
         );
     }
 }
+
+// TODO this should be sized appropriately based on how much space is needed
+const FONT_TEX_SIZE: u32 = 512;
+
+pub(crate) struct FontTextureOut {
+    pub font: Font,
+    pub data: Vec<u8>,
+    pub tex_width: u32,
+    pub tex_height: u32,
+}
+
+pub(crate) struct FontTextureWriter<'a> {
+    // current state
+    tex_x: u32,
+    tex_y: u32,
+    max_row_height: u32,
+
+    //input
+    tex_width: u32,
+    tex_height: u32,
+    font: &'a rusttype::Font<'a>,
+    font_scale: rusttype::Scale,
+    
+    //output
+    data: Vec<u8>,
+    characters: Vec<FontChar>,
+}
+
+impl<'a> FontTextureWriter<'a> {
+    pub fn new(font: &'a rusttype::Font<'a>, size: f32, scale: f32) -> FontTextureWriter<'a> {
+        let tex_width = FONT_TEX_SIZE;
+        let tex_height = FONT_TEX_SIZE;
+        let data = vec![0u8; (tex_width * tex_height) as usize];
+        let font_scale = rusttype::Scale { x: size * scale, y: size * scale };
+
+        FontTextureWriter {
+            tex_x: 0,
+            tex_y: 0,
+            max_row_height: 0,
+            tex_width,
+            tex_height,
+            font,
+            font_scale,
+            data,
+            characters: Vec::new(),
+        }
+    }
+
+    pub fn write(mut self, handle: FontHandle) -> Result<FontTextureOut, crate::Error> {
+        // push empty characters to fill array indices
+        for _ in 0..32 {
+            self.characters.push(FontChar::default());
+        }
+
+        // write ASCII printable characters
+        for i in 32..=126 {
+            let font_char = self.add_char(i);
+            self.characters.push(font_char);
+        }
+
+        // push empty characters to fill array indices
+        for _ in 127..161 {
+            self.characters.push(FontChar::default());
+        }
+
+        for i in 161..=255 {
+            let font_char = self.add_char(i);
+            self.characters.push(font_char);
+        }
+
+        let v_metrics = self.font.v_metrics(self.font_scale);
+
+        let font_out = Font::new(
+            handle,
+            self.characters,
+            v_metrics.ascent - v_metrics.descent + v_metrics.line_gap,
+            v_metrics.ascent,
+        );
+
+        Ok(FontTextureOut {
+            font: font_out,
+            data: self.data,
+            tex_width: self.tex_width,
+            tex_height: self.tex_height,
+        })
+    }
+    
+    fn add_char(
+        &mut self,
+        i: usize,
+    ) -> FontChar {
+        let c: char = i as u8 as char;
+
+        let glyph = self.font.glyph(c)
+            .scaled(self.font_scale)
+            .positioned(rusttype::Point { x: 0.0, y: 0.0 });
+
+        // compute the glyph size.  use a minimum size of (1,1) for spaces
+        let y_offset = glyph.pixel_bounding_box().map_or(0.0, |bb| bb.min.y as f32);
+        let bounding_box = glyph.pixel_bounding_box()
+            .map_or((1, 1), |bb| (bb.width() as u32, bb.height() as u32));
+        
+        if self.tex_x + bounding_box.0 >= FONT_TEX_SIZE {
+            // move to next row
+            self.tex_x = 0;
+            self.tex_y = self.tex_y + self.max_row_height + 1;
+            self.max_row_height = 0;
+        }
+
+        self.max_row_height = self.max_row_height.max(bounding_box.1);
+
+        glyph.draw(|x, y, val| {
+            let index = (self.tex_x + x) + (self.tex_y + y) * FONT_TEX_SIZE;
+            let value = (val * 255.0).round() as u8;
+            self.data[index as usize] = value;
+        });
+
+        let tex_coords = [
+            TexCoord::new(
+                self.tex_x as f32 / FONT_TEX_SIZE as f32,
+                self.tex_y as f32 / FONT_TEX_SIZE as f32
+            ),
+            TexCoord::new(
+                (self.tex_x + bounding_box.0) as f32 / FONT_TEX_SIZE as f32,
+                (self.tex_y + bounding_box.1) as f32 / FONT_TEX_SIZE as f32
+            ),
+        ];
+
+        self.tex_x += bounding_box.0 + 1;
+
+        FontChar {
+            size: (bounding_box.0 as f32, bounding_box.1 as f32).into(),
+            tex_coords,
+            x_advance: glyph.unpositioned().h_metrics().advance_width,
+            y_offset,
+        }
+    }
+}
