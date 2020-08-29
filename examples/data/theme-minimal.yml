@@ -111,8 +111,8 @@ image_sets:
           Pressed: close_icon_pressed
           Disabled: close_icon_disabled
       progress_bar:
-        position: [50, 96]
-        grid_size: [5, 12]
+        position: [50, 100]
+        grid_size: [5, 9]
       window_handle_normal:
         position: [97, 0]
         size: [12, 12]
@@ -203,7 +203,7 @@ widgets:
   scrollpane:
     width_from: Parent
     height_from: Parent
-    border: { all: 5 }
+    border: { bot: 5, left: 0, right: 5, top: 0 }
     children:
       content:
         height_from: Parent
@@ -264,7 +264,7 @@ widgets:
   progress_bar:
     size: [100, 24]
     background: gui/small_button_normal
-    border: { width: 4 }
+    border: { all: 4 }
     child_align: TopLeft
     children:
       bar:
@@ -315,7 +315,7 @@ widgets:
     wants_mouse: true
     layout: Vertical
     layout_spacing: [5, 5]
-    border: { left: 5, right: 5, top: 35, bot: 5 }
+    border: { left: 5, right: 5, top: 33, bot: 5 }
     size: [300, 400]
     child_align: Top
     children:
@@ -323,7 +323,7 @@ widgets:
         wants_mouse: true
         background: gui/small_button
         size: [10, 30]
-        pos: [-6, -36]
+        pos: [-6, -34]
         border: { all: 5 }
         width_from: Parent
         child_align: Center
