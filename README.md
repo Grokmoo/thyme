@@ -8,15 +8,20 @@ Performance is acceptable for most use cases, with the complete cycle of generat
 
 ## Getting Started
 
-### Running the demo example
+### Running the examples
 
 The demo contains an example role playing game (RPG) character generator program that uses many of the features of Thyme.
 
 ```bash
 git clone https://github.com/Grokmoo/thyme.git
 cd thyme
-cargo run --example demo
+cargo run --example demo --features glium_backend
 ```
+
+Run the hello_world example with either Glium or WGPU:
+```bash
+cargo run --example hello_glium --features glium_backend
+cargo run --example hello_wgpu --features wgpu_backend
 
 ### Starting your own project
 
@@ -24,7 +29,7 @@ Add the following to your Cargo.toml file:
 
 ```toml
 [dependencies]
-thyme = "0.1"
+thyme = { version = "0.1", features = ["glium_backend"] }
 ```
 
 See the [hello_glium](examples/hello_glium.rs) example for the bare minimum to get started using Glium.  As a starting point, you can copy the [data](examples/data) folder into your own project and import the resources there, as in the example.

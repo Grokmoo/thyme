@@ -16,15 +16,14 @@ default = []
 
 glium_backend = ["glium"]
 wgpu_backend = ["wgpu", "shaderc"]
-bench = ["parking_lot"]
 
 [dependencies]
 log = { version = "0.4" }
 serde = { version = "1.0", features = [ "derive" ] }
 rusttype = { version = "0.9" }
 winit = "0.22"
+parking_lot = { version = "0.11" }
 
-parking_lot = { version = "0.11", optional = true }
 glium = { version = "0.27", optional = true }
 wgpu = { version = "0.6", optional = true }
 shaderc = { version = "0.6", optional = true }

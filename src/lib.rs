@@ -250,9 +250,7 @@ methods on [`WidgetBuilder`](struct.WidgetBuilder.html) will take precedence ove
      layout_spacing: 5
 !*/
 
-#[cfg(feature = "bench")]
 pub mod bench;
-
 pub mod log;
 
 mod context;
