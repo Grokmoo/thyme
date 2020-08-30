@@ -1,8 +1,38 @@
-use winit::{event::{Event, WindowEvent}, event_loop::{ControlFlow, EventLoop}, window::WindowBuilder, dpi::LogicalSize};
+use winit::{
+    window::Window,
+    event::{Event, WindowEvent},
+    event_loop::{ControlFlow, EventLoop},
+    window::WindowBuilder,
+    dpi::LogicalSize
+};
+
+async fn setup_wgpu(
+    window: &Window,
+    instance: &wgpu::Instance,
+    surface: &wgpu::Surface
+) -> (wgpu::Adapter, wgpu::Device, wgpu::Queue) {
+    let adapter = instance.request_adapter(&wgpu::RequestAdapterOptions {
+        power_preference: wgpu::PowerPreference::Default,
+        // Request an adapter which can render to our surface
+        compatible_surface: Some(&surface),
+    }).await.unwrap();
+    
+    // Create the logical device and command queue
+    let (device, queue) = adapter.request_device(
+        &wgpu::DeviceDescriptor {
+            features: wgpu::Features::empty(),
+            limits: wgpu::Limits::default(),
+            shader_validation: true,
+        },
+        None,
+    ).await.expect("Failed to create WGPU device");
+
+    (adapter, device, queue)
+}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // initialize very basic logger so error messages go to stdout
-    thyme::log::init_all().unwrap();
+    thyme::log::init(log::Level::Warn).unwrap();
 
     // load assets
     let font_src = include_bytes!("data/fonts/Roboto-Medium.ttf");
@@ -17,14 +47,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let window = WindowBuilder::new()
         .with_title("Thyme WGPU Demo")
         .with_inner_size(LogicalSize::new(window_size[0], window_size[1]))
-        .build(&event_loop);
+        .build(&event_loop)
+        .unwrap();
 
-    // TODO setup WGPU
+    // setup WGPU
+    let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
+    let surface = unsafe { instance.create_surface(&window) };
+    let (adapter, device, queue) = futures::executor::block_on(setup_wgpu(&window, &instance, &surface));
 
     // create thyme backend
     let mut io = thyme::WinitIo::new(&event_loop, window_size.into());
-    let mut renderer = thyme::WgpuRenderer::new();
+    let mut renderer = thyme::WgpuRenderer::new(&device, &queue);
     let mut context_builder = thyme::ContextBuilder::new(theme, &mut renderer, &mut io)?;
+
+    // setup WGPU swapchain
+    let mut sc_desc = wgpu::SwapChainDescriptor {
+        usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+        format: wgpu::TextureFormat::Rgba8Sint,
+        width: window_size[0] as u32,
+        height: window_size[1] as u32,
+        present_mode: wgpu::PresentMode::Mailbox,
+    };
+
+    let mut swap_chain = device.create_swap_chain(&surface, &sc_desc);
 
     // TODO register resources in thyme and create the context
     // let image_dims = image.dimensions();
@@ -35,7 +80,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // run main loop
     event_loop.run(move |event, _, control_flow| match event {
         Event::MainEventsCleared => {
-            // TODO renderer setup
+            let frame = swap_chain.get_current_frame().unwrap().output;
+            let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
             let mut ui = context.create_frame();
 
@@ -46,6 +92,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             });
 
             // TODO renderer draw
+
+            queue.submit(Some(encoder.finish()));
         }
         Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => *control_flow = ControlFlow::Exit,
         event => {
