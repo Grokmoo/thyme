@@ -250,13 +250,14 @@ methods on [`WidgetBuilder`](struct.WidgetBuilder.html) will take precedence ove
      layout_spacing: 5
 !*/
 
+#[cfg(feature = "bench")]
 pub mod bench;
+
 pub mod log;
 
 mod context;
 mod font;
 mod frame;
-mod glium_backend;
 mod image;
 mod theme;
 mod recipes;
@@ -264,10 +265,21 @@ mod render;
 mod theme_definition;
 mod point;
 mod scrollpane;
-mod wgpu_backend;
 mod widget;
 mod window;
 mod winit_io;
+
+#[cfg(feature = "glium_backend")]
+mod glium_backend;
+
+#[cfg(feature = "glium_backend")]
+pub use glium_backend::GliumRenderer;
+
+#[cfg(feature = "wgpu_backend")]
+mod wgpu_backend;
+
+#[cfg(feature = "wgpu_backend")]
+pub use wgpu_backend::WgpuRenderer;
 
 pub use frame::Frame;
 pub use point::{Rect, Point, Border};
@@ -277,8 +289,7 @@ pub use scrollpane::{ScrollpaneBuilder, ShowElement};
 pub use theme_definition::{AnimStateKey, AnimState, Align, Color, Layout, WidthRelative, HeightRelative};
 pub use window::WindowBuilder;
 pub use winit_io::WinitIo;
-pub use glium_backend::GliumRenderer;
-pub use wgpu_backend::WgpuRenderer;
+
 pub use render::{IO, Renderer};
 
 /// A generic error that can come from a variety of internal sources.
