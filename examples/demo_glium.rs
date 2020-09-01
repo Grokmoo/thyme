@@ -78,8 +78,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             target.finish().unwrap();
 
             *control_flow = ControlFlow::WaitUntil(frame_start + std::time::Duration::from_millis(16));
-        }
-        Event::WindowEvent { event: WindowEvent::Resized(_), .. } => {},
+        },
         Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => *control_flow = ControlFlow::Exit,
         event => {
             io.handle_event(&mut context, &event);

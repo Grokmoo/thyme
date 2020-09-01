@@ -58,6 +58,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     events_loop.run(move |event, _, control_flow| {
         match event {
             Event::MainEventsCleared => {
+                let frame_start = std::time::Instant::now();
+
                 let frame = swap_chain.get_current_frame().unwrap().output;
                 let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
@@ -90,15 +92,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         queue.submit(Some(encoder.finish()));
                     });
                 });
-            },
-            Event::WindowEvent { event: WindowEvent::Resized(_), .. } => {
-                let size: (u32, u32) = window.inner_size().into();
 
-                let sc_desc = swapchain_desc(size.0, size.1);
-                swap_chain = device.create_swap_chain(&surface, &sc_desc);
+                *control_flow = ControlFlow::WaitUntil(frame_start + std::time::Duration::from_millis(16));
             },
             Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => *control_flow = ControlFlow::Exit,
             event => {
+                // recreate swap chain on resize, but also still pass the event to thyme
+                if let Event::WindowEvent { event: WindowEvent::Resized(_), ..} = event {
+                    let size: (u32, u32) = window.inner_size().into();
+
+                    let sc_desc = swapchain_desc(size.0, size.1);
+                    swap_chain = device.create_swap_chain(&surface, &sc_desc);
+                }
+
                 io.handle_event(&mut context, &event);
             }
         }
