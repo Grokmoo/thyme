@@ -38,9 +38,9 @@ thyme = { version = "0.1", features = ["wgpu_backend"] }
 
 See [hello_wgpu](examples/hello_wgpu.rs) or [hello_glium](examples/hello_glium.rs) for the bare minimum to get started with your preferred renderer.  As a starting point, you can copy the [data](examples/data) folder into your own project and import the resources there, as in the example.
 
-## [Documentation](docs.rs/thyme)
+## [Documentation](https://docs.rs/thyme)
 
-See the [docs](docs.rs/thyme) for the full API reference as well as theme definition format.
+See the [docs](https://docs.rs/thyme) for the full API reference as well as theme definition format.
 
 ## Why Thyme?
 
