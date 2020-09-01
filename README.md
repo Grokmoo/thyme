@@ -25,6 +25,7 @@ Run the hello_world example with either Glium or wgpu:
 ```bash
 cargo run --example hello_glium --features glium_backend
 cargo run --example hello_wgpu --features wgpu_backend
+```
 
 ### Starting your own project
 
