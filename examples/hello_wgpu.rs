@@ -54,17 +54,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
     let surface = unsafe { instance.create_surface(&window) };
     let (_adapter, device, queue) = futures::executor::block_on(setup_wgpu(&instance, &surface));
+    let sc_desc = swapchain_desc(window_size[0] as u32, window_size[1] as u32);
+    let mut swap_chain = device.create_swap_chain(&surface, &sc_desc);
 
     // create thyme backend
     let mut io = thyme::WinitIo::new(&event_loop, window_size.into());
     let mut renderer = thyme::WgpuRenderer::new(Rc::clone(&device), Rc::clone(&queue));
     let mut context_builder = thyme::ContextBuilder::new(theme, &mut renderer, &mut io)?;
 
-    // setup WGPU swapchain
-    let sc_desc = swapchain_desc(window_size[0] as u32, window_size[1] as u32);
-    let mut swap_chain = device.create_swap_chain(&surface, &sc_desc);
-
-    // TODO register resources in thyme and create the context
+    // register resources in thyme and create the context
     let image_dims = image.dimensions();
     context_builder.register_texture("gui", &image.into_raw(), image_dims)?;
     context_builder.register_font_source("roboto", font_src.to_vec())?;
@@ -73,12 +71,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // run main loop
     event_loop.run(move |event, _, control_flow| {
         match event {
-            Event::WindowEvent { event: WindowEvent::Resized(_), .. } => {
-                let size: (u32, u32) = window.inner_size().into();
-
-                let sc_desc = swapchain_desc(size.0, size.1);
-                swap_chain = device.create_swap_chain(&surface, &sc_desc);
-            }
             Event::MainEventsCleared => {
                 let frame = swap_chain.get_current_frame().unwrap().output;
                 let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
@@ -108,7 +100,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
 
                 queue.submit(Some(encoder.finish()));
-            }
+            },
+            Event::WindowEvent { event: WindowEvent::Resized(_), .. } => {
+                let size: (u32, u32) = window.inner_size().into();
+
+                let sc_desc = swapchain_desc(size.0, size.1);
+                swap_chain = device.create_swap_chain(&surface, &sc_desc);
+            },
             Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => *control_flow = ControlFlow::Exit,
             event => {
                 io.handle_event(&mut context, &event);

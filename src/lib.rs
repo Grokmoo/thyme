@@ -5,8 +5,9 @@ It is designed to be performant and flexible enough for use both in prototyping 
 Requiring a theme and image sources adds some additional development cost compared to many other immediate mode toolkits,
 however the advantage is full flexibility and control over the ultimate appearance of your UI.
 
-To use Thyme, you need the core library, a renderer (one based on [Glium](https://github.com/glium/glium) is included),
-event handling support (one based on [winit](https://github.com/rust-windowing/winit) is included), and a theme definition
+To use Thyme, you need the core library, a renderer (there are currently two - one using [Glium](https://github.com/glium/glium) and
+the other using [wgpu](https://github.com/gfx-rs/wgpu-rs)), event handling support (one using
+[winit](https://github.com/rust-windowing/winit) is included), and a theme definition
 with associated images and fonts.  Thyme logs errors using the [`log`](https://github.com/rust-lang/log) crate.  A very
 simple logger that sends messages to stdout is included to help you get started.
 

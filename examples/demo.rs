@@ -1,11 +1,8 @@
 use std::collections::HashMap;
 
-use glium::glutin::{
-    self,
-    event::{Event, WindowEvent},
-    event_loop::{ControlFlow, EventLoop},
-    window::WindowBuilder
-};
+use winit::{event::{Event, WindowEvent}, event_loop::{EventLoop, ControlFlow}};
+
+use glium::glutin::{self, window::WindowBuilder};
 use glium::{Display, Surface};
 
 use thyme::{Frame, Align, bench, ShowElement};
@@ -27,21 +24,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let theme: serde_yaml::Value = serde_yaml::from_str(&theme_src)?;
     let window_size = [1280.0, 720.0];
+    let events_loop = EventLoop::new();
 
-    // create glium display
-    let event_loop = EventLoop::new();
-    let context = glutin::ContextBuilder::new();
-    let builder = WindowBuilder::new()
-        .with_title("Thyme Demo")
-        .with_inner_size(glutin::dpi::LogicalSize::new(window_size[0], window_size[1]));
-    let display = Display::new(builder, context, &event_loop)?;
-
-    // hide the default cursor
-    display.gl_window().window().set_cursor_visible(false);
+    let (display, mut renderer) = setup_glium(&events_loop, window_size)?;
 
     // create thyme backend
-    let mut io = thyme::WinitIo::new(&event_loop, window_size.into());
-    let mut renderer = thyme::GliumRenderer::new(&display)?;
+    let mut io = thyme::WinitIo::new(&events_loop, window_size.into());
     let mut context_builder = thyme::ContextBuilder::new(theme, &mut renderer, &mut io)?;
 
     // register resources in thyme and create the context
@@ -53,36 +41,68 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut party = Party::default();
 
     // run main loop
-    event_loop.run(move |event, _, control_flow| match event {
+    events_loop.run(move |event, _, control_flow| match event {
         Event::MainEventsCleared => {
             let frame_start = std::time::Instant::now();
 
-            let mut target = display.draw();
-            target.clear_color(0.0, 0.0, 0.0, 0.0);
-
-            bench::run("thyme", || {
-                let mut frame = context.create_frame();
-
-                bench::run("frame", || {
-                    // show a custom cursor.  it automatically inherits mouse presses in its state
-                    frame.set_mouse_cursor("gui/cursor", Align::TopLeft);
-                    build_ui(&mut frame, &mut party);
-                });
-
-                bench::run("draw", || {
-                    renderer.draw_frame(&mut target, frame).unwrap();
-                });
-            });
-
-            target.finish().unwrap();
+            render_glium(&display, &mut context, &mut renderer, &mut party);
 
             *control_flow = ControlFlow::WaitUntil(frame_start + std::time::Duration::from_millis(16));
         }
+        Event::WindowEvent { event: WindowEvent::Resized(_), .. } => {
+            
+        },
         Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => *control_flow = ControlFlow::Exit,
         event => {
             io.handle_event(&mut context, &event);
         }
     })
+}
+
+fn setup_glium(
+    events_loop: &EventLoop<()>,
+    window_size: [f32; 2]
+) -> Result<(glium::Display, thyme::GliumRenderer), Box<dyn std::error::Error>> {
+    // create glium display
+    let context = glutin::ContextBuilder::new();
+    let builder = WindowBuilder::new()
+        .with_title("Thyme Demo")
+        .with_inner_size(glutin::dpi::LogicalSize::new(window_size[0], window_size[1]));
+    let display = Display::new(builder, context, events_loop)?;
+
+    // hide the default cursor
+    display.gl_window().window().set_cursor_visible(false);
+
+    // create thyme renderer
+    let renderer = thyme::GliumRenderer::new(&display)?;
+
+    Ok((display, renderer))
+}
+
+fn render_glium(
+    display: &Display,
+    context: &mut thyme::Context,
+    renderer: &mut thyme::GliumRenderer,
+    party: &mut Party
+) {
+    let mut target = display.draw();
+    target.clear_color(0.0, 0.0, 0.0, 0.0);
+
+    bench::run("thyme", || {
+        let mut frame = context.create_frame();
+
+        bench::run("frame", || {
+            // show a custom cursor.  it automatically inherits mouse presses in its state
+            frame.set_mouse_cursor("gui/cursor", Align::TopLeft);
+            build_ui(&mut frame, party);
+        });
+
+        bench::run("draw", || {
+            renderer.draw_frame(&mut target, frame).unwrap();
+        });
+    });
+
+    target.finish().unwrap();
 }
 
 #[derive(Default)]
