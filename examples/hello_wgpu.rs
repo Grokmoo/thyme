@@ -1,7 +1,6 @@
 use std::rc::Rc;
 
 use winit::{
-    window::Window,
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
@@ -39,7 +38,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let font_src = include_bytes!("data/fonts/Roboto-Medium.ttf");
     let image_src = include_bytes!("data/images/gui-minimal.png");
     let image = image::load_from_memory(image_src).unwrap().to_rgba();
-    let theme_src = include_str!("data/theme-empty.yml");
+    let theme_src = include_str!("data/theme-minimal.yml");
     let theme: serde_yaml::Value = serde_yaml::from_str(theme_src)?;
     let window_size = [1280.0, 720.0];
 
@@ -62,25 +61,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut context_builder = thyme::ContextBuilder::new(theme, &mut renderer, &mut io)?;
 
     // setup WGPU swapchain
-    let sc_desc = wgpu::SwapChainDescriptor {
-        usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
-        format: wgpu::TextureFormat::Bgra8Unorm,
-        width: window_size[0] as u32,
-        height: window_size[1] as u32,
-        present_mode: wgpu::PresentMode::Mailbox,
-    };
-
+    let sc_desc = swapchain_desc(window_size[0] as u32, window_size[1] as u32);
     let mut swap_chain = device.create_swap_chain(&surface, &sc_desc);
 
     // TODO register resources in thyme and create the context
     let image_dims = image.dimensions();
     context_builder.register_texture("gui", &image.into_raw(), image_dims)?;
-    // context_builder.register_font_source("roboto", font_src.to_vec())?;
+    context_builder.register_font_source("roboto", font_src.to_vec())?;
     let mut context = context_builder.build()?;
 
     // run main loop
     event_loop.run(move |event, _, control_flow| {
         match event {
+            Event::WindowEvent { event: WindowEvent::Resized(_), .. } => {
+                let size: (u32, u32) = window.inner_size().into();
+
+                let sc_desc = swapchain_desc(size.0, size.1);
+                swap_chain = device.create_swap_chain(&surface, &sc_desc);
+            }
             Event::MainEventsCleared => {
                 let frame = swap_chain.get_current_frame().unwrap().output;
                 let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
@@ -117,4 +115,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     })
+}
+
+fn swapchain_desc(width: u32, height: u32) -> wgpu::SwapChainDescriptor {
+    wgpu::SwapChainDescriptor {
+        usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+        format: wgpu::TextureFormat::Bgra8Unorm,
+        width,
+        height,
+        present_mode: wgpu::PresentMode::Mailbox,
+    }
 }

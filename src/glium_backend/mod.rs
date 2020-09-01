@@ -134,6 +134,7 @@ impl GliumRenderer {
                 );
             }
 
+            // render foregrounds & text
             for widget in render_group.iter(&widgets) {
                 if !widget.visible() { continue; }
 

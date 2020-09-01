@@ -49,7 +49,7 @@ pub(crate) fn view_matrix(display_pos: Point, display_size: Point) -> [[f32; 4];
     ]
 }
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum DrawMode {
     Image(TextureHandle),
     Font(FontHandle),

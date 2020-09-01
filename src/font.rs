@@ -276,7 +276,7 @@ impl<'a, D: DrawList> FontRenderer<'a, D> {
 }
 
 // TODO this should be sized appropriately based on how much space is needed
-const FONT_TEX_SIZE: u32 = 512;
+const FONT_TEX_SIZE: u32 = 192;
 
 pub(crate) struct FontTextureOut {
     pub font: Font,
@@ -382,6 +382,9 @@ impl<'a> FontTextureWriter<'a> {
             self.tex_y = self.tex_y + self.max_row_height + 1;
             self.max_row_height = 0;
         }
+
+        assert!(bounding_box.0 + self.tex_x < self.tex_width);
+        assert!(bounding_box.1 + self.tex_y < self.tex_height);
 
         self.max_row_height = self.max_row_height.max(bounding_box.1);
 

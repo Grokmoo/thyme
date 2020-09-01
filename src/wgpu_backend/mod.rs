@@ -13,6 +13,7 @@ use wgpu::{
 };
 
 use crate::render::{DrawMode, view_matrix, TextureData, TexCoord, DrawList};
+use crate::font::FontTextureWriter;
 use crate::image::ImageDrawParams;
 use crate::{Renderer, Frame, Point, Color, Rect};
 /**
@@ -23,15 +24,18 @@ This adapter registers image and font data as textures, and renders each frame.
 Note that the SPIRV shaders are manually built using [`shaderc`](https://github.com/google/shaderc).
 The commands should roughly be:
 ```bash
-glslc -fshader-stage=vertex -fentry-point=main -o vert.spirv thyme\src\wgpu_backend\shaders\vert.glsl
-glslc -fshader-stage=fragment -fentry-point=main -o frag.spirv thyme\src\wgpu_backend\shaders\frag.glsl
+cd src/wgpu_backend/shaders
+glslc -fshader-stage=vertex -fentry-point=main -o vert.spirv vert.glsl
+glslc -fshader-stage=fragment -fentry-point=main -o frag.spirv frag.glsl
+glslc -fshader-stage=fragment -fentry-point=main -o frag_font.spirv frag_font.glsl
 ```
 **/
 pub struct WgpuRenderer {
     device: Rc<Device>,
     queue: Rc<Queue>,
 
-    pipeline: RenderPipeline,
+    image_pipe: RenderPipeline,
+    font_pipe: RenderPipeline,
 
     view_matrix_buffer: Buffer,
     view_matrix_bind_group: BindGroup,
@@ -39,6 +43,7 @@ pub struct WgpuRenderer {
     texture_layout: BindGroupLayout,
 
     textures: Vec<Texture>,
+    fonts: Vec<Texture>,
 
     draw_list: WgpuDrawList,
 
@@ -49,6 +54,7 @@ impl WgpuRenderer {
     pub fn new(device: Rc<Device>, queue: Rc<Queue>) -> WgpuRenderer {
         let vert_shader = device.create_shader_module(include_spirv!("shaders/vert.spirv"));
         let frag_shader = device.create_shader_module(include_spirv!("shaders/frag.spirv"));
+        let frag_font_shader = device.create_shader_module(include_spirv!("shaders/frag_font.spirv"));
 
         // setup the view matrix
         let view_matrix_buffer = device.create_buffer(&BufferDescriptor {
@@ -109,7 +115,7 @@ impl WgpuRenderer {
             push_constant_ranges: &[],
         });
 
-        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        let mut pipe_desc = wgpu::RenderPipelineDescriptor {
             label: Some("thyme render pipeline"),
             layout: Some(&pipeline_layout),
             vertex_stage: wgpu::ProgrammableStageDescriptor {
@@ -149,14 +155,25 @@ impl WgpuRenderer {
             sample_count: 1,
             sample_mask: !0,
             alpha_to_coverage_enabled: false,
+        };
+
+        let image_pipe = device.create_render_pipeline(&pipe_desc);
+
+        pipe_desc.fragment_stage = Some(wgpu::ProgrammableStageDescriptor {
+            module: &frag_font_shader,
+            entry_point: "main",
         });
+
+        let font_pipe = device.create_render_pipeline(&pipe_desc);
 
         WgpuRenderer {
             view_matrix_buffer,
             view_matrix_bind_group,
             texture_layout,
             textures: Vec::new(),
-            pipeline,
+            fonts: Vec::new(),
+            image_pipe,
+            font_pipe,
             device,
             queue,
             draw_list: WgpuDrawList::new(),
@@ -176,9 +193,6 @@ impl WgpuRenderer {
         self.update_view_matrix(Point::default(), context.display_size());
         self.groups.clear();
 
-        render_pass.set_pipeline(&self.pipeline);
-        render_pass.set_bind_group(0, &self.view_matrix_bind_group, &[]);
-
         // render all widget groups to buffers
         for render_group in render_groups.into_iter().rev() {
             let mut draw_mode = None;
@@ -194,23 +208,7 @@ impl WgpuRenderer {
                 let time_millis = time_millis - context.base_time_millis_for(widget.id());
                 let image = context.themes().image(image_handle);
     
-                let desired_mode = DrawMode::Image(image.texture());
-                match draw_mode {
-                    None => draw_mode = Some(desired_mode),
-                    Some(cur_mode) => if cur_mode != desired_mode {
-                        let vertex = self.create_vertex_buffer(&self.draw_list.vertices);
-                        let index = self.create_index_buffer(&self.draw_list.indices);
-                        self.groups.push(BufferedGroup {
-                            vertex,
-                            index,
-                            mode: cur_mode,
-                            vertices: self.draw_list.indices.len() as u32,
-                        });
-                        self.draw_list.clear();
-
-                        draw_mode = Some(desired_mode);
-                    }
-                }
+                self.buffer_if_changed(&mut draw_mode, DrawMode::Image(image.texture()));
 
                 image.draw(
                     &mut self.draw_list,
@@ -225,36 +223,104 @@ impl WgpuRenderer {
                 );
             }
 
+            // render foregrounds & text
+            for widget in render_group.iter(&widgets) {
+                if !widget.visible() { continue; }
+
+                let border = widget.border();
+                let fg_pos = widget.pos() + border.tl();
+                let fg_size = widget.inner_size();
+    
+                if let Some(image_handle) = widget.foreground() {
+                    let time_millis = time_millis - context.base_time_millis_for(widget.id());
+                    let image = context.themes().image(image_handle);
+
+                    self.buffer_if_changed(&mut draw_mode, DrawMode::Image(image.texture()));
+
+                    image.draw(
+                        &mut self.draw_list,
+                        ImageDrawParams {
+                            pos: fg_pos.into(),
+                            size: fg_size.into(),
+                            anim_state: widget.anim_state(),
+                            clip: widget.clip(),
+                            time_millis,
+                            scale,
+                        }
+                    );
+                }
+
+                if let Some(text) = widget.text() {
+                    if let Some(font_sum) = widget.font() {
+                        self.buffer_if_changed(&mut draw_mode, DrawMode::Font(font_sum.handle));
+                        let font = context.themes().font(font_sum.handle);
+    
+                        font.draw(
+                            &mut self.draw_list,
+                            fg_size * scale,
+                            (fg_pos * scale).into(),
+                            text,
+                            widget.text_align(),
+                            widget.text_color(),
+                            widget.clip() * scale,
+                        )
+                    }
+                }
+            }
+
             // draw any not already drawn vertices
             if let Some(cur_mode) = draw_mode.take() {
-                let vertex = self.create_vertex_buffer(&self.draw_list.vertices);
-                let index = self.create_index_buffer(&self.draw_list.indices);
-                self.groups.push(BufferedGroup {
-                    vertex,
-                    index,
-                    mode: cur_mode,
-                    vertices: self.draw_list.indices.len() as u32,
-                });
-                self.draw_list.clear();
+                self.buffer(cur_mode);
             }
         }
 
+        // setup view matrix uniform
+        render_pass.set_bind_group(0, &self.view_matrix_bind_group, &[]);
+
         // draw buffers to render pass
         for group in &self.groups {
-            match &group.mode {
+            let texture = match &group.mode {
                 DrawMode::Image(handle) => {
-                    let texture = &self.textures[handle.id()];
-                    render_pass.set_bind_group(1, &texture.bind_group, &[]);
-        
-                    render_pass.set_vertex_buffer(0, group.vertex.slice(..));
-                    render_pass.set_index_buffer(group.index.slice(..));
-                    render_pass.draw_indexed(0..group.vertices, 0, 0..1);
+                   render_pass.set_pipeline(&self.image_pipe);
+                   &self.textures[handle.id()]
                 },
                 DrawMode::Font(handle) => {
-                    todo!();
+                    render_pass.set_pipeline(&self.font_pipe);
+                    &self.fonts[handle.id()]
                 }
+            };
+
+            render_pass.set_bind_group(1, &texture.bind_group, &[]);
+            render_pass.set_vertex_buffer(0, group.vertex.slice(..));
+            render_pass.set_index_buffer(group.index.slice(..));
+            render_pass.draw_indexed(0..group.vertices, 0, 0..1);
+        }
+    }
+
+    fn buffer_if_changed(
+        &mut self,
+        mode: &mut Option<DrawMode>,
+        desired_mode: DrawMode,
+    ) {
+        match mode {
+            None => *mode = Some(desired_mode),
+            Some(cur_mode) => if *cur_mode != desired_mode {
+                self.buffer(*cur_mode);
+                *mode = Some(desired_mode);
             }
         }
+    }
+
+    fn buffer(&mut self, mode: DrawMode) {
+        let vertex = self.create_vertex_buffer(&self.draw_list.vertices);
+        let index = self.create_index_buffer(&self.draw_list.indices);
+        self.groups.push(BufferedGroup {
+            vertex,
+            index,
+            mode,
+            vertices: self.draw_list.indices.len() as u32,
+        });
+        self.draw_list.clear();
     }
 
     fn create_vertex_buffer(&self, vertices: &[Vertex]) -> Buffer {
@@ -280,35 +346,14 @@ impl WgpuRenderer {
         let data = bytemuck::bytes_of(&view_matrix);
         self.queue.write_buffer(&self.view_matrix_buffer, 0, data);
     }
-}
 
-impl<'a> Renderer for WgpuRenderer {
-    fn register_font(
-        &mut self,
-        handle: crate::render::FontHandle,
-        source: &crate::font::FontSource,
-        size: f32,
-        scale: f32,
-    ) -> Result<crate::font::Font, crate::Error> {
-        todo!()
-    }
-
-    fn register_texture(
-        &mut self,
-        handle: crate::render::TextureHandle,
-        image_data: &[u8],
-        dimensions: (u32, u32),
-    ) -> Result<crate::render::TextureData, crate::Error> {
+    fn create_texture(&self, image_data: &[u8], width: u32, height: u32, format: wgpu::TextureFormat) -> BindGroup {
         let texture = self.device.create_texture(&wgpu::TextureDescriptor {
-            size: wgpu::Extent3d {
-                width: dimensions.0,
-                height: dimensions.1,
-                depth: 1,
-            },
+            size: wgpu::Extent3d { width, height, depth: 1, },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8Unorm,
+            format,
             usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
             label: None,
         });
@@ -323,14 +368,10 @@ impl<'a> Renderer for WgpuRenderer {
             image_data,
             TextureDataLayout {
                 offset: 0,
-                bytes_per_row: bytes as u32 / dimensions.1,
-                rows_per_image: dimensions.1,
+                bytes_per_row: bytes as u32 / height,
+                rows_per_image: height,
             },
-            wgpu::Extent3d {
-                width: dimensions.0,
-                height: dimensions.1,
-                depth: 1,
-            },
+            wgpu::Extent3d { width, height, depth: 1, },
         );
 
         let view = texture.create_view(&TextureViewDescriptor::default());
@@ -363,6 +404,51 @@ impl<'a> Renderer for WgpuRenderer {
                 },
             ],
         });
+
+        bind_group
+    }
+}
+
+impl<'a> Renderer for WgpuRenderer {
+    fn register_font(
+        &mut self,
+        handle: crate::render::FontHandle,
+        source: &crate::font::FontSource,
+        size: f32,
+        scale: f32,
+    ) -> Result<crate::font::Font, crate::Error> {
+        let font = &source.font;
+
+        let writer = FontTextureWriter::new(font, size, scale);
+        let writer_out = writer.write(handle)?;
+
+        let bind_group = self.create_texture(
+            &writer_out.data,
+            writer_out.tex_width,
+            writer_out.tex_height,
+            wgpu::TextureFormat::R8Unorm,
+        );
+
+        assert!(handle.id() == self.fonts.len());
+        self.fonts.push(Texture {
+            bind_group,
+        });
+
+        Ok(writer_out.font)
+    }
+
+    fn register_texture(
+        &mut self,
+        handle: crate::render::TextureHandle,
+        image_data: &[u8],
+        dimensions: (u32, u32),
+    ) -> Result<crate::render::TextureData, crate::Error> {
+        let bind_group = self.create_texture(
+            image_data,
+            dimensions.0,
+            dimensions.1,
+            wgpu::TextureFormat::Rgba8Unorm
+        );
 
         assert!(handle.id() == self.textures.len());
         self.textures.push(Texture {

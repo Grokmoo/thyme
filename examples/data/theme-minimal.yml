@@ -8,7 +8,7 @@ fonts:
     size: 20
   small:
     source: roboto
-    size: 16
+    size: 20
 image_sets:
   gui:
     source: gui
