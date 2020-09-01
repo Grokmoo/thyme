@@ -265,7 +265,7 @@ impl Renderer for GliumRenderer {
         image_data: &[u8],
         dimensions: (u32, u32),
     ) -> Result<TextureData, crate::Error> {
-        let image = RawImage2d::from_raw_rgba_reversed(image_data, dimensions);
+        let image = RawImage2d::from_raw_rgba(image_data.to_vec(), dimensions);
         let texture = SrgbTexture2d::new(&self.context, image).unwrap();
 
         let sampler = SamplerBehavior {
@@ -579,8 +579,8 @@ impl DrawList for GliumDrawList {
         let vert = GliumVertex {
             position: pos,
             size,
-            tex0: [tex[0].x(), 1.0 - tex[0].y()],
-            tex1: [tex[1].x(), 1.0 - tex[1].y()],
+            tex0: [tex[0].x(), tex[0].y()],
+            tex1: [tex[1].x(), tex[1].y()],
             color: color.into(),
             clip_pos: clip.pos.into(),
             clip_size: clip.size.into(),
