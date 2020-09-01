@@ -12,4 +12,4 @@ jobs:
           override: true
       - name: Clippy
         run: |
-          cargo clippy -- -D warnings
+          cargo clippy --features "wgpu_backend,glium_backend" -- -D warnings
