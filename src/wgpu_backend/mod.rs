@@ -20,19 +20,7 @@ use crate::{Renderer, Frame, Point, Color, Rect};
 /**
 A Thyme [`Renderer`](trait.Renderer.html) for [`wgpu`](https://github.com/gfx-rs/wgpu-rs).
 
-This adapter registers image and font data as textures, and renders each frame.
-
-Note that the SPIRV shaders are manually built using [`shaderc`](https://github.com/google/shaderc).
-This is slightly inconvenient, but I have found configuring shaders to compile at build time reliably
-in different environments too difficult.
-
-The commands to compile the shaders should be:
-```bash
-cd src/wgpu_backend/shaders
-glslc -fshader-stage=vertex -fentry-point=main -o vert.spirv vert.glsl
-glslc -fshader-stage=fragment -fentry-point=main -o frag.spirv frag.glsl
-glslc -fshader-stage=fragment -fentry-point=main -o frag_font.spirv frag_font.glsl
-```
+The adapter registers image and font data as textures, and renders each frame.
 
 This renderer is implemented fairly naively at present and there is definitely room for optimization.
 However, it is nonetheless already quite fast.
@@ -59,6 +47,19 @@ pub struct WgpuRenderer {
 
 impl WgpuRenderer {
     pub fn new(device: Rc<Device>, queue: Rc<Queue>) -> WgpuRenderer {
+        /*
+        Note that the SPIRV shaders are manually built using [`shaderc`](https://github.com/google/shaderc).
+        This is slightly inconvenient, but I have found configuring shaders to compile at build time reliably
+        in different environments too difficult.
+
+        The commands to compile the shaders should be:
+        ```bash
+        cd src/wgpu_backend/shaders
+        glslc -fshader-stage=vertex -fentry-point=main -o vert.spirv vert.glsl
+        glslc -fshader-stage=fragment -fentry-point=main -o frag.spirv frag.glsl
+        glslc -fshader-stage=fragment -fentry-point=main -o frag_font.spirv frag_font.glsl
+        ```
+        */
         let vert_shader = device.create_shader_module(include_spirv!("shaders/vert.spirv"));
         let frag_shader = device.create_shader_module(include_spirv!("shaders/frag.spirv"));
         let frag_font_shader = device.create_shader_module(include_spirv!("shaders/frag_font.spirv"));

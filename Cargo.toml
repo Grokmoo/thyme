@@ -1,8 +1,9 @@
 [package]
 name = "thyme"
-version = "0.0.1"
+version = "0.1.0"
 authors = ["Jared Stephen <grok_moo@yahoo.com>"]
-description = "Thyme GUI"
+description = "Themable Immediate Mode GUI"
+documentation = "https://docs.rs/thyme/"
 homepage = "https://github.com/Grokmoo/thyme"
 repository = "https://github.com/Grokmoo/thyme"
 readme = "README.md"
@@ -11,6 +12,9 @@ categories = ["game-development", "gui", "rendering"]
 license = "Apache-2.0"
 edition = "2018"
 autoexamples = false
+
+[package.metadata.docs.rs]
+all-features = true
 
 [[example]]
 name = "hello_glium"
