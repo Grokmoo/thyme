@@ -274,6 +274,27 @@ impl WgpuRenderer {
             }
         }
 
+        if let Some((mouse_cursor, align, anim_state)) = mouse_cursor {
+            let image = context.themes().image(mouse_cursor);
+            let mouse_pos = context.mouse_pos();
+            let size = image.base_size();
+            let pos = mouse_pos - align.adjust_for(size);
+            let clip = Rect::new(pos, size);
+
+            let params = ImageDrawParams {
+                pos: pos.into(),
+                size: size.into(),
+                anim_state,
+                clip,
+                time_millis,
+                scale
+            };
+
+            self.draw_list.clear();
+            image.draw(&mut self.draw_list, params);
+            self.buffer(DrawMode::Image(image.texture()));
+        }
+
         // setup view matrix uniform
         render_pass.set_bind_group(0, &self.view_matrix_bind_group, &[]);
 

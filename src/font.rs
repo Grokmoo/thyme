@@ -276,7 +276,7 @@ impl<'a, D: DrawList> FontRenderer<'a, D> {
 }
 
 // TODO this should be sized appropriately based on how much space is needed
-const FONT_TEX_SIZE: u32 = 192;
+const FONT_TEX_SIZE: u32 = 512;
 
 pub(crate) struct FontTextureOut {
     pub font: Font,
