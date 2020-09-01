@@ -10,9 +10,16 @@ use serde::{Serialize, Deserialize, Deserializer, de::{self, Error, Visitor, Map
 /// respectively.
 #[derive(Serialize, Copy, Clone, Default, Debug, PartialEq)]
 pub struct Border {
+    /// The upper edge border
     pub top: f32,
+
+    /// The lower edge border
     pub bot: f32,
+
+    /// The left edge border
     pub left: f32,
+
+    /// The right edge border
     pub right: f32,
 }
 
@@ -153,7 +160,10 @@ impl<'de> Deserialize<'de> for Border {
 /// A rectangular area, represented by a position and a size
 #[derive(Serialize, Deserialize, Copy, Clone, Default, Debug, PartialEq)]
 pub struct Rect {
+    /// The position of the rectangle
     pub pos: Point,
+
+    /// The size of the rectangle
     pub size: Point
 }
 
@@ -223,7 +233,10 @@ impl Mul<f32> for Rect {
 /// A two-dimensional point, with `x` and `y` coordinates.
 #[derive(Serialize, Deserialize, Copy, Clone, Default, Debug, PartialEq)]
 pub struct Point {
+    /// The `x` cartesian coordinate
     pub x: f32,
+
+    /// The `y` cartesian coordinate
     pub y: f32,
 }
 

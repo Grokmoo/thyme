@@ -365,14 +365,31 @@ impl Default for Layout {
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, Hash)]
 #[serde(deny_unknown_fields)]
 pub enum Align {
+    /// Center Left alignment
     Left,
+
+    /// Center Right alignment
     Right,
+
+    /// Bottom Center alignment
     Bot,
+
+    /// Top Center alignment
     Top,
+
+    /// Centered alignment on both axes
     Center,
+
+    /// Bottom Left alignment
     BotLeft,
+
+    /// Bottom Right alignment
     BotRight,
+
+    /// Top Left alignment
     TopLeft,
+
+    /// Top Right alignment
     TopRight,
 }
 
@@ -381,6 +398,9 @@ impl Default for Align {
 }
 
 impl Align {
+    /// Computes the position adjustment for this aligment within the given `size`.
+    /// For example, [`TopLeft`](#variant.TopLeft) will return (0, 0), while
+    /// [`BotRight`](#variant.BotRight) will return `size`.
     pub fn adjust_for(self, size: Point) -> Point {
         use Align::*;
         match self {
@@ -460,14 +480,29 @@ pub struct Color {
 }
 
 impl Color {
+    /// The color white.  `#FFFFFF` or `#FFF` in the theme
     pub fn white() -> Self { Color { r: 255, g: 255, b: 255 }}
+
+    /// The color black.  `#000000` or `#000` in the theme
     pub fn black() -> Self { Color { r: 0, g: 0, b: 0 }}
+
+    /// The color red.  `#FF0000` or `#F00` in the theme
     pub fn red() -> Self { Color { r: 255, g: 0, b: 0 }}
+
+    /// The color green.  `#00FF00` or `#0F0` in the theme
     pub fn green() -> Self { Color { r: 0, g: 255, b: 255 }}
+
+    /// The color blue.  `#0000FF` or `#00F` in the theme
     pub fn blue() -> Self { Color { r: 0, g: 0, b: 255 }}
+
+    /// The color cyan.  `#00FFFF` or `#0FF` in the theme
     pub fn cyan() -> Self { Color { r: 0, g: 255, b: 255 }}
+
+    /// The color yellow.  `#FFFF00` or `#FF0` in the theme
     pub fn yellow() -> Self { Color { r: 255, g: 255, b: 0 }}
-    pub fn magenta() -> Self { Color { r: 255, g: 255, b: 255 }}
+
+    /// The color magenta or purple.  `#FF00FF` or `#F0F` in the theme
+    pub fn magenta() -> Self { Color { r: 255, g: 0, b: 255 }}
 }
 
 impl Default for Color {

@@ -131,7 +131,7 @@ differentiate the different types.
 #### Timed Images
 Timed images display one out of several frames, on a timer.  Timed images can repeat continuously (the default), or only display once,
 based on the value of the optional `once` parameter.  `frame_time_millis` is how long each frame is shown for, in milliseconds.  Each
-`frame` is the `id` of an image within the current image set.  It can be a Simple Image or Composed Image.
+`frame` is the `id` of an image within the current image set.  It can be any of the other types of images in the current set.
 
 In this example, each frame is displayed for 500 milliseconds in an endless cycle.
 ```yaml
@@ -145,7 +145,7 @@ In this example, each frame is displayed for 500 milliseconds in an endless cycl
 
 #### Animated Images
 Animated images display one of several sub images based on the [`AnimState`](struct.AnimState.html). of the parent widget.
-The referenced images are specified by `id`, and can include Simple, Composed, and Timed images.
+The referenced images are specified by `id`, and can include Simple, Composed, or Collected images.
 ```yaml
   button:
     states:
@@ -181,12 +181,10 @@ Thyme will first look for a theme at the full ID, i.e.
         children:
           button
 ```
-If that is not found, it will look for `button` at the top level.  The [`child_align`](struct.WidgetBuilder.html#method.child_align),
-[`layout`](struct.WidgetBuilder.html#method.layout), and [`layout_spacing`](struct.WidgetBuilder.html#method.layout_spacing) fields deal specifically with how
-the widget will layout its children.
+If that is not found, it will look for `button` at the top level.
 
 ### Widget `from` attribute
-Each widget entry in the `widgets` section may have a `from` attribute, which instructs Thyme to copy the specified widget theme into this theme.
+Each widget entry in the `widgets` section may optionally have a `from` attribute, which instructs Thyme to copy the specified widget theme into this theme.
 This is resolved fully recursively and will copy all children, merging  where appropriate.  `from` attributes may also be defined recursively.
 Specifically defined attributes within a widget theme will override the `from` theme.
 
@@ -228,7 +226,10 @@ will interpret `main_window_titlebar` into the equivalent of this:
 
 ### Widget Attributes
 Each widget theme has many optional attributes that may be defined in the theme file, UI building source code, or both.  Source code
-methods on [`WidgetBuilder`](struct.WidgetBuilder.html) will take precedence over items defined in the theme file.
+methods on [`WidgetBuilder`](struct.WidgetBuilder.html) will take precedence over items defined in the theme file.  The
+[`child_align`](struct.WidgetBuilder.html#method.child_align), [`layout`](struct.WidgetBuilder.html#method.layout), and
+[`layout_spacing`](struct.WidgetBuilder.html#method.layout_spacing) fields deal specifically with how
+the widget will layout its children.
 
 ```yaml
    complicated_button:
@@ -244,12 +245,15 @@ methods on [`WidgetBuilder`](struct.WidgetBuilder.html) will take precedence ove
      size: [100, 0]
      width_from: Normal
      height_from: FontLine
+     # OR size_from: [Normal, FontLine]
      border: { all: 5 }
      align: TopLeft
      child_align: Top
      layout: Vertical
      layout_spacing: 5
 !*/
+
+#![deny(missing_docs)]
 
 pub mod bench;
 pub mod log;
@@ -294,7 +298,10 @@ pub use render::{IO, Renderer};
 /// A generic error that can come from a variety of internal sources.
 #[derive(Debug, Clone)]
 pub enum Error {
+    /// An error originating from an invalid theme reference or theme parsing
     Theme(String),
+
+    /// An error originating from an invalid font source
     FontSource(String),
 }
 
