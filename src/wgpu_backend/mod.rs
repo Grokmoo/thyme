@@ -16,19 +16,25 @@ use crate::render::{DrawMode, view_matrix, TextureData, TexCoord, DrawList};
 use crate::font::FontTextureWriter;
 use crate::image::ImageDrawParams;
 use crate::{Renderer, Frame, Point, Color, Rect};
+
 /**
 A Thyme [`Renderer`](trait.Renderer.html) for [`wgpu`](https://github.com/gfx-rs/wgpu-rs).
 
 This adapter registers image and font data as textures, and renders each frame.
 
 Note that the SPIRV shaders are manually built using [`shaderc`](https://github.com/google/shaderc).
-The commands should roughly be:
+This is slightly inconvenient, but I have found configuring shaders to compile at build time reliably
+in different environments too difficult.
+
+The commands to compile the shaders should be:
 ```bash
 cd src/wgpu_backend/shaders
 glslc -fshader-stage=vertex -fentry-point=main -o vert.spirv vert.glsl
 glslc -fshader-stage=fragment -fentry-point=main -o frag.spirv frag.glsl
 glslc -fshader-stage=fragment -fentry-point=main -o frag_font.spirv frag_font.glsl
 ```
+
+This renderer is implemented fairly naively at present and needs significant optimization work.
 **/
 pub struct WgpuRenderer {
     device: Rc<Device>,
@@ -149,7 +155,7 @@ impl WgpuRenderer {
                 vertex_buffers: &[VertexBufferDescriptor {
                     stride: std::mem::size_of::<Vertex>() as BufferAddress,
                     step_mode: InputStepMode::Vertex,
-                    attributes: &vertex_attr_array![0 => Float2, 1 => Float2, 2 => Float3],
+                    attributes: &vertex_attr_array![0 => Float2, 1 => Float2, 2 => Float3, 3 => Float2, 4 => Float2],
                 }],
             },
             sample_count: 1,
@@ -497,9 +503,11 @@ struct Vertex {
     position: [f32; 2],
     tex: [f32; 2],
     color: [f32; 3],
+    clip_pos: [f32; 2],
+    clip_size: [f32; 2],
 }
 
-// safety - Vertex is exactly 28 bytes with no padding.  all bit patterns are allowed.
+// safety - Vertex is exactly 44 bytes with no padding.  all bit patterns are allowed.
 unsafe impl bytemuck::Pod for Vertex {}
 unsafe impl bytemuck::Zeroable for Vertex {}
 
@@ -544,12 +552,16 @@ impl DrawList for WgpuDrawList {
             position: [pos[0], pos[1]],
             tex: tex[0].into(),
             color: color.into(),
+            clip_pos: clip.pos.into(),
+            clip_size: clip.size.into(),
         };
 
         let lr = Vertex {
             position: [pos[0] + size[0], pos[1] + size[1]],
             tex: tex[1].into(),
             color: color.into(),
+            clip_pos: clip.pos.into(),
+            clip_size: clip.size.into(),
         };
 
         let idx = self.vertices.len() as u16;
@@ -560,12 +572,16 @@ impl DrawList for WgpuDrawList {
             position: [ul.position[0], lr.position[1]],
             tex: [ul.tex[0], lr.tex[1]],
             color: ul.color,
+            clip_pos: clip.pos.into(),
+            clip_size: clip.size.into(),
         });
         self.vertices.push(lr);
         self.vertices.push(Vertex {
             position: [lr.position[0], ul.position[1]],
             tex: [lr.tex[0], ul.tex[1]],
             color: lr.color,
+            clip_pos: clip.pos.into(),
+            clip_size: clip.size.into(),
         });
     }
 }
