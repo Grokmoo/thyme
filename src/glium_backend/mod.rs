@@ -10,7 +10,7 @@ use glium::texture::{Texture2d, RawImage2d, SrgbTexture2d};
 use glium::index::PrimitiveType;
 
 use crate::{image::ImageDrawParams};
-use crate::render::{TexCoord, DrawList, DrawMode, Renderer, TextureHandle, TextureData, FontHandle};
+use crate::render::{view_matrix, TexCoord, DrawList, DrawMode, Renderer, TextureHandle, TextureData, FontHandle};
 use crate::font::{Font, FontSource, FontTextureWriter};
 use crate::{Frame, Point, Color, Rect};
 
@@ -76,7 +76,7 @@ impl GliumRenderer {
             fonts: Vec::new(),
             textures: Vec::new(),
             draw_list: GliumDrawList::new(),
-            matrix: matrix(Point::default(), Point { x: 100.0, y: 100.0 }),
+            matrix: view_matrix(Point::default(), Point { x: 100.0, y: 100.0 }),
             params: DrawParameters {
                 blend: glium::Blend::alpha_blending(),
                 clip_planes_bitmask: 0b1111, //enable the first 4 clip planes
@@ -103,7 +103,7 @@ impl GliumRenderer {
         let display_pos = Point::default();
         let display_size = context.display_size();
         let scale = context.scale_factor();
-        self.matrix = matrix(display_pos, display_size);
+        self.matrix = view_matrix(display_pos, display_size);
 
         for render_group in render_groups.into_iter().rev() {
             let mut draw_mode = None;
@@ -541,20 +541,6 @@ const FONT_FRAGMENT_SHADER_SRC: &str = r#"
     }
 "#;
 
-fn matrix(display_pos: Point, display_size: Point) -> [[f32; 4]; 4] {
-    let left = display_pos.x;
-    let right = display_pos.x + display_size.x;
-    let top = display_pos.y;
-    let bot = display_pos.y + display_size.y;
-
-    [
-        [         (2.0 / (right - left)),                             0.0,  0.0, 0.0],
-        [                            0.0,          (2.0 / (top - bot)),  0.0, 0.0],
-        [                            0.0,                             0.0, -1.0, 0.0],
-        [(right + left) / (left - right), (top + bot) / (bot - top),  0.0, 1.0],
-    ]
-}
-
 struct GliumDrawList {
     vertices: Vec<GliumVertex>,
 }
@@ -592,8 +578,8 @@ impl DrawList for GliumDrawList {
         let vert = GliumVertex {
             position: pos,
             size,
-            tex0: tex[0].into(),
-            tex1: tex[1].into(),
+            tex0: [tex[0].x(), 1.0 - tex[0].y()],
+            tex1: [tex[1].x(), 1.0 - tex[1].y()],
             color: color.into(),
             clip_pos: clip.pos.into(),
             clip_size: clip.size.into(),

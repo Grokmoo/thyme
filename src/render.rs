@@ -35,6 +35,20 @@ pub trait Renderer {
     ) -> Result<TextureData, Error>;
 }
 
+pub(crate) fn view_matrix(display_pos: Point, display_size: Point) -> [[f32; 4]; 4] {
+    let left = display_pos.x;
+    let right = display_pos.x + display_size.x;
+    let top = display_pos.y;
+    let bot = display_pos.y + display_size.y;
+
+    [
+        [         (2.0 / (right - left)),                             0.0,  0.0, 0.0],
+        [                            0.0,          (2.0 / (top - bot)),  0.0, 0.0],
+        [                            0.0,                             0.0, -1.0, 0.0],
+        [(right + left) / (left - right), (top + bot) / (bot - top),  0.0, 1.0],
+    ]
+}
+
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum DrawMode {
     Image(TextureHandle),
@@ -103,7 +117,7 @@ impl TextureData {
 
     pub fn tex_coord(&self, x: u32, y: u32) -> TexCoord {
         let x = x as f32 / self.size[0] as f32;
-        let y = 1.0 - y as f32 / self.size[1] as f32;
+        let y = y as f32 / self.size[1] as f32;
         TexCoord([x, y])
     }
 
@@ -117,6 +131,9 @@ impl TexCoord {
     pub fn new(x: f32, y: f32) -> TexCoord {
         TexCoord([x, y])
     }
+
+    pub fn x(&self) -> f32 { self.0[0] }
+    pub fn y(&self) -> f32 { self.0[1] }
 }
 
 impl Default for TexCoord {

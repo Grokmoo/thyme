@@ -15,7 +15,7 @@ edition = "2018"
 default = []
 
 glium_backend = ["glium"]
-wgpu_backend = ["wgpu", "futures"]
+wgpu_backend = ["wgpu", "futures", "bytemuck" ]
 
 [dependencies]
 log = { version = "0.4" }
@@ -27,6 +27,7 @@ parking_lot = { version = "0.11" }
 glium = { version = "0.27", optional = true }
 wgpu = { version = "0.6", optional = true }
 futures = { version = "0.3", optional = true }
+bytemuck = { version = "1", optional = true }
 
 [dev-dependencies]
 serde_yaml = "0.8"

@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use winit::{
     window::Window,
     event::{Event, WindowEvent},
@@ -7,10 +9,9 @@ use winit::{
 };
 
 async fn setup_wgpu(
-    window: &Window,
     instance: &wgpu::Instance,
     surface: &wgpu::Surface
-) -> (wgpu::Adapter, wgpu::Device, wgpu::Queue) {
+) -> (wgpu::Adapter, Rc<wgpu::Device>, Rc<wgpu::Queue>) {
     let adapter = instance.request_adapter(&wgpu::RequestAdapterOptions {
         power_preference: wgpu::PowerPreference::Default,
         // Request an adapter which can render to our surface
@@ -27,7 +28,7 @@ async fn setup_wgpu(
         None,
     ).await.expect("Failed to create WGPU device");
 
-    (adapter, device, queue)
+    (adapter, Rc::new(device), Rc::new(queue))
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -53,17 +54,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // setup WGPU
     let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
     let surface = unsafe { instance.create_surface(&window) };
-    let (adapter, device, queue) = futures::executor::block_on(setup_wgpu(&window, &instance, &surface));
+    let (_adapter, device, queue) = futures::executor::block_on(setup_wgpu(&instance, &surface));
 
     // create thyme backend
     let mut io = thyme::WinitIo::new(&event_loop, window_size.into());
-    let mut renderer = thyme::WgpuRenderer::new(&device, &queue);
+    let mut renderer = thyme::WgpuRenderer::new(Rc::clone(&device), Rc::clone(&queue));
     let mut context_builder = thyme::ContextBuilder::new(theme, &mut renderer, &mut io)?;
 
     // setup WGPU swapchain
-    let mut sc_desc = wgpu::SwapChainDescriptor {
+    let sc_desc = wgpu::SwapChainDescriptor {
         usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
-        format: wgpu::TextureFormat::Rgba8Sint,
+        format: wgpu::TextureFormat::Bgra8Unorm,
         width: window_size[0] as u32,
         height: window_size[1] as u32,
         present_mode: wgpu::PresentMode::Mailbox,
@@ -72,32 +73,48 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut swap_chain = device.create_swap_chain(&surface, &sc_desc);
 
     // TODO register resources in thyme and create the context
-    // let image_dims = image.dimensions();
-    // context_builder.register_texture("gui", &image.into_raw(), image_dims)?;
+    let image_dims = image.dimensions();
+    context_builder.register_texture("gui", &image.into_raw(), image_dims)?;
     // context_builder.register_font_source("roboto", font_src.to_vec())?;
     let mut context = context_builder.build()?;
 
     // run main loop
-    event_loop.run(move |event, _, control_flow| match event {
-        Event::MainEventsCleared => {
-            let frame = swap_chain.get_current_frame().unwrap().output;
-            let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+    event_loop.run(move |event, _, control_flow| {
+        match event {
+            Event::MainEventsCleared => {
+                let frame = swap_chain.get_current_frame().unwrap().output;
+                let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
-            let mut ui = context.create_frame();
+                let mut ui = context.create_frame();
 
-            ui.window("window", |ui| {
-                ui.gap(20.0);
-        
-                ui.button("label", "Hello, World!");
-            });
+                ui.window("window", |ui| {
+                    ui.gap(20.0);
+            
+                    ui.button("label", "Hello, World!");
+                });
 
-            // TODO renderer draw
+                {
+                    let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                            attachment: &frame.view,
+                            resolve_target: None,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                store: true,
+                            },
+                        }],
+                        depth_stencil_attachment: None,
+                    });
 
-            queue.submit(Some(encoder.finish()));
-        }
-        Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => *control_flow = ControlFlow::Exit,
-        event => {
-            io.handle_event(&mut context, &event);
+                    renderer.draw_frame(ui, &mut render_pass);
+                }
+
+                queue.submit(Some(encoder.finish()));
+            }
+            Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => *control_flow = ControlFlow::Exit,
+            event => {
+                io.handle_event(&mut context, &event);
+            }
         }
     })
 }
