@@ -7,29 +7,6 @@ use winit::{
     dpi::LogicalSize
 };
 
-async fn setup_wgpu(
-    instance: &wgpu::Instance,
-    surface: &wgpu::Surface
-) -> (wgpu::Adapter, Rc<wgpu::Device>, Rc<wgpu::Queue>) {
-    let adapter = instance.request_adapter(&wgpu::RequestAdapterOptions {
-        power_preference: wgpu::PowerPreference::Default,
-        // Request an adapter which can render to our surface
-        compatible_surface: Some(&surface),
-    }).await.unwrap();
-    
-    // Create the logical device and command queue
-    let (device, queue) = adapter.request_device(
-        &wgpu::DeviceDescriptor {
-            features: wgpu::Features::empty(),
-            limits: wgpu::Limits::default(),
-            shader_validation: true,
-        },
-        None,
-    ).await.expect("Failed to create WGPU device");
-
-    (adapter, Rc::new(device), Rc::new(queue))
-}
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // initialize very basic logger so error messages go to stdout
     thyme::log::init(log::Level::Warn).unwrap();
@@ -113,6 +90,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     })
+}
+
+async fn setup_wgpu(
+    instance: &wgpu::Instance,
+    surface: &wgpu::Surface
+) -> (wgpu::Adapter, Rc<wgpu::Device>, Rc<wgpu::Queue>) {
+    let adapter = instance.request_adapter(&wgpu::RequestAdapterOptions {
+        power_preference: wgpu::PowerPreference::Default,
+        // Request an adapter which can render to our surface
+        compatible_surface: Some(&surface),
+    }).await.unwrap();
+    
+    // Create the logical device and command queue
+    let (device, queue) = adapter.request_device(
+        &wgpu::DeviceDescriptor {
+            features: wgpu::Features::empty(),
+            limits: wgpu::Limits::default(),
+            shader_validation: true,
+        },
+        None,
+    ).await.expect("Failed to create WGPU device");
+
+    (adapter, Rc::new(device), Rc::new(queue))
 }
 
 fn swapchain_desc(width: u32, height: u32) -> wgpu::SwapChainDescriptor {

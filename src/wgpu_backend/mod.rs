@@ -34,7 +34,8 @@ glslc -fshader-stage=fragment -fentry-point=main -o frag.spirv frag.glsl
 glslc -fshader-stage=fragment -fentry-point=main -o frag_font.spirv frag_font.glsl
 ```
 
-This renderer is implemented fairly naively at present and needs significant optimization work.
+This renderer is implemented fairly naively at present and there is definitely room for optimization.
+However, it is nonetheless already quite fast.
 **/
 pub struct WgpuRenderer {
     device: Rc<Device>,
