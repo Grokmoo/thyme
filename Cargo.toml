@@ -30,7 +30,6 @@ name = "demo_wgpu"
 
 [features]
 default = []
-
 glium_backend = ["glium"]
 wgpu_backend = ["wgpu", "futures", "bytemuck" ]
 
@@ -41,6 +40,7 @@ rusttype = { version = "0.9" }
 winit = "0.22"
 parking_lot = { version = "0.11" }
 
+image = { version = "0.23", optional = true, default_features = false, features = [ "png", "jpeg" ] }
 glium = { version = "0.27", optional = true }
 wgpu = { version = "0.6", optional = true }
 futures = { version = "0.3", optional = true }

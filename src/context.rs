@@ -1,3 +1,4 @@
+use std::path::Path;
 use std::collections::{HashMap, HashSet};
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -43,6 +44,24 @@ impl<'a, R: Renderer, I: IO> ContextBuilder<'a, R, I> {
         })
     }
 
+    /// Registers the font data located in the file at the specified `path` with Thyme via the specified `id`.
+    /// See [`register_font`](#method.register_font)
+    pub fn register_font_from_file<T: Into<String>>(
+        &mut self,
+        id: T,
+        path: &Path,
+    ) -> Result<(), Error> {
+        let id = id.into();
+        log::debug!("Reading font source '{}' from file: '{:?}'", id, path);
+
+        let data = match std::fs::read(path) {
+            Ok(data) => data,
+            Err(error) => return Err(Error::IO(error)),
+        };
+        
+        self.register_font(id, data)
+    }
+
     /// Registers the font data for use with Thyme via the specified `id`.  The `data` must consist
     /// of the full binary for a valid TTF or OTF file.
     /// Once the font has been registered, it can be accessed in your theme file via the font `source`.
@@ -63,6 +82,27 @@ impl<'a, R: Renderer, I: IO> ContextBuilder<'a, R, I> {
         self.font_sources.insert(id, FontSource { font });
 
         Ok(())
+    }
+
+    /// Reads a texture from the specified image file.  See [`register_texture`](#method.register_texture).
+    /// Requires you to enable the `image` feature in `Cargo.toml` to enable the dependancy on the
+    /// [`image`](https://github.com/image-rs/image) crate.
+    #[cfg(feature="image")]
+    pub fn register_texture_from_file<T: Into<String>>(
+        &mut self,
+        id: T,
+        path: &Path,
+    ) -> Result<(), Error> {
+        let id = id.into();
+        log::debug!("Reading texture '{}' from file: '{:?}'", id, path);
+
+        let image = match image::open(path) {
+            Ok(image) => image.into_rgba(),
+            Err(error) => return Err(Error::Image(error)),
+        };
+
+        let dims = image.dimensions();
+        self.register_texture(id, &image.into_raw(), dims)
     }
 
     /// Registers the image data for use with Thyme via the specified `id`.  The `data` must consist of

@@ -296,13 +296,20 @@ pub use winit_io::WinitIo;
 pub use render::{IO, Renderer};
 
 /// A generic error that can come from a variety of internal sources.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum Error {
     /// An error originating from an invalid theme reference or theme parsing
     Theme(String),
 
     /// An error originating from an invalid font source
     FontSource(String),
+
+    /// An error that occurred attempting to use the filesystem
+    IO(std::io::Error),
+
+    /// An error that occurred reading an image using the `image` crate.
+    #[cfg(feature="image")]
+    Image(::image::error::ImageError),
 }
 
 impl std::fmt::Display for Error {
@@ -311,6 +318,10 @@ impl std::fmt::Display for Error {
         match self {
             Theme(msg) => write!(f, "Error creating theme from theme definition: {}", msg),
             FontSource(msg) => write!(f, "Error reading font source: {}", msg),
+            IO(error) => write!(f, "IO Error: {}", error),
+
+            #[cfg(feature="image")]
+            Image(error) => write!(f, "Image Error: {}", error),
         }
     }
 }
@@ -321,6 +332,10 @@ impl std::error::Error for Error {
         match self {
             Theme(..) => None,
             FontSource(..) => None,
+            IO(error) => Some(error),
+
+            #[cfg(feature="image")]
+            Image(error) => Some(error),
         }
     }
 }
