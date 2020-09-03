@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // register resources in thyme and create the context
     let image_dims = image.dimensions();
     context_builder.register_texture("gui", &image.into_raw(), image_dims)?;
-    context_builder.register_font_source("roboto", font_src.to_vec())?;
+    context_builder.register_font("roboto", font_src.to_vec())?;
     let mut context = context_builder.build()?;
 
     // run main loop

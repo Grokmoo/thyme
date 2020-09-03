@@ -46,7 +46,7 @@ impl<'a, R: Renderer, I: IO> ContextBuilder<'a, R, I> {
     /// Registers the font data for use with Thyme via the specified `id`.  The `data` must consist
     /// of the full binary for a valid TTF or OTF file.
     /// Once the font has been registered, it can be accessed in your theme file via the font `source`.
-    pub fn register_font_source<T: Into<String>>(
+    pub fn register_font<T: Into<String>>(
         &mut self,
         id: T,
         data: Vec<u8>
