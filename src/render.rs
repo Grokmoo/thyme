@@ -33,6 +33,10 @@ pub trait Renderer {
         image_data: &[u8],
         dimensions: (u32, u32),
     ) -> Result<TextureData, Error>;
+
+    /// Clears all font and image assets from the renderer.  This method is called via the
+    /// [`ContextBuilder`](struct.ContextBuilder.html).
+    fn clear_assets(&mut self);
 }
 
 pub(crate) fn view_matrix(display_pos: Point, display_size: Point) -> [[f32; 4]; 4] {

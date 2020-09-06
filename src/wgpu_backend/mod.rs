@@ -37,11 +37,12 @@ pub struct WgpuRenderer {
 
     texture_layout: BindGroupLayout,
 
+    // assets loaded from context
     textures: Vec<Texture>,
     fonts: Vec<Texture>,
 
+    // per frame data
     draw_list: WgpuDrawList,
-
     groups: Vec<BufferedGroup>,
 }
 
@@ -443,6 +444,11 @@ impl WgpuRenderer {
 }
 
 impl<'a> Renderer for WgpuRenderer {
+    fn clear_assets(&mut self) {
+        self.fonts.clear();
+        self.textures.clear();
+    }
+
     fn register_font(
         &mut self,
         handle: crate::render::FontHandle,

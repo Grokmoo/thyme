@@ -34,6 +34,8 @@ impl<'a, R: Renderer, I: IO> ContextBuilder<'a, R, I> {
     pub fn new<T: serde::Deserializer<'a>>(theme: T, renderer: &'a mut R, io: &'a mut I) -> Result<ContextBuilder<'a, R, I>, T::Error> {
         let theme_def: ThemeDefinition = serde::Deserialize::deserialize(theme)?;
 
+        renderer.clear_assets();
+
         Ok(ContextBuilder {
             renderer,
             io,

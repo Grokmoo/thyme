@@ -40,12 +40,13 @@ pub struct GliumRenderer {
     context: Rc<Context>,
     base_program: Program,
     font_program: Program,
+
+    // assets loaded from the context
     textures: Vec<GliumTexture>,
     fonts: Vec<GliumFont>,
 
-    // keep the draw list so we don't need to re-allocate every frame
+    // per frame data
     draw_list: GliumDrawList,
-
     matrix: [[f32; 4]; 4],
     params: DrawParameters<'static>,
 }
@@ -259,6 +260,11 @@ impl GliumRenderer {
 }
 
 impl Renderer for GliumRenderer {
+    fn clear_assets(&mut self) {
+        self.fonts.clear();
+        self.textures.clear();
+    }
+
     fn register_texture(
         &mut self,
         handle: TextureHandle,
