@@ -29,7 +29,7 @@ name = "demo_glium"
 name = "demo_wgpu"
 
 [features]
-default = []
+default = ["image"]
 glium_backend = ["glium"]
 wgpu_backend = ["wgpu", "futures", "bytemuck" ]
 

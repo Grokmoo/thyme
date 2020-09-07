@@ -259,6 +259,7 @@ pub mod bench;
 pub mod log;
 
 mod context;
+mod context_builder;
 mod font;
 mod frame;
 mod image;
@@ -287,7 +288,8 @@ pub use wgpu_backend::WgpuRenderer;
 pub use frame::Frame;
 pub use point::{Rect, Point, Border};
 pub use widget::{WidgetBuilder, WidgetState};
-pub use context::{Context, ContextBuilder, PersistentState};
+pub use context_builder::ContextBuilder;
+pub use context::{Context, PersistentState};
 pub use scrollpane::{ScrollpaneBuilder, ShowElement};
 pub use theme_definition::{AnimStateKey, AnimState, Align, Color, Layout, WidthRelative, HeightRelative};
 pub use window::WindowBuilder;
@@ -298,6 +300,9 @@ pub use render::{IO, Renderer};
 /// A generic error that can come from a variety of internal sources.
 #[derive(Debug)]
 pub enum Error {
+    /// An error originating from a passed in serde deserializer
+    Serde(String),
+
     /// An error originating from an invalid theme reference or theme parsing
     Theme(String),
 
@@ -316,6 +321,7 @@ impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         use self::Error::*;
         match self {
+          Serde(e) => write!(f, "Error deserializing theme: {}", e),
             Theme(msg) => write!(f, "Error creating theme from theme definition: {}", msg),
             FontSource(msg) => write!(f, "Error reading font source: {}", msg),
             IO(error) => write!(f, "IO Error: {}", error),
@@ -330,6 +336,7 @@ impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         use self::Error::*;
         match self {
+            Serde(..) => None,
             Theme(..) => None,
             FontSource(..) => None,
             IO(error) => Some(error),

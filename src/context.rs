@@ -1,146 +1,14 @@
-use std::path::Path;
 use std::collections::{HashMap, HashSet};
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::Instant;
 
-use crate::{Point, Error, Frame, Rect, frame::{RendGroup, RendGroupDef}};
+use crate::{Point, Frame, Rect, frame::{RendGroup, RendGroupDef}};
 use crate::font::FontSummary;
 use crate::widget::Widget;
 use crate::image::ImageHandle;
 use crate::theme::ThemeSet;
-use crate::theme_definition::{ThemeDefinition, AnimState, AnimStateKey};
-use crate::render::{Renderer, IO, TextureData, TextureHandle};
-use crate::font::FontSource;
-
-/// Structure to register resources and ultimately build the main Thyme [`Context`](struct.Context.html).
-///
-/// This will hold references to your chosen [`Renderer`](trait.Renderer.html) and [`IO`](trait.IO.html).
-/// You pass resources to it to register them with Thyme.  Once this process is complete, call
-/// [`build`](struct.ContextBuilder.html#method.build) to create your [`Context`](struct.Context.html).
-pub struct ContextBuilder<'a, R: Renderer, I: IO> {
-    renderer: &'a mut R,
-    io: &'a mut I,
-    font_sources: HashMap<String, FontSource>,
-    textures: HashMap<String, TextureData>,
-    next_texture_handle: TextureHandle,
-    theme_def: ThemeDefinition,
-}
-
-impl<'a, R: Renderer, I: IO> ContextBuilder<'a, R, I> {
-    /// Creates a new `ContextBuilder`, from the specified [`Renderer`](trait.Renderer.html) and [`IO`](trait.IO.html).  The theme for your UI will be deserialized from
-    /// `theme`.  For example, `theme` could be a [`serde_json Value`](https://docs.serde.rs/serde_json/value/enum.Value.html) or
-    /// [`serde_yaml Value`](https://docs.serde.rs/serde_yaml/enum.Value.html).  See [`the crate root`](index.html) for a discussion of the theme format.
-    pub fn new<T: serde::Deserializer<'a>>(theme: T, renderer: &'a mut R, io: &'a mut I) -> Result<ContextBuilder<'a, R, I>, T::Error> {
-        let theme_def: ThemeDefinition = serde::Deserialize::deserialize(theme)?;
-
-        renderer.clear_assets();
-
-        Ok(ContextBuilder {
-            renderer,
-            io,
-            font_sources: HashMap::new(),
-            textures: HashMap::new(),
-            next_texture_handle: TextureHandle::default(),
-            theme_def,
-        })
-    }
-
-    /// Registers the font data located in the file at the specified `path` with Thyme via the specified `id`.
-    /// See [`register_font`](#method.register_font)
-    pub fn register_font_from_file<T: Into<String>>(
-        &mut self,
-        id: T,
-        path: &Path,
-    ) -> Result<(), Error> {
-        let id = id.into();
-        log::debug!("Reading font source '{}' from file: '{:?}'", id, path);
-
-        let data = match std::fs::read(path) {
-            Ok(data) => data,
-            Err(error) => return Err(Error::IO(error)),
-        };
-        
-        self.register_font(id, data)
-    }
-
-    /// Registers the font data for use with Thyme via the specified `id`.  The `data` must consist
-    /// of the full binary for a valid TTF or OTF file.
-    /// Once the font has been registered, it can be accessed in your theme file via the font `source`.
-    pub fn register_font<T: Into<String>>(
-        &mut self,
-        id: T,
-        data: Vec<u8>
-    ) -> Result<(), Error> {
-        let id = id.into();
-        log::debug!("Registering font source '{}'", id);
-
-        let font = match rusttype::Font::try_from_vec(data) {
-            Some(font) => font,
-            None => return Err(
-                Error::FontSource(format!("Unable to parse '{}' as ttf", id))
-            )
-        };
-        self.font_sources.insert(id, FontSource { font });
-
-        Ok(())
-    }
-
-    /// Reads a texture from the specified image file.  See [`register_texture`](#method.register_texture).
-    /// Requires you to enable the `image` feature in `Cargo.toml` to enable the dependancy on the
-    /// [`image`](https://github.com/image-rs/image) crate.
-    #[cfg(feature="image")]
-    pub fn register_texture_from_file<T: Into<String>>(
-        &mut self,
-        id: T,
-        path: &Path,
-    ) -> Result<(), Error> {
-        let id = id.into();
-        log::debug!("Reading texture '{}' from file: '{:?}'", id, path);
-
-        let image = match image::open(path) {
-            Ok(image) => image.into_rgba(),
-            Err(error) => return Err(Error::Image(error)),
-        };
-
-        let dims = image.dimensions();
-        self.register_texture(id, &image.into_raw(), dims)
-    }
-
-    /// Registers the image data for use with Thyme via the specified `id`.  The `data` must consist of
-    /// raw binary image data in RGBA format, with 4 bytes per pixel.  The data must start at the
-    /// bottom-left hand corner pixel and progress left-to-right and bottom-to-top.  `data.len()` must
-    /// equal `dimensions.0 * dimensions.1 * 4`
-    /// Once the image has been registered, it can be accessed in your theme file via the image `source`.
-    pub fn register_texture<T: Into<String>>(
-        &mut self,
-        id: T,
-        data: &[u8],
-        dimensions: (u32, u32),
-    ) -> Result<(), Error> {
-        let id = id.into();
-        log::debug!("Registering texture '{}'", id);
-
-        let handle = self.next_texture_handle;
-        let data = self.renderer.register_texture(handle, data, dimensions)?;
-        self.textures.insert(id, data);
-        self.next_texture_handle = handle.next();
-
-        Ok(())
-    }
-
-    /// Consumes this builder and releases the borrows on the [`Renderer`](trait.Renderer.html) and [`IO`](trait.IO.html), so they can
-    /// be used further.  Builds a [`Context`](struct.Context.html).
-    pub fn build(self) -> Result<Context, Error> {
-        log::info!("Building Thyme Context");
-        let scale_factor = self.io.scale_factor();
-        let display_size = self.io.display_size();
-        let textures = self.textures;
-        let fonts = self.font_sources;
-        let themes = ThemeSet::new(self.theme_def, textures, fonts, self.renderer, scale_factor)?;
-        Ok(Context::new(themes, display_size, scale_factor))
-    }
-}
+use crate::theme_definition::{AnimState, AnimStateKey};
 
 #[derive(Copy, Clone)]
 pub(crate) struct PersistentStateData {
@@ -398,7 +266,7 @@ pub struct Context {
 }
 
 impl Context {
-    fn new(themes: ThemeSet, display_size: Point, scale_factor: f32) -> Context {
+    pub(crate) fn new(themes: ThemeSet, display_size: Point, scale_factor: f32) -> Context {
         let internal = ContextInternal {
             display_size,
             scale_factor,

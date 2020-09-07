@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use winit::{event::{Event, WindowEvent}, event_loop::{EventLoop, ControlFlow}};
 use thyme::{Align, bench};
 
@@ -10,17 +12,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // initialize very basic logger so error messages go to stdout
     thyme::log::init(log::Level::Warn).unwrap();
 
-    // load assets
-    let font_src = include_bytes!("data/fonts/Roboto-Medium.ttf");
-    let image_src = include_bytes!("data/images/gui-minimal.png");
-    let image = image::load_from_memory(image_src).unwrap().to_rgba();
-
-    // a very simple method of splitting up our theme into two files for readability
-    let theme_base_src = include_str!("data/theme-minimal.yml");
-    let theme_demo_src = include_str!("data/theme.yml");
-    let theme_src = format!("{}\n{}", theme_base_src, theme_demo_src);
-
-    let theme: serde_yaml::Value = serde_yaml::from_str(&theme_src)?;
     let window_size = [1280.0, 720.0];
     let events_loop = EventLoop::new();
 
@@ -44,12 +35,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // create thyme backend
     let mut io = thyme::WinitIo::new(&events_loop, window_size.into());
     let mut renderer = thyme::WgpuRenderer::new(std::rc::Rc::clone(&device), std::rc::Rc::clone(&queue));
-    let mut context_builder = thyme::ContextBuilder::new(theme, &mut renderer, &mut io)?;
+    let mut context_builder = thyme::ContextBuilder::new(&mut renderer, &mut io);
 
     // register resources in thyme and create the context
-    let image_dims = image.dimensions();
-    context_builder.register_texture("gui", &image.into_raw(), image_dims)?;
-    context_builder.register_font("roboto", font_src.to_vec())?;
+    context_builder.register_theme_from_files(
+        &[
+            Path::new("examples/data/theme-minimal.yml"),
+            Path::new("examples/data/theme.yml"),
+        ],
+        serde_yaml::from_str::<serde_yaml::Value>
+    )?;
+    context_builder.register_texture_from_file("gui", Path::new("examples/data/images/gui-minimal.png"))?;
+    context_builder.register_font_from_file("roboto", Path::new("examples/data/fonts/Roboto-Medium.ttf"))?;
     let mut context = context_builder.build()?;
 
     let mut party = demo::Party::default();

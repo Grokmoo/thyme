@@ -37,10 +37,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // create thyme backend
     let mut io = thyme::WinitIo::new(&event_loop, window_size.into());
     let mut renderer = thyme::WgpuRenderer::new(Rc::clone(&device), Rc::clone(&queue));
-    let mut context_builder = thyme::ContextBuilder::new(theme, &mut renderer, &mut io)?;
+    let mut context_builder = thyme::ContextBuilder::new(&mut renderer, &mut io);
 
     // register resources in thyme and create the context
     let image_dims = image.dimensions();
+    context_builder.register_theme(theme)?;
     context_builder.register_texture("gui", &image.into_raw(), image_dims)?;
     context_builder.register_font("roboto", font_src.to_vec())?;
     let mut context = context_builder.build()?;
