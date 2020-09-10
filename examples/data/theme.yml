@@ -1,6 +1,12 @@
 # Continues on from theme-minimal
 # This file contains the demo-specific widget definitions
 
+  reload:
+    from: button
+    size: [250, 25]
+    text: "Reload All Assets"
+    align: TopRight
+    pos: [0, 70]
   bench:
     from: label
     background: gui/small_button_normal

@@ -29,14 +29,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // hide the default cursor
     display.gl_window().window().set_cursor_visible(false);
 
-    // create thyme renderer
-    let mut renderer = thyme::GliumRenderer::new(&display)?;
-
     // create thyme backend
+    let mut renderer = thyme::GliumRenderer::new(&display)?;
     let mut io = thyme::WinitIo::new(&events_loop, window_size.into());
     let mut context_builder = thyme::ContextBuilder::new(&mut renderer, &mut io);
 
-    // register resources in thyme and create the context
+    // register resources in thyme by reading from files.  this enables live reload.
     context_builder.register_theme_from_files(
         &[
             Path::new("examples/data/theme-minimal.yml"),
@@ -44,8 +42,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ],
         serde_yaml::from_str::<serde_yaml::Value>
     )?;
-    context_builder.register_texture_from_file("gui", Path::new("examples/data/images/gui-minimal.png"))?;
-    context_builder.register_font_from_file("roboto", Path::new("examples/data/fonts/Roboto-Medium.ttf"))?;
+    context_builder.register_texture_from_file("gui", Path::new("examples/data/images/gui-minimal.png"));
+    context_builder.register_font_from_file("roboto", Path::new("examples/data/fonts/Roboto-Medium.ttf"));
     let mut context = context_builder.build()?;
 
     let mut party = demo::Party::default();
@@ -54,6 +52,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     events_loop.run(move |event, _, control_flow| match event {
         Event::MainEventsCleared => {
             let frame_start = std::time::Instant::now();
+
+            if party.take_reload_assets() {
+                context.rebuild(&mut renderer).unwrap();
+            }
 
             let mut target = display.draw();
             target.clear_color(0.0, 0.0, 0.0, 0.0);

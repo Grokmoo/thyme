@@ -36,6 +36,7 @@ wgpu_backend = ["wgpu", "futures", "bytemuck" ]
 [dependencies]
 log = { version = "0.4" }
 serde = { version = "1.0", features = [ "derive" ] }
+erased-serde = "0.3"
 rusttype = { version = "0.9" }
 winit = "0.22"
 parking_lot = { version = "0.11" }

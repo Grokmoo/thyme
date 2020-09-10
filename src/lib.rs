@@ -266,6 +266,7 @@ mod image;
 mod theme;
 mod recipes;
 mod render;
+mod resource;
 mod theme_definition;
 mod point;
 mod scrollpane;

@@ -3,12 +3,10 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::time::Instant;
 
-use crate::{Point, Frame, Rect, frame::{RendGroup, RendGroupDef}};
-use crate::font::FontSummary;
-use crate::widget::Widget;
-use crate::image::ImageHandle;
-use crate::theme::ThemeSet;
+use crate::{Error, Point, Frame, Rect, frame::{RendGroup, RendGroupDef}};
+use crate::{font::FontSummary, widget::Widget, image::ImageHandle, theme::ThemeSet, resource::ResourceSet};
 use crate::theme_definition::{AnimState, AnimStateKey};
+use crate::render::Renderer;
 
 #[derive(Copy, Clone)]
 pub(crate) struct PersistentStateData {
@@ -78,7 +76,10 @@ impl Default for PersistentState {
 }
 
 pub struct ContextInternal {
+    resources: ResourceSet,
     themes: ThemeSet,
+    frame_active: bool,
+
     mouse_taken_last_frame: Option<(String, RendGroup)>,
     mouse_in_rend_group_last_frame: Option<RendGroup>,
     top_rend_group: RendGroup,
@@ -251,6 +252,7 @@ impl ContextInternal {
         self.mouse_taken_last_frame = mouse_taken;
         self.last_mouse_pos = self.mouse_pos;
         self.mouse_in_rend_group_last_frame = mouse_in_rend_group;
+        self.frame_active = false;
     }
 }
 
@@ -266,8 +268,14 @@ pub struct Context {
 }
 
 impl Context {
-    pub(crate) fn new(themes: ThemeSet, display_size: Point, scale_factor: f32) -> Context {
+    pub(crate) fn new(
+        resources: ResourceSet,
+        themes: ThemeSet,
+        display_size: Point,
+        scale_factor: f32
+    ) -> Context {
         let internal = ContextInternal {
+            resources,
             display_size,
             scale_factor,
             themes,
@@ -288,6 +296,7 @@ impl Context {
             start_instant: Instant::now(),
             keyboard_focus_widget: None,
             errors: HashSet::new(),
+            frame_active: false,
         };
 
         Context {
@@ -387,6 +396,21 @@ impl Context {
         internal.mouse_pos = pos;
     }
 
+    /// Rebuilds this context, reloading all asset data.  Notably, files on disk
+    /// that were used in [`building`](struct.ContextBuilder.html) the context
+    /// are re-read.  If any errors are encountered in reading or parsing files, this
+    /// will return `Err` and no  changes are made to the context.
+    pub fn rebuild<R: Renderer>(&mut self, renderer: &mut R) -> Result<(), Error> {
+        let mut internal = self.internal.borrow_mut();
+        internal.resources.clear_data_cache();
+        internal.resources.cache_data()?;
+
+        let scale_factor = internal.scale_factor;
+        let themes = internal.resources.build_assets(renderer, scale_factor)?;
+        internal.themes = themes;
+        Ok(())
+    }
+
     /// Creates a [`Frame`](struct.Frame.html), the main object that should pass through
     /// your UI building functions and is responsible for constructing the widget tree.
     /// This method should be called each frame you want to draw / interact with the UI.
@@ -396,6 +420,12 @@ impl Context {
         let anim_state;
         let display_size = {
             let mut context = self.internal.borrow_mut();
+
+            if context.frame_active {
+                panic!("A Thyme Frame is already active but a new one has been requested.");
+            }
+
+            context.frame_active = true;
 
             let elapsed = (now - context.start_instant).as_millis() as u32;
             context.time_millis = elapsed;

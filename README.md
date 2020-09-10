@@ -1,6 +1,6 @@
 # Thyme - Themable Immediate Mode GUI
 
-Thyme is a Graphical User Interface (GUI) library written in pure, safe, Rust.  All widgets are rendered using image sources, instead of the line art more commonly used by other Immediate Mode GUIs.  The image definitions, fonts, and style attributes are all specified in a unified theme.  This is generally drawn from a file, but any [Serde](https://serde.rs/) compatible source should work.
+Thyme is a Graphical User Interface (GUI) library written in pure, safe, Rust.  All widgets are rendered using image sources, instead of the line art more commonly used by other Immediate Mode GUIs.  The image definitions, fonts, and style attributes are all specified in a unified theme.  This is generally drawn from a file, but any [Serde](https://serde.rs/) compatible source should work.  Live Reload is supported for asset files for a more efficient workflow.
 
 ![Screenshot](screenshot.png)
 
@@ -49,6 +49,10 @@ unlike many of those libraries Thyme is focused on extreme customizability and f
 
 With Thyme, you can customize exactly how you want your UI to look and operate.  Thyme also focuses a great deal on being performant, while still
 retaining the benefits of a true immediate mode GUI.
+
+This flexibility comes at the cost of needing to specify theme, font, and image files.  But, Thyme comes with some such files as examples to help you
+get started.  Separating assets out in this manner can also significantly improve your workflow, especially with Thyme's built in support for live
+reload.  This strikes a balance, enabling very fast iteration on layout and appearance while still keeping your UI logic in compiled Rust code.
 
 This flexibility does come at a cost, of course - There is quite a bit of overhead in getting started compared to similar libraries.  Once you get up and
 running, though, the overhead is fairly minor.  Performance is also very good and should be at least on-par with other immediate mode GUIs.

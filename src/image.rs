@@ -197,13 +197,13 @@ impl Image {
 
     pub(crate) fn new(
         image_id: &str,
-        def: ImageDefinition,
+        def: &ImageDefinition,
         texture: &TextureData,
         others: &HashMap<String, Image>,
         scale: f32,
     )-> Result<Image, Error> {
         let base_size;
-        let kind = match def.kind {
+        let kind = match &def.kind {
             ImageDefinitionKind::Composed { grid_size, position} => {
                 let mut tex_coords = [[TexCoord::default(); 4]; 4];
                 for y in 0..4 {
@@ -253,7 +253,7 @@ impl Image {
                 let tex1 = texture.tex_coord(position[0], position[1]);
                 let tex2 = texture.tex_coord(position[0] + size[0], position[1] + size[1]);
                 base_size = Point::new(size[0] as f32 * scale, size[1] as f32 * scale);
-                ImageKind::Simple { tex_coords: [tex1, tex2], base_size: base_size.into(), fill }
+                ImageKind::Simple { tex_coords: [tex1, tex2], base_size: base_size.into(), fill: *fill }
             },
             ImageDefinitionKind::Collected { sub_images } => {
                 let mut size = Point::default();
@@ -288,7 +288,7 @@ impl Image {
                 }
 
                 base_size = size;
-                ImageKind::Timed { frame_time_millis, frames: frames_out, once }
+                ImageKind::Timed { frame_time_millis: *frame_time_millis, frames: frames_out, once: *once }
             },
             ImageDefinitionKind::Animated { states } => {
                 let mut size = Point::default();
@@ -296,7 +296,7 @@ impl Image {
                 for (state, id) in states {
                     let image = find_image_in_set(image_id, others, &id)?;
                     size = image.base_size;
-                    states_out.push((state, image));
+                    states_out.push((*state, image));
                 }
 
                 base_size = size;

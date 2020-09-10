@@ -260,11 +260,6 @@ impl GliumRenderer {
 }
 
 impl Renderer for GliumRenderer {
-    fn clear_assets(&mut self) {
-        self.fonts.clear();
-        self.textures.clear();
-    }
-
     fn register_texture(
         &mut self,
         handle: TextureHandle,
@@ -285,8 +280,12 @@ impl Renderer for GliumRenderer {
             ..Default::default()
         };
 
-        assert!(handle.id() == self.textures.len());
-        self.textures.push(GliumTexture { texture, sampler });
+        assert!(handle.id() <= self.textures.len());
+        if handle.id() == self.textures.len() {
+            self.textures.push(GliumTexture { texture, sampler });
+        } else {
+            self.textures[handle.id()] = GliumTexture { texture, sampler };
+        }
 
         Ok(TextureData::new(handle, dimensions.0, dimensions.1))
     }
@@ -327,11 +326,13 @@ impl Renderer for GliumRenderer {
             ..Default::default()
         };
 
-        assert!(handle.id() == self.fonts.len());
-        self.fonts.push(GliumFont {
-            texture: font_tex,
-            sampler,
-        });
+        assert!(handle.id() <= self.fonts.len());
+        if handle.id() == self.fonts.len() {
+            self.fonts.push(GliumFont { texture: font_tex, sampler });
+        } else {
+            self.fonts[handle.id()] = GliumFont { texture: font_tex, sampler };
+        }
+        
 
         Ok(writer_out.font)
     }

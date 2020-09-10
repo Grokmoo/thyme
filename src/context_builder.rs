@@ -1,12 +1,9 @@
-use std::{path::Path, fs::File, io::Read};
-use std::collections::{HashMap};
+use std::{path::Path};
 
 use crate::{Error, Context};
-use crate::theme::ThemeSet;
+use crate::{resource::ResourceSet};
 use crate::theme_definition::{ThemeDefinition};
-use crate::render::{Renderer, IO, TextureData, TextureHandle};
-use crate::font::FontSource;
-
+use crate::render::{Renderer, IO};
 
 /// Structure to register resources and ultimately build the main Thyme [`Context`](struct.Context.html).
 ///
@@ -16,24 +13,16 @@ use crate::font::FontSource;
 pub struct ContextBuilder<'a, R: Renderer, I: IO> {
     renderer: &'a mut R,
     io: &'a mut I,
-    font_sources: HashMap<String, FontSource>,
-    textures: HashMap<String, TextureData>,
-    next_texture_handle: TextureHandle,
-    theme_def: Option<ThemeDefinition>,
+    resources: ResourceSet,
 }
 
 impl<'a, R: Renderer, I: IO> ContextBuilder<'a, R, I> {
     /// Creates a new `ContextBuilder`, from the specified [`Renderer`](trait.Renderer.html) and [`IO`](trait.IO.html).
     pub fn new(renderer: &'a mut R, io: &'a mut I) -> ContextBuilder<'a, R, I> {
-        renderer.clear_assets();
-
         ContextBuilder {
             renderer,
             io,
-            font_sources: HashMap::new(),
-            textures: HashMap::new(),
-            next_texture_handle: TextureHandle::default(),
-            theme_def: None,
+            resources: ResourceSet::new(),
         }
     }
 
@@ -46,70 +35,45 @@ impl<'a, R: Renderer, I: IO> ContextBuilder<'a, R, I> {
         log::debug!("Registering theme");
         
         let theme_def: ThemeDefinition = serde::Deserialize::deserialize(theme)?;
-        self.theme_def = Some(theme_def);
+        self.resources.register_theme(theme_def);
         Ok(())
     }
 
     /// Sets the theme for this context by reading from the file at the specified `path`.  The files are first
     /// read to a string and then passed to the function `f`, which returns a serde Deserializable object.  That
     /// object is then deserialized as the theme.  See [`register_theme`](#method.register_theme)
-    pub fn register_theme_from_file<T: serde::Deserializer<'a>, E: std::error::Error + 'static, F: Fn(&str) -> Result<T, E>>(
+    pub fn register_theme_from_file<T, E, F>(
         &mut self,
         path: &Path,
         f: F,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error> where
+        T: 'static + for<'de> serde::Deserializer<'de>,
+        E: 'static + std::error::Error,
+        F: 'static + Fn(&str) -> Result<T, E>
+    {
         log::debug!("Reading theme from file: '{:?}'", path);
 
-        let theme = match std::fs::read_to_string(path) {
-            Ok(data) => data,
-            Err(e) => return Err(Error::IO(e)),
-        };
+        self.resources.register_theme_from_files(&[path], f);
 
-        self.register_theme_from_str(&theme, f)
+        Ok(())
     }
 
     /// Sets the theme for this context by reading from the specified list of files.  The files are each read into a
     /// string and then concatenated together.  The string is passed to the function `f` which returns a serde
     /// Deserializable object, which is finally deserialized into the theme.  See
     /// [`register_theme`](#method.register_theme)
-    pub fn register_theme_from_files<T: serde::Deserializer<'a>, E: std::error::Error + 'static, F: Fn(&str) -> Result<T, E>>(
+    pub fn register_theme_from_files<T, E, F>(
         &mut self,
         paths: &[&Path],
         f: F,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error> where
+        T: 'static + for<'de> serde::Deserializer<'de>,
+        E: 'static + std::error::Error,
+        F: 'static + Fn(&str) -> Result<T, E>
+    {
         log::debug!("Reading theme from files: '{:?}'", paths);
 
-        let mut theme = String::new();
-        for path in paths {
-            let mut file = match File::open(path) {
-                Ok(file) => file,
-                Err(e) => return Err(Error::IO(e)),
-            };
-
-            if let Err(e) = file.read_to_string(&mut theme) {
-                return Err(Error::IO(e));
-            }
-        }
-
-        self.register_theme_from_str(&theme, f)
-    }
-
-    fn register_theme_from_str<T: serde::Deserializer<'a>, E: std::error::Error + 'static, F: Fn(&str) -> Result<T, E>>(
-        &mut self,
-        theme: &str,
-        f: F,
-    ) -> Result<(), Error> {
-        let theme_value: T = match f(&theme) {
-            Ok(value) => value,
-            Err(e) => return Err(Error::Serde(e.to_string())),
-        };
-
-        let theme_def: ThemeDefinition = match serde::Deserialize::deserialize(theme_value) {
-            Ok(theme) => theme,
-            Err(e) => return Err(Error::Serde(e.to_string())),
-        };
-
-        self.theme_def = Some(theme_def);
+        self.resources.register_theme_from_files(paths, f);
         Ok(())
     }
 
@@ -119,16 +83,10 @@ impl<'a, R: Renderer, I: IO> ContextBuilder<'a, R, I> {
         &mut self,
         id: T,
         path: &Path,
-    ) -> Result<(), Error> {
+    ) {
         let id = id.into();
         log::debug!("Reading font source '{}' from file: '{:?}'", id, path);
-
-        let data = match std::fs::read(path) {
-            Ok(data) => data,
-            Err(error) => return Err(Error::IO(error)),
-        };
-        
-        self.register_font(id, data)
+        self.resources.register_font_from_file(id, path);
     }
 
     /// Registers the font data for use with Thyme via the specified `id`.  The `data` must consist
@@ -138,19 +96,10 @@ impl<'a, R: Renderer, I: IO> ContextBuilder<'a, R, I> {
         &mut self,
         id: T,
         data: Vec<u8>
-    ) -> Result<(), Error> {
+    ) {
         let id = id.into();
         log::debug!("Registering font source '{}'", id);
-
-        let font = match rusttype::Font::try_from_vec(data) {
-            Some(font) => font,
-            None => return Err(
-                Error::FontSource(format!("Unable to parse '{}' as ttf", id))
-            )
-        };
-        self.font_sources.insert(id, FontSource { font });
-
-        Ok(())
+        self.resources.register_font_from_data(id, data);
     }
 
     /// Reads a texture from the specified image file.  See [`register_texture`](#method.register_texture).
@@ -161,17 +110,10 @@ impl<'a, R: Renderer, I: IO> ContextBuilder<'a, R, I> {
         &mut self,
         id: T,
         path: &Path,
-    ) -> Result<(), Error> {
+    ) {
         let id = id.into();
         log::debug!("Reading texture '{}' from file: '{:?}'", id, path);
-
-        let image = match image::open(path) {
-            Ok(image) => image.into_rgba(),
-            Err(error) => return Err(Error::Image(error)),
-        };
-
-        let dims = image.dimensions();
-        self.register_texture(id, &image.into_raw(), dims)
+        self.resources.register_image_from_file(id, path);
     }
 
     /// Registers the image data for use with Thyme via the specified `id`.  The `data` must consist of
@@ -182,38 +124,23 @@ impl<'a, R: Renderer, I: IO> ContextBuilder<'a, R, I> {
     pub fn register_texture<T: Into<String>>(
         &mut self,
         id: T,
-        data: &[u8],
+        data: Vec<u8>,
         dimensions: (u32, u32),
-    ) -> Result<(), Error> {
+    ) {
         let id = id.into();
         log::debug!("Registering texture '{}'", id);
-
-        let handle = self.next_texture_handle;
-        let data = self.renderer.register_texture(handle, data, dimensions)?;
-        self.textures.insert(id, data);
-        self.next_texture_handle = handle.next();
-
-        Ok(())
+        self.resources.register_image_from_data(id, data, dimensions.0, dimensions.1);
     }
 
     /// Consumes this builder and releases the borrows on the [`Renderer`](trait.Renderer.html) and [`IO`](trait.IO.html), so they can
     /// be used further.  Builds a [`Context`](struct.Context.html).
-    pub fn build(self) -> Result<Context, Error> {
-        let definition = match self.theme_def {
-            None => {
-                return Err(Error::Theme(
-                    "Cannot build context.  No theme specified.".to_string()
-                ));
-            },
-            Some(def) => def,
-        };
-
+    pub fn build(mut self) -> Result<Context, Error> {
         log::info!("Building Thyme Context");
         let scale_factor = self.io.scale_factor();
         let display_size = self.io.display_size();
-        let textures = self.textures;
-        let fonts = self.font_sources;
-        let themes = ThemeSet::new(definition, textures, fonts, self.renderer, scale_factor)?;
-        Ok(Context::new(themes, display_size, scale_factor))
+
+        self.resources.cache_data()?;
+        let themes = self.resources.build_assets(self.renderer, scale_factor)?;
+        Ok(Context::new(self.resources, themes, display_size, scale_factor))
     }
 }

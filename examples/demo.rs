@@ -9,6 +9,15 @@ use thyme::{Frame, bench, ShowElement};
 pub struct Party {
     members: Vec<Character>,
     editing_index: Option<usize>,
+    reload_assets: bool,
+}
+
+impl Party {
+    pub fn take_reload_assets(&mut self) -> bool {
+        let result = self.reload_assets;
+        self.reload_assets = false;
+        result
+    }
 }
 
 const MIN_AGE: f32 = 18.0;
@@ -108,6 +117,10 @@ pub fn build_ui(ui: &mut Frame, party: &mut Party) {
         bench::report("frame"),
         bench::report("draw"),
     ));
+
+    if ui.child("reload").clicked {
+        party.reload_assets = true;
+    }
 
     ui.start("party_window")
     .window("party_window")

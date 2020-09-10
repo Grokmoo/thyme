@@ -21,7 +21,7 @@ pub struct ThemeSet {
 
 impl ThemeSet {
     pub(crate) fn new<R: Renderer>(
-        definition: ThemeDefinition,
+        definition: &ThemeDefinition,
         textures: HashMap<String, TextureData>,
         font_sources: HashMap<String, FontSource>,
         renderer: &mut R,
@@ -32,7 +32,7 @@ impl ThemeSet {
         let mut font_handles = HashMap::new();
         let mut font_handle = FontHandle::default();
         let mut fonts = Vec::new();
-        for (font_id, font) in definition.fonts {
+        for (font_id, font) in &definition.fonts {
             let source = font_sources.get(&font.source).ok_or_else(||
                 Error::Theme(format!("Unable to locate font handle {}", font.source))
             )?;
@@ -44,50 +44,50 @@ impl ThemeSet {
             let handle = font.handle();
             assert!(handle.id() == fonts.len());
             fonts.push(font);
-            font_handles.insert(font_id, FontSummary { handle, line_height });
+            font_handles.insert(font_id.to_string(), FontSummary { handle, line_height });
         }
 
         let mut images = HashMap::new();
-        for (set_id, set) in definition.image_sets {
+        for (set_id, set) in &definition.image_sets {
             let mut images_in_set = HashMap::new();
 
             let texture = textures.get(&set.source).ok_or_else(||
                 Error::Theme(format!("Unable to locate texture {}", set.source))
             )?;
 
-            let mut collected_images: Vec<(String, ImageDefinition)> = Vec::new();
-            let mut timed_images: Vec<(String, ImageDefinition)> = Vec::new();
-            let mut animated_images: Vec<(String, ImageDefinition)> = Vec::new();
+            let mut collected_images: Vec<(&str, &ImageDefinition)> = Vec::new();
+            let mut timed_images: Vec<(&str, &ImageDefinition)> = Vec::new();
+            let mut animated_images: Vec<(&str, &ImageDefinition)> = Vec::new();
 
             // first parse all images without dependencies
-            for (image_id, image_def) in set.images {
+            for (image_id, image_def) in &set.images {
                 match image_def.kind {
                     ImageDefinitionKind::Animated { .. } => animated_images.push((image_id, image_def)),
                     ImageDefinitionKind::Timed { .. } => timed_images.push((image_id, image_def)),
                     ImageDefinitionKind::Collected { .. } => collected_images.push((image_id, image_def)),
                     _ => {
                         let image = Image::new(&image_id, image_def, texture, &images_in_set, set.scale)?;
-                        images_in_set.insert(image_id, image);
+                        images_in_set.insert(image_id.to_string(), image);
                     }
                 }
             }
 
             // now parse collected images
             for (id, image_def) in collected_images {
-                let image = Image::new(&id, image_def, texture, &images_in_set, set.scale)?;
-                images_in_set.insert(id, image);
+                let image = Image::new(id, image_def, texture, &images_in_set, set.scale)?;
+                images_in_set.insert(id.to_string(), image);
             }
 
             // now parse timed images
             for (id, image_def) in timed_images {
-                let image = Image::new(&id, image_def, texture, &images_in_set, set.scale)?;
-                images_in_set.insert(id, image);
+                let image = Image::new(id, image_def, texture, &images_in_set, set.scale)?;
+                images_in_set.insert(id.to_string(), image);
             }
 
             // now parse animated images
             for (id, image_def) in animated_images {
-                let image = Image::new(&id, image_def, texture, &images_in_set, set.scale)?;
-                images_in_set.insert(id, image);
+                let image = Image::new(id, image_def, texture, &images_in_set, set.scale)?;
+                images_in_set.insert(id.to_string(), image);
             }
 
             // create the full hashmap with all images
@@ -115,11 +115,11 @@ impl ThemeSet {
         theme_handles.insert(default_id.to_string(), default_handle);
 
         let mut handle_index = 1;
-        for (theme_id, theme) in definition.widgets {
+        for (theme_id, theme) in &definition.widgets {
             WidgetTheme::create(
                 "",
                 None,
-                theme_id, 
+                theme_id.to_string(), 
                 &mut handle_index, 
                 &mut theme_handles, 
                 &mut themes, 
@@ -312,7 +312,7 @@ impl WidgetTheme {
         handle_index: &mut u64,
         handles: &mut HashMap<String, WidgetThemeHandle>,
         themes: &mut Vec<WidgetTheme>,
-        def: WidgetThemeDefinition,
+        def: &WidgetThemeDefinition,
         images: &HashMap<String, ImageHandle>,
         fonts: &HashMap<String, FontSummary>,
     ) -> Result<WidgetThemeHandle, Error> {
@@ -329,24 +329,24 @@ impl WidgetTheme {
             format!("{}/{}", parent_id, id)
         };
 
-        let background = if let Some(bg) = def.background {
-            Some(*images.get(&bg).ok_or_else(||
+        let background = if let Some(bg) = def.background.as_ref() {
+            Some(*images.get(bg).ok_or_else(||
                 Error::Theme(format!("Unable to locate image '{}' as background for widget '{}'", bg, parent_id))
             )?)
         } else {
             None
         };
 
-        let foreground = if let Some(fg) = def.foreground {
-            Some(*images.get(&fg).ok_or_else(||
+        let foreground = if let Some(fg) = def.foreground.as_ref() {
+            Some(*images.get(fg).ok_or_else(||
                 Error::Theme(format!("Unable to locate image '{}' as foreground for widget '{}'", fg, parent_id))
             )?)
         } else {
             None
         };
 
-        let font = if let Some(font) = def.font {
-            let font_handle = fonts.get(&font).ok_or_else(||
+        let font = if let Some(font) = def.font.as_ref() {
+            let font_handle = fonts.get(font).ok_or_else(||
                 Error::Theme(format!("Unable to locate font '{}' for widget '{}'", font, parent_id))
             )?;
             Some(*font_handle)
@@ -363,12 +363,12 @@ impl WidgetTheme {
         let handle = WidgetThemeHandle { id: *handle_index };
         *handle_index += 1;
         let theme = WidgetTheme {
-            from: def.from,
+            from: def.from.clone(),
             parent_handle,
             handle,
             id,
             full_id: parent_id.to_string(),
-            text: def.text,
+            text: def.text.clone(),
             text_color: def.text_color,
             font,
             background,
@@ -391,11 +391,11 @@ impl WidgetTheme {
         themes.push(theme);
 
         let mut children = Vec::new();
-        for (child_id, child_def) in def.children {
+        for (child_id, child_def) in &def.children {
             let child = WidgetTheme::create(
                 &parent_id,
                 Some(handle),
-                child_id,
+                child_id.to_string(),
                 handle_index,
                 handles,
                 themes,

@@ -444,11 +444,6 @@ impl WgpuRenderer {
 }
 
 impl<'a> Renderer for WgpuRenderer {
-    fn clear_assets(&mut self) {
-        self.fonts.clear();
-        self.textures.clear();
-    }
-
     fn register_font(
         &mut self,
         handle: crate::render::FontHandle,
@@ -468,10 +463,13 @@ impl<'a> Renderer for WgpuRenderer {
             wgpu::TextureFormat::R8Unorm,
         );
 
-        assert!(handle.id() == self.fonts.len());
-        self.fonts.push(Texture {
-            bind_group,
-        });
+        assert!(handle.id() <= self.fonts.len());
+        if handle.id() == self.fonts.len() {
+            self.fonts.push(Texture { bind_group });
+        } else {
+            self.fonts[handle.id()] = Texture { bind_group };
+        }
+        
 
         Ok(writer_out.font)
     }
@@ -489,10 +487,12 @@ impl<'a> Renderer for WgpuRenderer {
             wgpu::TextureFormat::Rgba8Unorm
         );
 
-        assert!(handle.id() == self.textures.len());
-        self.textures.push(Texture {
-            bind_group,
-        });
+        assert!(handle.id() <= self.textures.len());
+        if handle.id() == self.textures.len() {
+            self.textures.push(Texture { bind_group });
+        } else {
+            self.textures[handle.id()] = Texture { bind_group };
+        }
 
         Ok(TextureData::new(handle, dimensions.0, dimensions.1))
     }
