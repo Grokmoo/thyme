@@ -332,7 +332,7 @@ impl Context {
     /// or game logic should handle input.
     pub fn wants_mouse(&self) -> bool {
         let internal = self.internal.borrow();
-        internal.mouse_taken_last_frame.is_some()
+        internal.mouse_taken_last_frame.is_some() || internal.modal.is_some()
     }
 
     pub(crate) fn internal(&self) -> &Rc<RefCell<ContextInternal>> {
