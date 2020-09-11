@@ -30,10 +30,11 @@ impl Handle {
 
 /// Runs the specified closure `block` as a benchmark timing
 /// with the given `tag`.
-pub fn run<F: FnOnce()>(tag: &str, block: F) {
+pub fn run<Ret, F: FnOnce() -> Ret>(tag: &str, block: F) -> Ret {
     let handle = start(tag);
-    (block)();
+    let ret = (block)();
     end(handle);
+    ret
 }
 
 /// Starts a benchmark timing with the given `tag`.  You
