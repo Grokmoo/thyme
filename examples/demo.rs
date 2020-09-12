@@ -176,7 +176,12 @@ pub fn build_ui(ui: &mut Frame, party: &mut Party) {
         ui.window("item_picker", |ui| {
             let display_size = ui.display_size();
 
-            ui.start("greyed_out").unclip().size(display_size.x, display_size.y).screen_pos(0.0, 0.0).finish();
+            ui.start("greyed_out")
+            .unclip()
+            .unparent()
+            .size(display_size.x, display_size.y)
+            .screen_pos(0.0, 0.0).finish();
+
             item_picker(ui, character);
         });
     }
@@ -294,9 +299,13 @@ fn inventory_panel(ui: &mut Frame, character: &mut Character) {
 fn items_panel(ui: &mut Frame, character: &mut Character) {
     let mut sell = None;
     for (index, item) in character.items.iter().enumerate() {
-        // TODO tooltip that says remove item
-        if ui.button("item_button", item.name).clicked {
+        let result = ui.button("item_button", item.name);
+        if result.clicked {
             sell = Some(index);
+        }
+        
+        if result.hovered {
+            ui.tooltip("tooltip", "Remove Item");
         }
     }
 

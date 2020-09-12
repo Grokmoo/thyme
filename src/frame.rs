@@ -212,6 +212,22 @@ impl Frame {
         self.context_internal().borrow().display_size()
     }
 
+    /// Returns the current mouse position and size, in logical pixels
+    pub fn mouse_rect(&self) -> Rect {
+        let context = self.context_internal().borrow();
+
+        let (align, size) = if let Some((handle, align)) = self.mouse_cursor {
+            (align, context.themes().image(handle).base_size())
+        } else {
+            // TODO how to get platform mouse cursor size?
+            (Align::TopLeft, Point::new(24.0, 24.0))
+        };
+
+        let pos = context.mouse_pos() + align.adjust_for(size);
+
+        Rect::new(pos, size)
+    }
+
     /// Adds a gap between the previous widget and the next to be specified, subject
     /// to the current parent's layout requirement.
     pub fn gap(&mut self, gap: f32) {

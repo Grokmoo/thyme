@@ -94,6 +94,7 @@ impl Widget {
             active: false,
             recalc_pos_size: true,
             next_render_group: false,
+            unparent: false,
         };
 
         let widget = Widget {
@@ -298,6 +299,7 @@ pub(crate) struct WidgetData {
     active: bool,
     recalc_pos_size: bool,
     next_render_group: bool,
+    unparent: bool,
 }
 
 /// A `WidgetBuilder` is used to customize widgets within your UI tree, following a builder pattern.
@@ -668,6 +670,16 @@ impl<'a> WidgetBuilder<'a> {
         self
     }
 
+    /// If called, the current parent widget will not treat this widget as a child for the purposes
+    /// of computing its child bounds.  This is useful for popups and similar which are not
+    /// neccesarily children of the widgets that create them.  You usually will also want
+    /// [`unclip`](#method.unclip) and [`new_render_group`](#method.new_render_group).
+    #[must_use]
+    pub fn unparent(mut self) -> WidgetBuilder<'a> {
+        self.data.unparent = true;
+        self
+    }
+
     /// Sets whether the widget's [`AnimState`](struct.AnimState.html) will
     /// include the `active` [`AnimStateKey`](enum.AnimStateKey.html).
     #[must_use]
@@ -904,7 +916,9 @@ impl<'a> WidgetBuilder<'a> {
             self.frame.set_parent_max_child_bounds(this_children_max_bounds);
         }
 
-        self.frame.set_max_child_bounds(old_max_child_bounds.max(self_bounds));
+        if !self.data.unparent {
+            self.frame.set_max_child_bounds(old_max_child_bounds.max(self_bounds));
+        }
 
         let (clicked, mut anim_state, mut dragged) = if self.data.enabled && self.data.wants_mouse {
             let mouse_state = self.frame.check_mouse_state(widget_index);

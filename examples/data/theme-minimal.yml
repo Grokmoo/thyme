@@ -167,6 +167,11 @@ image_sets:
         size: [5, 5]
         fill: Stretch
 widgets:
+  tooltip:
+    background: gui/small_button_normal
+    font: small
+    text_align: Center
+    size: [100, 30]
   greyed_out:
     background: gui/greyed_out
   horizontal_slider:

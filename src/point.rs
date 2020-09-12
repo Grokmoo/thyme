@@ -176,6 +176,26 @@ impl Rect {
         }
     }
 
+    /// Returns the left edge of this Rect.
+    pub fn left(&self) -> f32 {
+        self.pos.x
+    }
+
+    /// Returns the right edge of this Rect.
+    pub fn right(&self) -> f32 {
+        self.pos.x + self.size.x
+    }
+
+    /// Returns the top edge of this Rect.
+    pub fn top(&self) -> f32 {
+        self.pos.y
+    }
+
+    /// Returns the bottom edge of this Rect.
+    pub fn bot(&self) -> f32 {
+        self.pos.y + self.size.y
+    }
+
     /// Returns true if the specified point is inside (or on the edge of)
     /// this rectangle; false otherwise
     pub fn is_inside(&self, pos: Point) -> bool {

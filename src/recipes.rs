@@ -199,11 +199,12 @@ impl Frame {
 
         let mut result = None;
 
-        // TODO popup will have clipping issues if this goes outside the parent
         self.start(&format!("{}_popup", id))
         .id(&popup_id)
         .screen_pos(rect.pos.x, rect.pos.y + rect.size.y)
         .initially_open(false)
+        .unclip()
+        .unparent()
         .new_render_group()
         .scrollpane("cb_popup_content")
         .children(|ui| {
@@ -318,6 +319,30 @@ impl Frame {
             .clip(Rect::new(rect.pos, Point::new(rect.size.x * frac, rect.size.y)))
             .finish();
         });
+    }
+
+    /**
+    Creates a simple tooltip with the specified text.  The tooltip is placed based on the
+    position of the mouse.
+
+    An example YAML theme definition:
+    ```yaml
+    tooltip:
+      background: gui/button
+      font: small
+      text_align: Center
+    ```
+    **/
+    pub fn tooltip<T: Into<String>>(&mut self, theme: &str, label: T) {
+        let mouse = self.mouse_rect();
+
+        self.start(theme)
+        .unclip()
+        .unparent()
+        .text(label)
+        .screen_pos(mouse.right(), mouse.bot())
+        .new_render_group()
+        .finish();
     }
 
     /// A convenience method to create a window with the specified `theme`.  The `theme` is also
