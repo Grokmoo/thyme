@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, hash_map::Entry};
 use std::fmt;
 
 use serde::{Serialize, Deserialize, Deserializer, Serializer, de::{self, Visitor}};
@@ -8,9 +8,49 @@ use crate::{Border, Point};
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ThemeDefinition {
+    #[serde(default)]
     pub fonts: HashMap<String, FontDefinition>,
+
+    #[serde(default)]
     pub image_sets: HashMap<String, ImageSet>,
+
+    #[serde(default)]
     pub widgets: HashMap<String, WidgetThemeDefinition>,
+}
+
+impl ThemeDefinition {
+    /// Merges the specified `other` theme definition into this one
+    pub fn merge(&mut self, other: ThemeDefinition) {
+        use Entry::*;
+
+        for (id, font) in other.fonts {
+            match self.fonts.entry(id) {
+                Occupied(mut entry) => {
+                    log::warn!("Overwriting font id '{}'", entry.key());
+                    entry.insert(font);
+                },
+                Vacant(entry) => { entry.insert(font); }
+            }
+        }
+
+        for (id, image) in other.image_sets {
+            match self.image_sets.entry(id) {
+                Occupied(mut entry) => {
+                    log::warn!("Overwriting image set id '{}'", entry.key());
+                    entry.insert(image);
+                }, Vacant(entry) => { entry.insert(image); }
+            }
+        }
+
+        for (id, widget) in other.widgets {
+            match self.widgets.entry(id) {
+                Occupied(mut entry) => {
+                    log::warn!("Overwriting widget theme id '{}'", entry.key());
+                    entry.insert(widget);
+                }, Vacant(entry) => { entry.insert(widget); }
+            }
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize)]

@@ -138,6 +138,8 @@ impl ResourceSet {
     pub(crate) fn cache_data(&mut self) -> Result<(), Error> {
         if self.theme.data.is_none() {
             if let Some(theme_source) = self.theme.files.as_ref() {
+                let mut theme_def: Option<ThemeDefinition> = None;
+
                 let mut theme_str = String::new();
                 for path in &theme_source.paths {
                     let mut file = match File::open(path) {
@@ -145,25 +147,41 @@ impl ResourceSet {
                         Err(e) => return Err(Error::IO(e)),
                     };
 
+                    theme_str.clear();
                     match file.read_to_string(&mut theme_str) {
                         Err(e) => return Err(Error::IO(e)),
                         Ok(count) => {
                             log::debug!("Read {} bytes from '{:?}' for theme.", count, path);
                         }
                     }
+
+                    let theme_value = match (theme_source.de_func)(&theme_str) {
+                        Ok(value) => value,
+                        Err(e) => return Err(Error::Serde(e.to_string())),
+                    };
+                    
+                    match theme_def.as_mut() {
+                        None => {
+                            theme_def = Some(match serde::Deserialize::deserialize(theme_value) {
+                                Ok(theme) => theme,
+                                Err(e) => return Err(Error::Serde(e.to_string())),
+                            });
+                        }, Some(theme) => {
+                            let new_theme_def: ThemeDefinition = match serde::Deserialize::deserialize(theme_value) {
+                                Ok(theme) => theme,
+                                Err(e) => return Err(Error::Serde(e.to_string())),
+                            };
+
+                            theme.merge(new_theme_def);
+                        }
+                    }
                 }
 
-                let theme_value = match (theme_source.de_func)(&theme_str) {
-                    Ok(value) => value,
-                    Err(e) => return Err(Error::Serde(e.to_string())),
-                };
-        
-                let theme_def: ThemeDefinition = match serde::Deserialize::deserialize(theme_value) {
-                    Ok(theme) => theme,
-                    Err(e) => return Err(Error::Serde(e.to_string())),
-                };
+                if theme_def.is_none() {
+                    return Err(Error::Theme("No valid theme was specified".to_string()));
+                }
 
-                self.theme.data = Some(theme_def);
+                self.theme.data = theme_def;
             }
         }
 
