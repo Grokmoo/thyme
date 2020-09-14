@@ -1,17 +1,10 @@
-# A minimal theme with definitions for the provided example fonts and "gui-minimal" image.
+# A minimal theme with definitions for the provided example fonts and "gui-pixel" image.
 # It includes definitions for all of the basic types of widgets.
 # This file works standalone or can be included in a larger theme.
 
-fonts:
-  medium:
-    source: roboto
-    size: 20
-  small:
-    source: roboto
-    size: 16
 image_sets:
   gui:
-    source: gui
+    source: pixel
     scale: 1.0
     images:
       cursor_normal:
@@ -166,6 +159,13 @@ image_sets:
         position: [17, 98]
         size: [5, 5]
         fill: Stretch
+fonts:
+  medium:
+    source: roboto
+    size: 20
+  small:
+    source: roboto
+    size: 16
 widgets:
   tooltip:
     background: gui/small_button_normal

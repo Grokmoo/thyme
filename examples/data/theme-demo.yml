@@ -1,6 +1,6 @@
-# Continues on from theme-minimal
-# This file contains the demo-specific widget definitions
+# Specific widget definitions for the demo app.  Appended to theme-base
 
+widgets:
   reload:
     from: button
     size: [250, 25]

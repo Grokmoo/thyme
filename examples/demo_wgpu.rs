@@ -40,12 +40,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // register resources in thyme by reading from files.  this enables live reload.
     context_builder.register_theme_from_files(
         &[
-            Path::new("examples/data/theme-minimal.yml"),
-            Path::new("examples/data/theme.yml"),
+            Path::new("examples/data/theme-base.yml"),
+            Path::new("examples/data/theme-demo.yml"),
         ],
         serde_yaml::from_str::<serde_yaml::Value>
     )?;
-    context_builder.register_texture_from_file("gui", Path::new("examples/data/images/gui-minimal.png"));
+    context_builder.register_texture_from_file("pixel", Path::new("examples/data/images/gui-pixel.png"));
     context_builder.register_font_from_file("roboto", Path::new("examples/data/fonts/Roboto-Medium.ttf"));
     let mut context = context_builder.build()?;
 
