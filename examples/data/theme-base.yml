@@ -3,7 +3,7 @@
 # This file works standalone or can be included in a larger theme.
 
 image_sets:
-  gui2:
+  gui:
     source: pixel
     scale: 1.0
     images:
