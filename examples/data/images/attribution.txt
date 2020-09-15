@@ -6,3 +6,8 @@ https://opengameart.org/users/buch
 Repeat fill texture taken from "Seamless Textures" by arikel
 https://opengameart.org/content/seamless-textures
 https://opengameart.org/users/arikel
+
+gui-fantasy.png
+Base theme taken from and edited
+https://opengameart.org/content/fantasy-gui-0
+https://opengameart.org/users/melle

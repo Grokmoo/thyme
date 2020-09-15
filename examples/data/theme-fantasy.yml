@@ -1,16 +1,16 @@
 # Image definitions for "gui-fantasy.png" image.
 
 image_sets:
-  gui_fantasy:
+  gui:
     source: fantasy
-    scale: 2.0
+    scale: 0.5
     images:
       cursor_normal:
-        position: [66, 97]
-        size: [21, 21]
+        position: [132, 194]
+        size: [42, 42]
       cursor_pressed:
-        position: [89, 106]
-        size: [21, 21]
+        position: [178, 212]
+        size: [42, 42]
       cursor:
         states:
           Normal: cursor_normal
@@ -22,39 +22,39 @@ image_sets:
             position: [0, 0]
             size: [0, 0]
           window_fill:
-            position: [5, 5]
-            size: [-10, -10]
+            position: [6, 6]
+            size: [-12, -16]
       window_bg_base:
         position: [0, 0]
-        grid_size: [32, 32]
+        grid_size: [64, 64]
       window_fill:
-        position: [128, 0]
-        size: [128, 128]
+        position: [256, 0]
+        size: [256, 256]
         fill: Repeat
       small_button_normal:
-        position: [110, 0]
-        grid_size: [5, 5]
+        position: [220, 0]
+        grid_size: [10, 10]
       small_button_hover:
-        position: [110, 15]
-        grid_size: [5, 5]
+        position: [220, 30]
+        grid_size: [10, 10]
       small_button_pressed:
-        position: [110, 30]
-        grid_size: [5, 5]
+        position: [220, 60]
+        grid_size: [10, 10]
       small_button_disabled:
-        position: [110, 45]
-        grid_size: [5, 5]
+        position: [220, 90]
+        grid_size: [10, 10]
       small_button_active:
-        position: [110, 60]
-        grid_size: [5, 5]
+        position: [220, 120]
+        grid_size: [10, 10]
       small_button_black:
-        position: [110, 75]
-        grid_size: [5, 5]
+        position: [220, 150]
+        grid_size: [10, 10]
       small_button_flash1:
-        position: [110, 90]
-        grid_size: [5, 5]
+        position: [220, 180]
+        grid_size: [10, 10]
       small_button_flash2:
-        position: [110, 105]
-        grid_size: [5, 5]
+        position: [220, 210]
+        grid_size: [10, 10]
       small_button_normal_flash:
         frame_time_millis: 200
         frames:
@@ -87,14 +87,14 @@ image_sets:
           Active + Hover: small_button_active
           Active + Pressed: small_button_pressed
       close_icon_normal:
-        position: [97, 66]
-        size: [12, 12]
+        position: [194, 132]
+        size: [24, 24]
       close_icon_pressed:
-        position: [97, 78]
-        size: [12, 12]
+        position: [194, 156]
+        size: [24, 24]
       close_icon_disabled:
-        position: [97, 90]
-        size: [12, 12]
+        position: [194, 180]
+        size: [24, 24]
       close_icon:
         states:
           Normal: close_icon_normal
@@ -102,20 +102,20 @@ image_sets:
           Pressed: close_icon_pressed
           Disabled: close_icon_disabled
       progress_bar:
-        position: [50, 100]
-        grid_size: [5, 9]
+        position: [100, 200]
+        grid_size: [10, 18]
       window_handle_normal:
-        position: [97, 0]
-        size: [12, 12]
+        position: [194, 0]
+        size: [24, 24]
       window_handle_hover:
-        position: [97, 12]
-        size: [12, 12]
+        position: [194, 24]
+        size: [24, 24]
       window_handle_pressed:
-        position: [97, 24]
-        size: [12, 12]
+        position: [194, 48]
+        size: [24, 24]
       window_handle_disabled:
-        position: [97, 36]
-        size: [12, 12]
+        position: [194, 72]
+        size: [24, 24]
       window_handle:
         states:
           Normal: window_handle_normal
@@ -123,12 +123,12 @@ image_sets:
           Pressed: window_handle_pressed
           Disabled: window_handle_disabled
       caret_on:
-        position: [97, 49]
-        size: [2, 16]
+        position: [194, 98]
+        size: [4, 32]
         fill: Stretch
       caret_off:
-        position: [100, 49]
-        size: [2, 16]
+        position: [200, 98]
+        size: [4, 32]
         fill: Stretch
       caret:
         frame_time_millis: 500
@@ -136,24 +136,24 @@ image_sets:
           - caret_on
           - caret_off
       arrow_right:
-        position: [24, 97]
-        size: [12, 12]
+        position: [48, 194]
+        size: [24, 24]
       arrow_left:
-        position: [24, 109]
-        size: [12, 12]
+        position: [48, 218]
+        size: [24, 24]
       arrow_down:
-        position: [36, 97]
-        size: [12, 12]
+        position: [72, 194]
+        size: [24, 24]
       arrow_up:
-        position: [36, 109]
-        size: [12, 12]
+        position: [72, 218]
+        size: [24, 24]
       slider_horizontal:
-        position: [0, 97]
-        grid_size_horiz: [5, 4]
+        position: [0, 196]
+        grid_size_horiz: [10, 8]
       slider_vertical:
-        position: [0, 102]
-        grid_size_vert: [4, 5]
+        position: [0, 204]
+        grid_size_vert: [8, 10]
       greyed_out:
-        position: [17, 98]
-        size: [5, 5]
+        position: [34, 196]
+        size: [10, 10]
         fill: Stretch
