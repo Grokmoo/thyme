@@ -204,7 +204,6 @@ impl Frame {
         .screen_pos(rect.pos.x, rect.pos.y + rect.size.y)
         .initially_open(false)
         .unclip()
-        .unparent()
         .new_render_group()
         .scrollpane("cb_popup_content")
         .children(|ui| {
