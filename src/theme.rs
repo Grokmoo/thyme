@@ -153,7 +153,7 @@ impl ThemeSet {
 
                 found_new = true;
 
-                let from_id = *theme_handles.get(from_str).ok_or_else(|| {
+                let from_id = resolve_from(&themes, &theme_handles, from_str, *to_id).ok_or_else(|| {
                     Error::Theme(format!("Invalid from theme '{}' in '{}'", from_str, themes[to_id.id as usize].id))
                 })?;
 
@@ -236,6 +236,28 @@ impl ThemeSet {
     pub fn handle(&self, id: &str) -> Option<WidgetThemeHandle> {
         self.theme_handles.get(id).cloned()
     }
+}
+
+fn resolve_from(
+    themes: &[WidgetTheme],
+    handles: &HashMap<String, WidgetThemeHandle>,
+    from_str: &str,
+    to_id: WidgetThemeHandle
+) -> Option<WidgetThemeHandle> {
+    // first, look for theme with the absolute path specified by from_str
+    if let Some(handle) = handles.get(from_str) {
+        return Some(*handle);
+    }
+
+    // now look for a theme relative to the current theme with from_str
+    if let Some(parent_handle) = themes[to_id.id as usize].parent_handle {
+        let parent_id = &themes[parent_handle.id as usize].full_id;
+        let from_full_id = format!("{}/{}", parent_id, from_str);
+
+        return handles.get(&from_full_id).copied();
+    }
+
+    None
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]

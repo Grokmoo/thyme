@@ -186,7 +186,8 @@ If that is not found, it will look for `button` at the top level.
 ### Widget `from` attribute
 Each widget entry in the `widgets` section may optionally have a `from` attribute, which instructs Thyme to copy the specified widget theme into this theme.
 This is resolved fully recursively and will copy all children, merging  where appropriate.  `from` attributes may also be defined recursively.
-Specifically defined attributes within a widget theme will override the `from` theme.
+Specifically defined attributes within a widget theme will override the `from` theme.  Thyme first looks for the `from` theme at the specified absolute path.
+If no theme is found there, it then looks in the path relative to the current widget.
 
 For example, this definition:
 ```yaml
