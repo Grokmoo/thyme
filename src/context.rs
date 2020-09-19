@@ -423,7 +423,7 @@ impl Context {
     /// that were used in [`building`](struct.ContextBuilder.html) the context
     /// are re-read.  If any errors are encountered in reading or parsing files, this
     /// will return `Err` and no  changes are made to the context.
-    pub fn rebuild<R: Renderer>(&mut self, renderer: &mut R) -> Result<(), Error> {
+    pub fn rebuild_all<R: Renderer>(&mut self, renderer: &mut R) -> Result<(), Error> {
         let mut internal = self.internal.borrow_mut();
         internal.resources.clear_data_cache();
         internal.resources.cache_data()?;
@@ -431,6 +431,23 @@ impl Context {
         let scale_factor = internal.scale_factor;
         let themes = internal.resources.build_assets(renderer, scale_factor)?;
         internal.themes = themes;
+        Ok(())
+    }
+
+    /// Checks the internal live reload thread to see if any file notifications have occurred
+    /// since the last check.  If so, will fully rebuild the theme.  If any errors are encountered
+    /// in the process of rebuilding the theme, will return the `Err` and no changes are made to
+    /// the current theme.
+    pub fn check_live_reload<R: Renderer>(&mut self, renderer: &mut R) -> Result<(), Error> {
+        let mut internal = self.internal.borrow_mut();
+        let scale_factor = internal.scale_factor;
+
+        let themes = internal.resources.check_live_reload(renderer, scale_factor)?;
+
+        if let Some(themes) = themes {
+            internal.themes = themes;
+        }
+
         Ok(())
     }
 

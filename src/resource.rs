@@ -1,14 +1,19 @@
 use std::fs::{File};
 use std::io::Read;
+use std::time::Duration;
 use std::path::{Path, PathBuf};
 use std::collections::HashMap;
+use std::sync::{atomic::{AtomicBool, Ordering}, mpsc::channel};
 
 use erased_serde::Deserializer;
+use notify::{Watcher, RecommendedWatcher, RecursiveMode, watcher, DebouncedEvent};
 
 use crate::Error;
 use crate::theme::ThemeSet;
 use crate::theme_definition::ThemeDefinition;
 use crate::render::{Renderer, TextureData, TextureHandle};
+
+static RELOAD_THEME: AtomicBool = AtomicBool::new(false);
 
 struct ThemeSource {
     data: Option<ThemeDefinition>,
@@ -38,10 +43,46 @@ pub(crate) struct ResourceSet {
     images: Vec<(String, ImageSource)>,
     fonts: Vec<(String, FontSource)>,
     theme: ThemeSource,
+
+    watcher: Option<RecommendedWatcher>,
 }
 
 impl ResourceSet {
     pub(crate) fn new() -> ResourceSet {
+        let (tx, rx) = channel();
+
+        let watcher = match watcher(tx, Duration::from_secs(2)) {
+            Err(e) => {
+                log::error!("Unable to initialize file watching for live-reload:");
+                log::error!("{}", e);
+                None
+            }, Ok(watcher) => Some(watcher),
+        };
+
+        std::thread::spawn(move || {
+            loop {
+                match rx.recv() {
+                    Ok(event) => {
+                        use DebouncedEvent::*;
+                        match event {
+                            Create(..) | Write(..) | Remove(..) | Rename(..) | Chmod(..) | Rescan => (),
+                            NoticeWrite(..) | NoticeRemove(..) => {
+                                log::info!("Received file notification: {:?}", event);
+                                RELOAD_THEME.store(true, Ordering::Release);
+                            },
+                            Error(error, path) => {
+                                log::warn!("Received file notification error for path {:?}", path);
+                                log::warn!("{}", error);
+                            }
+                        }
+                    },
+                    Err(e) => {
+                       log::info!("Disconnected live-reload watcher: {}", e);
+                    }
+                }
+            }
+        });
+
         ResourceSet {
             images: Vec::new(),
             fonts: Vec::new(),
@@ -49,6 +90,26 @@ impl ResourceSet {
                 data: None,
                 files: None,
             },
+            watcher,
+        }
+    }
+
+    fn remove_path_from_watcher(&mut self, path: &Path) {
+        if let Some(watcher) = self.watcher.as_mut() {
+            if let Err(e) = watcher.unwatch(path) {
+                log::warn!("Unable to watch path: {:?}", path);
+                log::warn!("{}", e);
+            }
+        }
+    }
+
+    fn add_path_to_watcher(&mut self, path: &Path) {
+        if let Some(watcher) = self.watcher.as_mut() {
+            log::info!("Watching {:?}", path);
+            if let Err(e) = watcher.watch(path, RecursiveMode::NonRecursive) {
+                log::warn!("Unable to unwatch path: {:?}", path);
+                log::warn!("{}", e);
+            }
         }
     }
 
@@ -75,15 +136,20 @@ impl ResourceSet {
             Ok(Box::new(Deserializer::erase(result)))
         });
 
-        let paths: Vec<PathBuf> = paths.iter().map(|p| (*p).to_owned()).collect();
+        let mut paths_out: Vec<PathBuf> = Vec::new();
+        for path in paths {
+            self.add_path_to_watcher(path);
+            paths_out.push((*path).to_owned());
+        }
 
         self.theme.files = Some(ThemeSourceFiles {
-            paths,
+            paths: paths_out,
             de_func: boxed_fn,
         });
     }
 
     pub(crate) fn register_font_from_file(&mut self, id: String, path: &Path) {
+        self.add_path_to_watcher(path);
         self.fonts.push((id, FontSource { font: None, data: None, file: Some(path.to_owned()) }));
     }
 
@@ -92,6 +158,7 @@ impl ResourceSet {
     }
 
     pub(crate) fn register_image_from_file(&mut self, id: String, path: &Path) {
+        self.add_path_to_watcher(path);
         self.images.push((id, ImageSource { data: None, file: Some(path.to_owned()) }));
     }
 
@@ -100,6 +167,7 @@ impl ResourceSet {
     }
 
     pub(crate) fn remove_theme_file(&mut self, path: &Path) {
+        self.remove_path_from_watcher(path);
         if let Some(theme) = self.theme.files.as_mut() {
             theme.paths.retain(|p| p != path);
             self.theme.data = None;
@@ -107,15 +175,34 @@ impl ResourceSet {
     }
 
     pub(crate) fn add_theme_file(&mut self, path: PathBuf) {
+        self.add_path_to_watcher(&path);
         if let Some(theme) = self.theme.files.as_mut() {
             theme.paths.push(path);
             self.theme.data = None;
         }
     }
 
+    /// Checks for a file watch change and rebuilds the theme if neccessary, clearing the data cache
+    /// and reloading all data.  Will return Ok(None) if there was no change, or Err if there was
+    /// a problem rebuilding the theme.
+    pub(crate) fn check_live_reload<R: Renderer>(&mut self, renderer: &mut R, scale_factor: f32) -> Result<Option<ThemeSet>, Error> {
+        if !RELOAD_THEME.compare_and_swap(true, false, Ordering::AcqRel) {
+            return Ok(None);
+        }
+
+        self.clear_data_cache();
+        self.cache_data()?;
+
+        let themes = self.build_assets(renderer, scale_factor)?;
+
+        Ok(Some(themes))
+    }
+
     /// Builds all assets and registers them with the renderer.  You must make sure all asset
     /// data is cached with [`cache_data`](#method.cache_assets) prior to calling this.
     pub(crate) fn build_assets<R: Renderer>(&mut self, renderer: &mut R, scale_factor: f32) -> Result<ThemeSet, Error> {
+        RELOAD_THEME.store(false, Ordering::Release);
+
         let textures = self.build_images(renderer)?;
         let fonts = self.build_fonts()?;
 

@@ -59,8 +59,14 @@ impl Party {
         }
 
         if self.reload_assets {
-            context.rebuild(renderer).unwrap();
+            if let Err(e) = context.rebuild_all(renderer) {
+                log::error!("Unable to rebuild theme: {}", e);
+            }
             self.reload_assets = false;
+        } else {
+            if let Err(e) = context.check_live_reload(renderer) {
+                log::error!("Unable to live reload theme: {}", e);
+            }
         }
     }
 }
