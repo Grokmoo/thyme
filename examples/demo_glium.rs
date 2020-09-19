@@ -45,6 +45,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     )?;
     context_builder.register_texture_from_file("pixel", Path::new("examples/data/images/gui-pixel.png"));
     context_builder.register_texture_from_file("fantasy", Path::new("examples/data/images/gui-fantasy.png"));
+    context_builder.register_texture_from_file("transparent", Path::new("examples/data/images/gui-transparent.png"));
     context_builder.register_font_from_file("roboto", Path::new("examples/data/fonts/Roboto-Medium.ttf"));
     let mut context = context_builder.build()?;
 
@@ -58,7 +59,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             party.check_context_changes(&mut context, &mut renderer);
 
             let mut target = display.draw();
-            target.clear_color(0.0, 0.0, 0.0, 0.0);
+            target.clear_color(0.5, 0.5, 0.5, 1.0);
 
             bench::run("thyme", || {
                 let mut ui = context.create_frame();

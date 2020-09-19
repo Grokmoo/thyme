@@ -9,13 +9,17 @@ use thyme::{Context, Frame, bench, ShowElement, Renderer};
 enum ThemeChoice {
     Pixels,
     Fantasy,
+    Transparent,
 }
+
+const THEME_CHOICES: [ThemeChoice; 3] = [ThemeChoice::Pixels, ThemeChoice::Fantasy, ThemeChoice::Transparent];
 
 impl ThemeChoice {
     fn path(self) -> Option<&'static str> {
         match self {
             ThemeChoice::Fantasy => Some("examples/data/theme-fantasy.yml"),
             ThemeChoice::Pixels => None,
+            ThemeChoice::Transparent => Some("examples/data/theme-transparent.yml"),
         }
     }
 }
@@ -31,8 +35,6 @@ impl std::fmt::Display for ThemeChoice {
         write!(f, "{:?}", self)
     }
 }
-
-const THEME_CHOICES: [ThemeChoice; 2] = [ThemeChoice::Pixels, ThemeChoice::Fantasy];
 
 #[derive(Default)]
 pub struct Party {

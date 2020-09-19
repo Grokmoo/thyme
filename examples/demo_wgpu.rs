@@ -48,6 +48,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     )?;
     context_builder.register_texture_from_file("pixel", Path::new("examples/data/images/gui-pixel.png"));
     context_builder.register_texture_from_file("fantasy", Path::new("examples/data/images/gui-fantasy.png"));
+    context_builder.register_texture_from_file("transparent", Path::new("examples/data/images/gui-transparent.png"));
     context_builder.register_font_from_file("roboto", Path::new("examples/data/fonts/Roboto-Medium.ttf"));
     let mut context = context_builder.build()?;
 
@@ -80,7 +81,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     attachment: &frame.view,
                                     resolve_target: None,
                                     ops: wgpu::Operations {
-                                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                        load: wgpu::LoadOp::Clear(wgpu::Color { r: 0.5, g: 0.5, b: 0.5, a: 1.0 }),
                                         store: true,
                                     },
                                 }],

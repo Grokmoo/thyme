@@ -1,0 +1,147 @@
+# Image definitions for "gui-transparent.png" image.
+
+image_sets:
+  gui:
+    source: transparent
+    scale: 0.5
+    images:
+      cursor_normal:
+        position: [132, 194]
+        size: [42, 42]
+      cursor_pressed:
+        position: [178, 212]
+        size: [42, 42]
+      cursor:
+        states:
+          Normal: cursor_normal
+          Hover: cursor_normal
+          Pressed: cursor_pressed
+      window_bg:
+        position: [0, 0]
+        grid_size: [24, 24]
+      small_button_normal:
+        position: [0, 84]
+        grid_size: [12, 12]
+      small_button_hover:
+        position: [36, 84]
+        grid_size: [12, 12]
+      small_button_pressed:
+        position: [72, 84]
+        grid_size: [12, 12]
+      small_button_disabled:
+        position: [108, 84]
+        grid_size: [12, 12]
+      small_button_active:
+        position: [0, 120]
+        grid_size: [12, 12]
+      small_button_black:
+        position: [36, 120]
+        grid_size: [12, 12]
+      small_button_flash1:
+        position: [72, 120]
+        grid_size: [12, 12]
+      small_button_flash2:
+        position: [108, 120]
+        grid_size: [12, 12]
+      small_button_normal_flash:
+        frame_time_millis: 200
+        frames:
+          - small_button_flash1
+          - small_button_flash2
+          - small_button_flash1
+          - small_button_normal
+      input_field:
+        states:
+          Normal: small_button_black
+          Hover: small_button_hover
+          Pressed: small_button_pressed
+          Disabled: small_button_disabled
+      small_button:
+        states:
+          Normal: small_button_normal
+          Hover: small_button_hover
+          Pressed: small_button_pressed
+          Disabled: small_button_disabled
+          Active: small_button_active
+          Active + Hover: small_button_active
+          Active + Pressed: small_button_pressed
+      small_button_flash:
+        states:
+          Normal: small_button_normal_flash
+          Hover: small_button_hover
+          Pressed: small_button_pressed
+          Disabled: small_button_disabled
+          Active: small_button_active
+          Active + Hover: small_button_active
+          Active + Pressed: small_button_pressed
+      close_icon_normal:
+        position: [156, 84]
+        size: [24, 24]
+      close_icon_pressed:
+        position: [156, 108]
+        size: [24, 24]
+      close_icon_disabled:
+        position: [156, 132]
+        size: [24, 24]
+      close_icon:
+        states:
+          Normal: close_icon_normal
+          Hover: close_icon_normal
+          Pressed: close_icon_pressed
+          Disabled: close_icon_disabled
+      progress_bar:
+        position: [100, 200]
+        grid_size: [10, 18]
+      window_handle_normal:
+        position: [194, 0]
+        size: [24, 24]
+      window_handle_hover:
+        position: [194, 24]
+        size: [24, 24]
+      window_handle_pressed:
+        position: [194, 48]
+        size: [24, 24]
+      window_handle_disabled:
+        position: [194, 72]
+        size: [24, 24]
+      window_handle:
+        states:
+          Normal: window_handle_normal
+          Hover: window_handle_hover
+          Pressed: window_handle_pressed
+          Disabled: window_handle_disabled
+      caret_on:
+        position: [194, 98]
+        size: [4, 32]
+        fill: Stretch
+      caret_off:
+        position: [200, 98]
+        size: [4, 32]
+        fill: Stretch
+      caret:
+        frame_time_millis: 500
+        frames:
+          - caret_on
+          - caret_off
+      arrow_right:
+        position: [48, 194]
+        size: [24, 24]
+      arrow_left:
+        position: [48, 218]
+        size: [24, 24]
+      arrow_down:
+        position: [72, 194]
+        size: [24, 24]
+      arrow_up:
+        position: [72, 218]
+        size: [24, 24]
+      slider_horizontal:
+        position: [0, 196]
+        grid_size_horiz: [10, 8]
+      slider_vertical:
+        position: [0, 204]
+        grid_size_vert: [8, 10]
+      greyed_out:
+        position: [34, 196]
+        size: [10, 10]
+        fill: Stretch
