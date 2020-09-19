@@ -1,12 +1,25 @@
 # Specific widget definitions for the demo app.  Appended to theme-base
 
 widgets:
-  reload:
-    from: button
+  theme_panel:
     size: [250, 25]
-    text: "Reload All Assets"
     align: TopRight
     pos: [0, 70]
+    layout: Horizontal
+    layout_spacing: [5, 5]
+    children:
+      reload:
+        from: button
+        size: [125, 25]
+        text: "Reload All Assets"
+      theme_choice:
+        from: combo_box
+        size_from: [Normal, Parent]
+        size: [100, 0]
+      theme_choice_popup:
+        from: combo_box_popup
+        size_from: [Normal, Normal]
+        size: [100, 55]
   bench:
     from: label
     background: gui/small_button_normal

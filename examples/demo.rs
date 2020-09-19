@@ -3,20 +3,63 @@
 //! This file contains example uses of many of Thyme's features.
 
 use std::collections::HashMap;
-use thyme::{Frame, bench, ShowElement};
+use thyme::{Context, Frame, bench, ShowElement, Renderer};
+
+#[derive(Debug, Copy, Clone)]
+enum ThemeChoice {
+    Pixels,
+    Fantasy,
+}
+
+impl ThemeChoice {
+    fn path(self) -> Option<&'static str> {
+        match self {
+            ThemeChoice::Fantasy => Some("examples/data/theme-fantasy.yml"),
+            ThemeChoice::Pixels => None,
+        }
+    }
+}
+
+impl Default for ThemeChoice {
+    fn default() -> Self {
+        ThemeChoice::Pixels
+    }
+}
+
+impl std::fmt::Display for ThemeChoice {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+const THEME_CHOICES: [ThemeChoice; 2] = [ThemeChoice::Pixels, ThemeChoice::Fantasy];
 
 #[derive(Default)]
 pub struct Party {
     members: Vec<Character>,
     editing_index: Option<usize>,
+
     reload_assets: bool,
+    old_theme_choice: Option<ThemeChoice>,
+    theme_choice: ThemeChoice,
 }
 
 impl Party {
-    pub fn take_reload_assets(&mut self) -> bool {
-        let result = self.reload_assets;
-        self.reload_assets = false;
-        result
+    pub fn check_context_changes<R: Renderer>(&mut self, context: &mut Context, renderer: &mut R) {
+        if let Some(old_choice) = self.old_theme_choice.take() {
+            if let Some(path) = old_choice.path() {
+                context.remove_theme_file(path);
+            }
+
+            if let Some(path) = self.theme_choice.path() {
+                context.add_theme_file(path);
+            }
+        }
+
+        if self.reload_assets {
+            context.rebuild(renderer).unwrap();
+            self.reload_assets = false;
+        }
     }
 }
 
@@ -118,9 +161,17 @@ pub fn build_ui(ui: &mut Frame, party: &mut Party) {
         bench::report("draw"),
     ));
 
-    if ui.child("reload").clicked {
-        party.reload_assets = true;
-    }
+    ui.start("theme_panel").children(|ui| {
+        if ui.child("reload").clicked {
+            party.reload_assets = true;
+        }
+
+        if let Some(choice) = ui.combo_box("theme_choice", "theme_choice", party.theme_choice, &THEME_CHOICES) {
+            party.old_theme_choice = Some(party.theme_choice);
+            party.theme_choice = *choice;
+            party.reload_assets = true;
+        }
+    });
 
     ui.start("party_window")
     .window("party_window")

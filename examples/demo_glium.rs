@@ -38,8 +38,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     context_builder.register_theme_from_files(
         &[
             Path::new("examples/data/theme-base.yml"),
-            Path::new("examples/data/theme-fantasy.yml"),
             Path::new("examples/data/theme-demo.yml"),
+            // note we dynamically add to this list later if the user selects a new theme
         ],
         serde_yaml::from_str::<serde_yaml::Value>
     )?;
@@ -55,9 +55,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Event::MainEventsCleared => {
             let frame_start = std::time::Instant::now();
 
-            if party.take_reload_assets() {
-                context.rebuild(&mut renderer).unwrap();
-            }
+            party.check_context_changes(&mut context, &mut renderer);
 
             let mut target = display.draw();
             target.clear_color(0.0, 0.0, 0.0, 0.0);

@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::path::{Path, PathBuf};
 use std::time::Instant;
 
 use crate::{Error, Point, Frame, Rect, frame::{RendGroup, RendGroupDef}};
@@ -394,6 +395,28 @@ impl Context {
     pub(crate) fn set_mouse_pos(&mut self, pos: Point) {
         let mut internal = self.internal.borrow_mut();
         internal.mouse_pos = pos;
+    }
+
+    /// Adds the specified path as a source file for the resources being used
+    /// by the theme for this context.  This will only work if the theme was
+    /// set up to read source data from files, i.e. using
+    /// [`ContextBuilder#register_theme_from_files`](struct.ContextBuilder.html#method.register_theme_from_files)
+    /// This does not rebuild the theme; you will
+    /// need to call [`rebuild`](#method.rebuild) for that.
+    pub fn add_theme_file<P: Into<PathBuf>>(&mut self, path: P) {
+        let path = path.into();
+        let mut internal = self.internal.borrow_mut();
+        internal.resources.add_theme_file(path);
+    }
+
+    /// Removes the theme source file with the specified path from the resources
+    /// being used by the theme for this context, if it is present.  If it is not
+    /// present, does nothing.  This does not rebuild the theme; you will
+    /// need to call [`rebuild`](#method.rebuild) for that.
+    pub fn remove_theme_file<P: Into<PathBuf>>(&mut self, path: P) {
+        let path: &Path = &path.into();
+        let mut internal = self.internal.borrow_mut();
+        internal.resources.remove_theme_file(path);
     }
 
     /// Rebuilds this context, reloading all asset data.  Notably, files on disk

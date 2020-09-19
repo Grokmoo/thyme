@@ -99,6 +99,20 @@ impl ResourceSet {
         self.images.push((id, ImageSource { data: Some((data, width, height)), file: None }));
     }
 
+    pub(crate) fn remove_theme_file(&mut self, path: &Path) {
+        if let Some(theme) = self.theme.files.as_mut() {
+            theme.paths.retain(|p| p != path);
+            self.theme.data = None;
+        }
+    }
+
+    pub(crate) fn add_theme_file(&mut self, path: PathBuf) {
+        if let Some(theme) = self.theme.files.as_mut() {
+            theme.paths.push(path);
+            self.theme.data = None;
+        }
+    }
+
     /// Builds all assets and registers them with the renderer.  You must make sure all asset
     /// data is cached with [`cache_data`](#method.cache_assets) prior to calling this.
     pub(crate) fn build_assets<R: Renderer>(&mut self, renderer: &mut R, scale_factor: f32) -> Result<ThemeSet, Error> {
