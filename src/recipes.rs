@@ -279,7 +279,8 @@ impl Frame {
     The text input will grab keyboard focus when the user clicks on it, allowing
     the user to type text.  The return value will be `None` if the text didn't change
     this frame, or will contain the current text displayed by the textbox if it did
-    change.
+    change.  Optionally, pass an initial_value which will set the field's text if it
+    is not already set.
 
     An example YAML theme definition:
     ```yaml
@@ -298,12 +299,12 @@ impl Frame {
           background: gui/caret
     ```
     **/
-    pub fn input_field(&mut self, theme: &str, id: &str) -> Option<String> {
+    pub fn input_field(&mut self, theme: &str, id: &str, initial_value: Option<String>) -> Option<String> {
         let mut text_out = None;
 
         self.modify(id, |state| {
             if state.text.is_none() {
-                state.text = Some(String::new());
+                state.text = Some(initial_value.unwrap_or_default());
             }
 
             let mut text_changed = false;
