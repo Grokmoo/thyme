@@ -300,16 +300,10 @@ fn stats_panel(ui: &mut Frame, character: &mut Character) {
         .children(|ui| {
             ui.label("label", format!("{:?}", stat));
 
-            let clicked = ui.start("decrease").enabled(*value > MIN_STAT).finish().clicked;
-            if clicked {
-                *value -= 1;
-            }
-
-            ui.label("value", format!("{}", *value));
-            
-            let clicked = ui.start("increase").enabled(points_available > 0 && *value < MAX_STAT).finish().clicked;
-            if clicked {
-                *value = 18.min(*value + 1);
+            match ui.spinner("spinner", *value, MIN_STAT, if points_available == 0 { *value } else { MAX_STAT }) {
+                1 => *value += 1,
+                -1 => *value -= 1,
+                _ => (),
             }
         }); 
     }

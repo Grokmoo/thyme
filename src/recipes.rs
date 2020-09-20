@@ -152,6 +152,55 @@ impl Frame {
         new_value
     }
 
+    /**
+    A spinner, used to select a numeric value.  The spinner includes a label, a button to increase the value,
+    and a button to decrease the value.  If the decrease button is clicked, returns -1, while if
+    the increase button is clicked, returns 1.  Otherwise, returns 0.  The buttons will be enabled
+    based on comparing the `value` with `min` and `max` to determine if the value can increase or decrease.
+
+    An example theme definition:
+    ```yaml
+    spinner:
+      size: [80, 20]
+      layout: Horizontal
+      layout_spacing: [5, 5]
+      child_align: Left
+      children:
+        decrease:
+          from: button
+          text: "-"
+          background: gui/small_button
+          size: [20, 20]
+        value:
+          from: label
+          size: [30, 0]
+          font: medium
+          width_from: Normal
+        increase:
+          from: button
+          text: "+"
+          background: gui/small_button
+          size: [20, 20]
+    ```
+    **/
+    pub fn spinner<T: PartialOrd + Display>(&mut self, theme: &str, value: T, min: T, max: T) -> i32 {
+        let mut delta = 0;
+
+        self.start(theme).children(|ui| {
+            if ui.start("decrease").enabled(value > min).finish().clicked {
+                delta = -1;
+            }
+
+            ui.label("value", value.to_string());
+
+            if ui.start("increase").enabled(value < max).finish().clicked {
+                delta = 1;
+            }
+        });
+
+        delta
+    }
+
     // TODO tree
 
     // TODO menubar

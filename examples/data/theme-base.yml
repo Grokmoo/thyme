@@ -313,6 +313,27 @@ widgets:
     text_align: Center
     size: [150, 24]
     border: { all: 5 }
+  spinner:
+    size: [80, 20]
+    layout: Horizontal
+    layout_spacing: [5, 5]
+    child_align: Left
+    children:
+      decrease:
+        from: button
+        text: "-"
+        background: gui/small_button
+        size: [20, 20]
+      value:
+        from: label
+        size: [30, 0]
+        font: medium
+        width_from: Normal
+      increase:
+        from: button
+        text: "+"
+        background: gui/small_button
+        size: [20, 20]
   window:
     background: gui/window_bg
     wants_mouse: true
