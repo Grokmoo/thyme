@@ -437,7 +437,8 @@ impl Context {
     /// Checks the internal live reload thread to see if any file notifications have occurred
     /// since the last check.  If so, will fully rebuild the theme.  If any errors are encountered
     /// in the process of rebuilding the theme, will return the `Err` and no changes are made to
-    /// the current theme.
+    /// the current theme.  Note that if you built the context with live reload disabled
+    /// (see [`BuildOptions`](struct.BuildOptions.html)), this function will do nothing.
     pub fn check_live_reload<R: Renderer>(&mut self, renderer: &mut R) -> Result<(), Error> {
         let mut internal = self.internal.borrow_mut();
         let scale_factor = internal.scale_factor;

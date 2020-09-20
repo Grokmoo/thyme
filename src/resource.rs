@@ -3,7 +3,7 @@ use std::io::Read;
 use std::time::Duration;
 use std::path::{Path, PathBuf};
 use std::collections::HashMap;
-use std::sync::{atomic::{AtomicBool, Ordering}, mpsc::channel};
+use std::sync::{atomic::{AtomicBool, Ordering}, mpsc::{Receiver, channel}};
 
 use erased_serde::Deserializer;
 use notify::{Watcher, RecommendedWatcher, RecursiveMode, watcher, DebouncedEvent};
@@ -48,40 +48,24 @@ pub(crate) struct ResourceSet {
 }
 
 impl ResourceSet {
-    pub(crate) fn new() -> ResourceSet {
+    pub(crate) fn new(enable_live_reload: bool) -> ResourceSet {
         let (tx, rx) = channel();
 
-        let watcher = match watcher(tx, Duration::from_secs(2)) {
-            Err(e) => {
-                log::error!("Unable to initialize file watching for live-reload:");
-                log::error!("{}", e);
-                None
-            }, Ok(watcher) => Some(watcher),
+        let watcher = if enable_live_reload {
+            match watcher(tx, Duration::from_secs(1)) {
+                Err(e) => {
+                    log::error!("Unable to initialize file watching for live-reload:");
+                    log::error!("{}", e);
+                    None
+                }, Ok(watcher) => Some(watcher),
+            }
+        } else {
+            None
         };
 
-        std::thread::spawn(move || {
-            loop {
-                match rx.recv() {
-                    Ok(event) => {
-                        use DebouncedEvent::*;
-                        match event {
-                            Create(..) | Write(..) | Remove(..) | Rename(..) | Chmod(..) | Rescan => (),
-                            NoticeWrite(..) | NoticeRemove(..) => {
-                                log::info!("Received file notification: {:?}", event);
-                                RELOAD_THEME.store(true, Ordering::Release);
-                            },
-                            Error(error, path) => {
-                                log::warn!("Received file notification error for path {:?}", path);
-                                log::warn!("{}", error);
-                            }
-                        }
-                    },
-                    Err(e) => {
-                       log::info!("Disconnected live-reload watcher: {}", e);
-                    }
-                }
-            }
-        });
+        if watcher.is_some() {
+            std::thread::spawn(move || watcher_loop(rx) );
+        }
 
         ResourceSet {
             images: Vec::new(),
@@ -365,5 +349,29 @@ impl ResourceSet {
         }
 
         Ok(output)
+    }
+}
+
+fn watcher_loop(rx: Receiver<DebouncedEvent>) {
+    loop {
+        match rx.recv() {
+            Ok(event) => {
+                use DebouncedEvent::*;
+                match event {
+                    NoticeWrite(..) | NoticeRemove(..) | Chmod(..) | Rescan => (),
+                    Create(..) | Write(..) | Remove(..) | Rename(..) => {
+                        log::info!("Received file notification: {:?}", event);
+                        RELOAD_THEME.store(true, Ordering::Release);
+                    },
+                    Error(error, path) => {
+                        log::warn!("Received file notification error for path {:?}", path);
+                        log::warn!("{}", error);
+                    }
+                }
+            },
+            Err(e) => {
+               log::info!("Disconnected live-reload watcher: {}", e);
+            }
+        }
     }
 }

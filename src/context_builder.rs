@@ -5,24 +5,43 @@ use crate::{resource::ResourceSet};
 use crate::theme_definition::{ThemeDefinition};
 use crate::render::{Renderer, IO};
 
+/// Global options that may be specified when building the Thyme context with
+/// [`ContextBuilder`](struct.ContextBuilder.html).  These options
+/// cannot be changed afterwards.
+pub struct BuildOptions {
+    /// Whether to enable background file monitoring for live reload.  Note that
+    /// to actually make use of this feature, you will need to call
+    /// [`check_live_reload`](struct.Context.html#method.check_live_reload), typically
+    /// once between each frame.  The default value is `true`.
+    pub enable_live_reload: bool,
+}
+
+impl Default for BuildOptions {
+    fn default() -> Self {
+        Self {
+            enable_live_reload: true,
+        }
+    }
+}
+
 /// Structure to register resources and ultimately build the main Thyme [`Context`](struct.Context.html).
 ///
-/// This will hold references to your chosen [`Renderer`](trait.Renderer.html) and [`IO`](trait.IO.html).
 /// You pass resources to it to register them with Thyme.  Once this process is complete, call
 /// [`build`](struct.ContextBuilder.html#method.build) to create your [`Context`](struct.Context.html).
-pub struct ContextBuilder<'a, R: Renderer, I: IO> {
-    renderer: &'a mut R,
-    io: &'a mut I,
+pub struct ContextBuilder {
     resources: ResourceSet,
 }
 
-impl<'a, R: Renderer, I: IO> ContextBuilder<'a, R, I> {
-    /// Creates a new `ContextBuilder`, from the specified [`Renderer`](trait.Renderer.html) and [`IO`](trait.IO.html).
-    pub fn new(renderer: &'a mut R, io: &'a mut I) -> ContextBuilder<'a, R, I> {
+impl ContextBuilder {
+    /// Creates a new `ContextBuilder`, using the default [`BuildOptions`](struct.BuildOptions.html)
+    pub fn with_defaults() -> ContextBuilder {
+        ContextBuilder::new(BuildOptions::default())
+    }
+
+    /// Creates a new `ContextBuilder`, using the specified [`BuildOptions`](struct.BuildOptions.html)
+    pub fn new(options: BuildOptions) -> ContextBuilder {
         ContextBuilder {
-            renderer,
-            io,
-            resources: ResourceSet::new(),
+            resources: ResourceSet::new(options.enable_live_reload),
         }
     }
 
@@ -31,7 +50,7 @@ impl<'a, R: Renderer, I: IO> ContextBuilder<'a, R, I> {
     /// [`serde_yaml Value`](https://docs.serde.rs/serde_yaml/enum.Value.html).  See [`the crate root`](index.html) for a
     /// discussion of the theme format.  If this method is called multiple times, only the last
     /// theme is used
-    pub fn register_theme<T: serde::Deserializer<'a>>(&mut self, theme: T) -> Result<(), T::Error> {
+    pub fn register_theme<'a, T: serde::Deserializer<'a>>(&mut self, theme: T) -> Result<(), T::Error> {
         log::debug!("Registering theme");
         
         let theme_def: ThemeDefinition = serde::Deserialize::deserialize(theme)?;
@@ -132,15 +151,15 @@ impl<'a, R: Renderer, I: IO> ContextBuilder<'a, R, I> {
         self.resources.register_image_from_data(id, data, dimensions.0, dimensions.1);
     }
 
-    /// Consumes this builder and releases the borrows on the [`Renderer`](trait.Renderer.html) and [`IO`](trait.IO.html), so they can
-    /// be used further.  Builds a [`Context`](struct.Context.html).
-    pub fn build(mut self) -> Result<Context, Error> {
+    /// Consumes this builder and releases the borrows on the [`Renderer`](trait.Renderer.html) and [`IO`](trait.IO.html),
+    /// so they can be used further.  Builds a [`Context`](struct.Context.html).
+    pub fn build<R: Renderer, I: IO>(mut self, renderer: &mut R, io: &mut I) -> Result<Context, Error> {
         log::info!("Building Thyme Context");
-        let scale_factor = self.io.scale_factor();
-        let display_size = self.io.display_size();
+        let scale_factor = io.scale_factor();
+        let display_size = io.display_size();
 
         self.resources.cache_data()?;
-        let themes = self.resources.build_assets(self.renderer, scale_factor)?;
+        let themes = self.resources.build_assets(renderer, scale_factor)?;
         Ok(Context::new(self.resources, themes, display_size, scale_factor))
     }
 }

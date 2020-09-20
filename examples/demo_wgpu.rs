@@ -35,7 +35,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // create thyme backend
     let mut io = thyme::WinitIo::new(&events_loop, window_size.into());
     let mut renderer = thyme::WgpuRenderer::new(std::rc::Rc::clone(&device), std::rc::Rc::clone(&queue));
-    let mut context_builder = thyme::ContextBuilder::new(&mut renderer, &mut io);
+    let mut context_builder = thyme::ContextBuilder::with_defaults();
 
     // register resources in thyme by reading from files.  this enables live reload.
     context_builder.register_theme_from_files(
@@ -50,7 +50,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     context_builder.register_texture_from_file("fantasy", Path::new("examples/data/images/gui-fantasy.png"));
     context_builder.register_texture_from_file("transparent", Path::new("examples/data/images/gui-transparent.png"));
     context_builder.register_font_from_file("roboto", Path::new("examples/data/fonts/Roboto-Medium.ttf"));
-    let mut context = context_builder.build()?;
+    let mut context = context_builder.build(&mut renderer, &mut io)?;
 
     let mut party = demo::Party::default();
 
