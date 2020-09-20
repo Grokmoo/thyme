@@ -232,7 +232,7 @@ impl Frame {
           size: [20, 30]
     ```
     **/
-    pub fn combo_box<'a, T: Display>(&mut self, theme: &str, id: &str, current: T, values: &'a [T]) -> Option<&'a T> {
+    pub fn combo_box<'a, T: Display>(&mut self, theme: &str, id: &str, current: &T, values: &'a [T]) -> Option<&'a T> {
         let popup_id = format!("{}_popup", id);
         
         let mut rect = Rect::default();

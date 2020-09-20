@@ -174,7 +174,7 @@ pub fn build_ui(ui: &mut Frame, party: &mut Party) {
             party.reload_assets = true;
         }
 
-        if let Some(choice) = ui.combo_box("theme_choice", "theme_choice", party.theme_choice, &THEME_CHOICES) {
+        if let Some(choice) = ui.combo_box("theme_choice", "theme_choice", &party.theme_choice, &THEME_CHOICES) {
             party.old_theme_choice = Some(party.theme_choice);
             party.theme_choice = *choice;
             party.reload_assets = true;
@@ -212,7 +212,7 @@ pub fn build_ui(ui: &mut Frame, party: &mut Party) {
 
                 ui.gap(10.0);
 
-                if let Some(race) = ui.combo_box("race_selector", "race_selector", character.race, Race::all()) {
+                if let Some(race) = ui.combo_box("race_selector", "race_selector", &character.race, Race::all()) {
                     character.race = *race;
                 }
     
