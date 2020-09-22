@@ -41,6 +41,7 @@ pub struct Party {
     members: Vec<Character>,
     editing_index: Option<usize>,
 
+    live_reload_disabled: bool,
     reload_assets: bool,
     old_theme_choice: Option<ThemeChoice>,
     theme_choice: ThemeChoice,
@@ -63,7 +64,7 @@ impl Party {
                 log::error!("Unable to rebuild theme: {}", e);
             }
             self.reload_assets = false;
-        } else {
+        } else if !self.live_reload_disabled {
             if let Err(e) = context.check_live_reload(renderer) {
                 log::error!("Unable to live reload theme: {}", e);
             }
@@ -170,8 +171,8 @@ pub fn build_ui(ui: &mut Frame, party: &mut Party) {
     ));
 
     ui.start("theme_panel").children(|ui| {
-        if ui.child("reload").clicked {
-            party.reload_assets = true;
+        if ui.start("live_reload").active(!party.live_reload_disabled).finish().clicked {
+            party.live_reload_disabled = !party.live_reload_disabled;
         }
 
         if let Some(choice) = ui.combo_box("theme_choice", "theme_choice", &party.theme_choice, &THEME_CHOICES) {

@@ -70,6 +70,15 @@ image_sets:
           Hover: small_button_hover
           Pressed: small_button_pressed
           Disabled: small_button_disabled
+      small_button_no_active:
+        states:
+          Normal: small_button_normal
+          Hover: small_button_hover
+          Pressed: small_button_pressed
+          Disabled: small_button_disabled
+          Active: small_button_normal
+          Active + Hover: small_button_hover
+          Active + Pressed: small_button_pressed
       small_button:
         states:
           Normal: small_button_normal
@@ -149,6 +158,21 @@ image_sets:
       arrow_up:
         position: [36, 109]
         size: [12, 12]
+      check_normal:
+        position: [12, 104]
+        size: [12, 12]
+      check_active:
+        position: [12, 116]
+        size: [12, 12]
+      check:
+        states:
+          Normal: check_normal
+          Hover: check_normal
+          Pressed: check_normal
+          Disabled: check_normal
+          Active: check_active
+          Active + Hover: check_active
+          Active + Pressed: check_active
       slider_horizontal:
         position: [0, 97]
         grid_size_horiz: [5, 4]
@@ -314,6 +338,10 @@ widgets:
     wants_mouse: true
     background: gui/window_handle
     size: [12, 12]
+  check_button:
+    from: button
+    background: gui/small_button_no_active
+    foreground: gui/check
   button:
     font: small
     wants_mouse: true

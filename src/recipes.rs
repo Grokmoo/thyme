@@ -219,22 +219,22 @@ impl Frame {
           size: [12, 12]
           align: Right
           foreground: gui/arrow_down
-    combo_box_popup:
-      from: scrollpane
-      width_from: Parent
-      height_from: Normal
-      size: [0, 75]
-      background: gui/small_button_normal
-      children:
-        content:
-          size: [-15, 0]
+        combo_box_popup:
+          from: scrollpane
+          width_from: Parent
+          height_from: Normal
+          size: [10, 75]
+          background: gui/small_button_normal
           children:
-            entry:
-              from: button
-              width_from: Parent
-              size: [0, 25]
-        scrollbar_vertical:
-          size: [20, 30]
+            content:
+              size: [-18, -10]
+              children:
+                entry:
+                  from: button
+                  width_from: Parent
+                  size: [0, 25]
+            scrollbar_vertical:
+              size: [20, 20]
     ```
     **/
     pub fn combo_box<'a, T: Display>(&mut self, theme: &str, id: &str, current: &T, values: &'a [T]) -> Option<&'a T> {

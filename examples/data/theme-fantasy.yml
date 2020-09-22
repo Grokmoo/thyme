@@ -77,6 +77,15 @@ image_sets:
           Active: small_button_active
           Active + Hover: small_button_active
           Active + Pressed: small_button_pressed
+      small_button_no_active:
+        states:
+          Normal: small_button_normal
+          Hover: small_button_hover
+          Pressed: small_button_pressed
+          Disabled: small_button_disabled
+          Active: small_button_normal
+          Active + Hover: small_button_hover
+          Active + Pressed: small_button_pressed
       small_button_flash:
         states:
           Normal: small_button_normal_flash
@@ -147,6 +156,21 @@ image_sets:
       arrow_up:
         position: [72, 218]
         size: [24, 24]
+      check_normal:
+        position: [24, 208]
+        size: [24, 24]
+      check_active:
+        position: [24, 232]
+        size: [24, 24]
+      check:
+        states:
+          Normal: check_normal
+          Hover: check_normal
+          Pressed: check_normal
+          Disabled: check_normal
+          Active: check_active
+          Active + Hover: check_active
+          Active + Pressed: check_active
       slider_horizontal:
         position: [0, 196]
         grid_size_horiz: [10, 8]

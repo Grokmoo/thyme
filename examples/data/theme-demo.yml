@@ -8,10 +8,10 @@ widgets:
     layout: Horizontal
     layout_spacing: [5, 5]
     children:
-      reload:
-        from: button
+      live_reload:
+        from: check_button
         size: [125, 25]
-        text: "Reload All Assets"
+        text: "Live Reload"
       theme_choice:
         from: combo_box
         size_from: [Normal, Parent]
