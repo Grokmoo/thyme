@@ -57,6 +57,9 @@ reload.  This strikes a balance, enabling very fast iteration on layout and appe
 This flexibility does come at a cost, of course - There is quite a bit of overhead in getting started compared to similar libraries.  Once you get up and
 running, though, the overhead is fairly minor.  Performance is also very good and should be at least on-par with other immediate mode GUIs.
 
+Thyme comes with a library of widgets similar to most UI libraries.  However, Thyme's widgets are written entirely using the public API, so the 
+[`source`](src/recipes.rs) for these can serve as examples and templates for your own custom widgets.
+
 It is also written from scratch in 100% Rust!
 
 ## License
