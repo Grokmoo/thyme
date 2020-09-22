@@ -253,7 +253,7 @@ impl Frame {
             .unclip()
             .unparent()
             .new_render_group()
-            .scrollpane("cb_popup_content")
+            .scrollpane(&format!("{}_content", popup_id))
             .children(|ui| {
                 for value in values {
                     if ui.button("entry", value.to_string()).clicked {
