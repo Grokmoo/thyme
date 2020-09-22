@@ -225,6 +225,17 @@ will interpret `main_window_titlebar` into the equivalent of this:
         size: [25, 25]
 ```
 
+### Custom fields
+You may optionally specify custom values in the `custom_floats` mapping of the theme.  This allows more specialized widgets to
+obtain neccessary parameters from the theme itself, rather than relying on another external source.
+
+```yaml
+  tree:
+    custom_floats:
+      collapsed_width: 0.0
+      collapsed_height: 34.0
+```
+
 ### Widget Attributes
 Each widget theme has many optional attributes that may be defined in the theme file, UI building source code, or both.  Source code
 methods on [`WidgetBuilder`](struct.WidgetBuilder.html) will take precedence over items defined in the theme file.  The

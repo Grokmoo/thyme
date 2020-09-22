@@ -81,6 +81,9 @@ pub struct WidgetThemeDefinition {
     pub layout_spacing: Option<Point>,
 
     #[serde(default)]
+    pub custom_floats: HashMap<String, f32>,
+
+    #[serde(default)]
     pub children: HashMap<String, WidgetThemeDefinition>,
 }
 

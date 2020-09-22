@@ -219,15 +219,19 @@ pub fn build_ui(ui: &mut Frame, party: &mut Party) {
     
                 ui.gap(10.0);
     
-                ui.start("stats_panel")
-                .children(|ui| {
+                ui.tree("stats_panel", "stats_panel",
+                |ui| {
+                    ui.child("title");
+                },|ui| {
                     stats_panel(ui, character);
                 });
                 
                 ui.gap(10.0);
     
-                ui.start("inventory_panel")
-                .children(|ui| {
+                ui.tree("inventory_panel", "inventory_panel",
+                |ui| {
+                    ui.child("title");
+                }, |ui| {
                     inventory_panel(ui, character);
                 });
             });
@@ -279,9 +283,6 @@ fn set_active_character(ui: &mut Frame, character: &Character) {
 fn stats_panel(ui: &mut Frame, character: &mut Character) {
     let points_used: u32 = character.stats.values().sum();
     let points_available: u32 = STAT_POINTS - points_used;
-
-    ui.child("title");
-
     let frac = ((ui.cur_time_millis() - ui.base_time_millis("stat_roll")) as f32 / 1000.0).min(1.0);
 
     let roll = ui.start("roll_button")
@@ -332,7 +333,6 @@ fn item_picker(ui: &mut Frame, character: &mut Character) {
 }
 
 fn inventory_panel(ui: &mut Frame, character: &mut Character) {
-    ui.child("title");
     ui.start("top_panel")
     .children(|ui| {
         if ui.child("buy").clicked {

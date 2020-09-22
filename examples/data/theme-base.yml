@@ -405,3 +405,25 @@ widgets:
         from: window_handle
         align: BotRight
         pos: [-2, 0]
+  tree:
+    width_from: Parent
+    border: { all: 5 }
+    background: gui/window_bg
+    custom_floats:
+      collapsed_width: 0
+      collapsed_height: 34
+    children:
+      expand:
+        from: button
+        align: TopLeft
+        pos: [0, 0]
+        text: "+"
+        text_align: Center
+        size: [24, 24]
+      collapse:
+        from: button
+        align: TopLeft
+        pos: [0, 0]
+        text: "-"
+        text_align: Center
+        size: [24, 24]

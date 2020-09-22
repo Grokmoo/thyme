@@ -12,6 +12,7 @@ use crate::render::Renderer;
 #[derive(Copy, Clone)]
 pub(crate) struct PersistentStateData {
     pub is_open: bool,
+    pub expanded: bool,
     pub resize: Point,
     pub moved: Point,
     pub scroll: Point,
@@ -28,6 +29,9 @@ pub(crate) struct PersistentStateData {
 pub struct PersistentState {
     /// Whether the widget will be shown.  Defaults to true.
     pub is_open: bool,
+
+    /// Whether a tree or similar widget is expanded, showing all children, or not
+    pub expanded: bool,
 
     /// An amount, in logical pixels that the widget has been resized by.  Default to zero.
     pub resize: Point,
@@ -55,6 +59,7 @@ impl PersistentState {
     pub(crate) fn copy_data(&self) -> PersistentStateData {
         PersistentStateData {
             is_open: self.is_open,
+            expanded: self.expanded,
             resize: self.resize,
             moved: self.moved,
             scroll: self.scroll,
@@ -66,6 +71,7 @@ impl Default for PersistentState {
     fn default() -> Self {
         PersistentState {
             is_open: true,
+            expanded: true,
             resize: Point::default(),
             moved: Point::default(),
             scroll: Point::default(),

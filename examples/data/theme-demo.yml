@@ -73,11 +73,10 @@ widgets:
         text_align: Center
         font: medium
   subpanel:
+    from: tree
     background: gui/small_button_normal
-    width_from: Parent
     layout: Vertical
     layout_spacing: [5, 5]
-    border: { all: 5 }
     children:
       title:
         from: label

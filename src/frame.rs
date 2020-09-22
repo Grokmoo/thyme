@@ -360,6 +360,19 @@ impl Frame {
         context.state(id).text.clone()
     }
 
+    /// Returns whether the widget with the specified `id` is expanded in its [`PersistentState`](struct.PersistentState.html).
+    /// Trees and similar widgets will not show their entire content if not expanded
+    pub fn is_expanded(&self, id: &str) -> bool {
+        let context = self.context.internal().borrow();
+        context.state(id).expanded
+    }
+
+    /// Sets the expanded value for the given widget to `expanded`.  See [`is_expanded`](#method.is_expanded)
+    pub fn set_expanded<T: Into<String>>(&mut self, id: T, expanded: bool) {
+        let mut context = self.context.internal().borrow_mut();
+        context.state_mut(id).expanded = expanded;
+    }
+
     /// Returns whether the widget with the specified `id` is open in its [`PersistentState`](struct.PersistentState.html).
     /// If not open, widgets are not visible.
     pub fn is_open(&self, id: &str) -> bool {
@@ -439,6 +452,18 @@ impl Frame {
     pub fn modify<T: Into<String>, F: FnOnce(&mut PersistentState)>(&mut self, id: T, f: F) {
         let mut context = self.context.internal().borrow_mut();
         (f)(context.state_mut(id));
+    }
+
+    /// Queries the theme for the specified custom float, in the `custom_floats` field for the
+    /// theme with the specified `key`.  Returns the `default_value` if the theme or key cannot
+    /// be found.
+    pub fn custom_float(&self, theme_id: &str, key: &str, default_value: f32) -> f32 {
+        let context = self.context_internal().borrow();
+
+        match context.themes().theme(theme_id) {
+            None => default_value,
+            Some(theme) => *theme.custom_floats.get(key).unwrap_or(&0.0),
+        }
     }
 
     pub(crate) fn push_widget(&mut self, mut widget: Widget) {
