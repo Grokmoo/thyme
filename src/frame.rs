@@ -479,11 +479,11 @@ impl Frame {
 
         let mut render_groups = self.render_groups;
         render_groups.sort_by_key(|group| {
-            if group.group == top_rend_group { 0 } else { 1 }
+            if group.group == top_rend_group { 1 } else { 0 }
         });
 
         let mut mouse_in_rend_group = None;
-        for rend_group in &render_groups {
+        for rend_group in render_groups.iter().rev() {
             if rend_group.rect.is_inside(mouse_pos) {
                 mouse_in_rend_group = Some(rend_group.group);
                 break;

@@ -214,6 +214,11 @@ impl Frame {
     ```yaml
     combo_box:
       from: button
+      children:
+        expand:
+          size: [12, 12]
+          align: Right
+          foreground: gui/arrow_down
     combo_box_popup:
       from: scrollpane
       width_from: Parent
@@ -234,35 +239,35 @@ impl Frame {
     **/
     pub fn combo_box<'a, T: Display>(&mut self, theme: &str, id: &str, current: &T, values: &'a [T]) -> Option<&'a T> {
         let popup_id = format!("{}_popup", id);
-        
-        let mut rect = Rect::default();
 
-        if self.start(theme)
+        let mut result = None;
+        let open_result = self.start(theme)
         .text(current.to_string())
         .wants_mouse(true)
-        .trigger_layout(&mut rect)
-        .finish().clicked {
+        .children(|ui| {
+            ui.child("expand");
+
+            ui.start("combo_box_popup")
+            .id(&popup_id)
+            .initially_open(false)
+            .unclip()
+            .unparent()
+            .new_render_group()
+            .scrollpane("cb_popup_content")
+            .children(|ui| {
+                for value in values {
+                    if ui.button("entry", value.to_string()).clicked {
+                        result = Some(value);
+                        ui.close(&popup_id);
+                    }
+                }
+            });
+
+        });
+        if open_result.clicked {
             self.open_modal(&popup_id);
             self.close_modal_on_click_outside();
         }
-
-        let mut result = None;
-
-        self.start(&format!("{}_popup", id))
-        .id(&popup_id)
-        .screen_pos(rect.pos.x, rect.pos.y + rect.size.y)
-        .initially_open(false)
-        .unclip()
-        .new_render_group()
-        .scrollpane("cb_popup_content")
-        .children(|ui| {
-            for value in values {
-                if ui.button("entry", value.to_string()).clicked {
-                    result = Some(value);
-                    ui.close(&popup_id);
-                }
-            }
-        });
 
         result
     }

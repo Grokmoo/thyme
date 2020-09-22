@@ -189,33 +189,41 @@ widgets:
         size: [15, 15]
   combo_box:
     from: button
-  combo_box_popup:
-    from: scrollpane
-    width_from: Parent
-    height_from: Normal
-    size: [0, 75]
-    background: gui/small_button_normal
     children:
-      content:
-        size: [-15, 0]
+      expand:
+        size: [12, 12]
+        align: Right
+        foreground: gui/arrow_down
+      combo_box_popup:
+        from: scrollpane
+        width_from: Parent
+        height_from: Normal
+        size: [10, 75]
+        pos: [-5, 18]
+        background: gui/small_button_normal
         children:
-          entry:
-            from: button
-            width_from: Parent
-            size: [0, 25]
-      scrollbar_vertical:
-        size: [20, 30]
+          content:
+            size: [-18, -10]
+            pos: [0, 5]
+            children:
+              entry:
+                from: button
+                width_from: Parent
+                size: [0, 25]
+          scrollbar_vertical:
+            size: [20, 20]
   scrollpane:
     width_from: Parent
     height_from: Parent
-    border: { bot: 5, left: 0, right: 5, top: 0 }
     children:
       content:
+        border: { all: 2 }
         height_from: Parent
         width_from: Parent
         align: TopLeft
         layout: Vertical
-        size: [-15, -15]
+        size: [-18, -20]
+        pos: [0, 0]
         child_align: TopLeft
       scrollbar_horizontal:
         from: scrollbar_horizontal
@@ -227,8 +235,8 @@ widgets:
     size: [20, 20]
     border: { all: 4 }
   scrollbar_horizontal:
-    size: [10, 20]
-    pos: [-5, -5]
+    size: [0, 20]
+    pos: [0, 0]
     align: BotLeft
     width_from: Parent
     children:
@@ -247,8 +255,8 @@ widgets:
         align: Left
         border: { all: 4 }
   scrollbar_vertical:
-    size: [20, 10]
-    pos: [-5, -5]
+    size: [20, 0]
+    pos: [0, 0]
     align: TopRight
     height_from: Parent
     children:

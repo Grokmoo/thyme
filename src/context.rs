@@ -156,7 +156,7 @@ impl ContextInternal {
     }
 
     pub(crate) fn check_set_rend_group_top(&mut self, groups: &[RendGroupDef]) {
-        let id = match self.check_set_top_rend_group.take() {
+        let id = match &self.check_set_top_rend_group {
             None => return,
             Some(id) => id,
         };
@@ -164,6 +164,7 @@ impl ContextInternal {
         for group in groups {
             if group.id() == id {
                 self.top_rend_group = group.group();
+                self.check_set_top_rend_group = None;
                 break;
             }
         }

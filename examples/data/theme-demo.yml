@@ -16,10 +16,6 @@ widgets:
         from: combo_box
         size_from: [Normal, Parent]
         size: [120, 0]
-      theme_choice_popup:
-        from: combo_box_popup
-        size_from: [Normal, Normal]
-        size: [120, 60]
   bench:
     from: label
     background: gui/small_button_normal
@@ -95,8 +91,6 @@ widgets:
     from: combo_box
     width_from: Parent
     size: [0, 25]
-  race_selector_popup:
-    from: combo_box_popup
   stats_panel:
     from: subpanel
     size: [0, 305]
