@@ -87,6 +87,14 @@ impl<'a> WindowBuilder<'a> {
         self
     }
 
+    /// Specify a title to show in the window's titlebar, if it is present.  If the
+    /// titlebar is not present, does nothing.  This will override any text set in the theme.
+    #[must_use]
+    pub fn title<T: Into<String>>(mut self, title: T) -> WindowBuilder<'a> {
+        self.state.title = Some(title.into());
+        self
+    }
+
     /// Specifies whether the created window should have a close button.
     #[must_use]
     pub fn with_close_button(mut self, with_close_button: bool) -> WindowBuilder<'a> {
@@ -126,8 +134,12 @@ impl<'a> WindowBuilder<'a> {
             let drag_move = if state.with_titlebar {
                 let result = ui.start("titlebar")
                 .children(|ui| {
-                    ui.start("title").finish();
-
+                    if let Some(title) = state.title.as_ref() {
+                        ui.start("title").text(title).finish();
+                    } else {
+                        ui.start("title").finish();
+                    }
+                    
                     if state.with_close_button {
                         let clicked = ui.button("close", "").clicked;
 
@@ -169,6 +181,7 @@ struct WindowState {
     with_close_button: bool,
     moveable: bool,
     resizable: bool,
+    title: Option<String>,
 }
 
 impl Default for WindowState {
@@ -178,6 +191,7 @@ impl Default for WindowState {
             with_close_button: true,
             moveable: true,
             resizable: true,
+            title: None,
         }
     }
 }
