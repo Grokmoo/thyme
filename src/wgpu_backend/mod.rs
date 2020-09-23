@@ -207,7 +207,7 @@ impl WgpuRenderer {
         self.groups.clear();
 
         // render all widget groups to buffers
-        for render_group in render_groups.into_iter() {
+        for render_group in render_groups.into_iter().rev() {
             let mut draw_mode = None;
             self.draw_list.clear();
 

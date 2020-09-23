@@ -471,6 +471,7 @@ fn merge_from(
     if to.child_align.is_none() { to.child_align = from.child_align; }
     if to.layout.is_none() { to.layout = from.layout; }
     if to.layout_spacing.is_none() { to.layout_spacing = from.layout_spacing; }
+    if to.text.is_none() { to.text = from.text.clone(); }
 
     for (id, value) in from.custom_floats.iter() {
         match to.custom_floats.entry(id.to_string()) {

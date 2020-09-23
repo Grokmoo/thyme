@@ -106,7 +106,7 @@ impl GliumRenderer {
         let scale = context.scale_factor();
         self.matrix = view_matrix(display_pos, display_size);
 
-        for render_group in render_groups.into_iter() {
+        for render_group in render_groups.into_iter().rev() {
             let mut draw_mode = None;
             self.draw_list.clear();
 

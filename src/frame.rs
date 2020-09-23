@@ -448,10 +448,11 @@ impl Frame {
     /// Gets a mutable reference to the [`PersistentState`](struct.PersistentState.html) associated with
     /// the `id`, and calls the passed in closure, `f`, allowing you to modify it in arbitrary ways.  This
     /// is more efficient than calling several individual methods in a row, such as [`open`](#method.open),
-    /// [`scroll`](#method.scroll), etc.
-    pub fn modify<T: Into<String>, F: FnOnce(&mut PersistentState)>(&mut self, id: T, f: F) {
+    /// [`scroll`](#method.scroll), etc.  The return value of the passed in function is passed through
+    /// this method, allowing you to use it for queries as well.
+    pub fn modify<T: Into<String>, Ret, F: FnOnce(&mut PersistentState) -> Ret>(&mut self, id: T, f: F) -> Ret{
         let mut context = self.context.internal().borrow_mut();
-        (f)(context.state_mut(id));
+        (f)(context.state_mut(id))
     }
 
     /// Queries the theme for the specified custom float, in the `custom_floats` field for the

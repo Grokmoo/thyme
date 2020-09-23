@@ -923,7 +923,11 @@ impl<'a> WidgetBuilder<'a> {
                 self_bounds.size.y += this_children_max_bounds.size.y + border;
 
                 self.frame.widget_mut(widget_index).size.y += this_children_max_bounds.size.y + border;
-                self.frame.rebound_cur_render_group(self_bounds);
+
+                if self.data.next_render_group {
+                    // if we just created the render group, rebound it
+                    self.frame.rebound_cur_render_group(self_bounds);
+                }
             }
 
             if self.data.width_from == WidthRelative::Children {
@@ -931,7 +935,11 @@ impl<'a> WidgetBuilder<'a> {
                 self_bounds.size.x += this_children_max_bounds.size.x + border;
 
                 self.frame.widget_mut(widget_index).size.x += this_children_max_bounds.size.x + border;
-                self.frame.rebound_cur_render_group(self_bounds);
+                
+                if self.data.next_render_group {
+                    // if we just created the render group, rebound it
+                    self.frame.rebound_cur_render_group(self_bounds);
+                }
             }
         }
 
