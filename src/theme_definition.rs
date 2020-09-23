@@ -474,6 +474,11 @@ pub enum WidthRelative {
     /// Width is equal to the `x` field of the widget's `size`.
     Normal,
 
+    /// Width is sized so that the widget's inner width just encompasses all child widgets, plus the `x` field
+    /// of the widget's `size`.  Note that any children of this Widget should not use `Parent` width if this
+    /// is used.
+    Children,
+
     /// Width is equal to the parent widget's inner width plus the `x` field of the widget's `size`.
     Parent,
 }
@@ -491,6 +496,11 @@ pub enum HeightRelative {
 
     /// Height is equal to the parent widget's inner height plus the `y` field of the widget's `size`.
     Parent,
+
+    /// Height is sized so that the widget's inner height just encompasses all child widgets, plus the `y` field
+    /// of the widget's `size`.  Note that any children of this Widget should not use `Parent` height if this
+    /// is used.
+    Children,
 
     /// Height is equal to the line height of the widget's font plus the `y` field of the widget's `size`.
     FontLine,

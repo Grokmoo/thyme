@@ -493,6 +493,10 @@ impl Frame {
         self.cur_rend_group = cur_rend_group;
     }
 
+    pub(crate) fn rebound_cur_render_group(&mut self, bounds: Rect) {
+        self.render_groups[self.cur_rend_group.index as usize].rect = bounds;
+    }
+
     pub(crate) fn finish_frame(self) -> (Context, Vec<Widget>, Vec<RendGroupDef>) {
         let (top_rend_group, mouse_pos) = {
             let mut context = self.context.internal().borrow_mut();

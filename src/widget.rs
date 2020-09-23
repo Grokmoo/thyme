@@ -226,10 +226,12 @@ fn size(
     height_from: HeightRelative,
 ) -> Point {
     let x = match width_from {
+        WidthRelative::Children => size.x, // this will be added to after children are layed out
         WidthRelative::Normal => size.x,
         WidthRelative::Parent => size.x + parent.size.x - parent.border.horizontal(),
     };
     let y = match height_from {
+        HeightRelative::Children => size.y, // this will be added to after children are layed out
         HeightRelative::Normal => size.y,
         HeightRelative::Parent => size.y + parent.size.y - parent.border.vertical(),
         HeightRelative::FontLine => size.y + font.map_or(0.0,
@@ -878,7 +880,7 @@ impl<'a> WidgetBuilder<'a> {
 
         let self_pos = self.widget.pos;
         let self_size = self.widget.size;
-        let self_bounds = Rect::new(self_pos, self_size);
+        let mut self_bounds = Rect::new(self_pos, self_size);
         let old_max_child_bounds = self.frame.max_child_bounds();
 
         // set modal tree value only if a match is found
@@ -914,6 +916,23 @@ impl<'a> WidgetBuilder<'a> {
             self.frame.set_parent_index(old_parent_index);
             let this_children_max_bounds = self.frame.max_child_bounds();
             self.frame.set_parent_max_child_bounds(this_children_max_bounds);
+
+            // adjust widget size if needed for Child relative size
+            if self.data.height_from == HeightRelative::Children {
+                let border = self.frame.widget(widget_index).border().bot;
+                self_bounds.size.y += this_children_max_bounds.size.y + border;
+
+                self.frame.widget_mut(widget_index).size.y += this_children_max_bounds.size.y + border;
+                self.frame.rebound_cur_render_group(self_bounds);
+            }
+
+            if self.data.width_from == WidthRelative::Children {
+                let border = self.frame.widget(widget_index).border().right;
+                self_bounds.size.x += this_children_max_bounds.size.x + border;
+
+                self.frame.widget_mut(widget_index).size.x += this_children_max_bounds.size.x + border;
+                self.frame.rebound_cur_render_group(self_bounds);
+            }
         }
 
         if !self.data.unparent {

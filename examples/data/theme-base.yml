@@ -219,7 +219,7 @@ widgets:
         align: Right
         foreground: gui/arrow_down
       combo_box_popup:
-        from: scrollpane
+        from: scrollpane_vertical
         width_from: Parent
         height_from: Normal
         size: [10, 75]
@@ -234,8 +234,14 @@ widgets:
                 from: button
                 width_from: Parent
                 size: [0, 25]
-          scrollbar_vertical:
-            size: [20, 20]
+  scrollpane_vertical:
+    from: scrollpane
+    children:
+      content:
+        size: [-18, 0]
+      scrollbar_vertical:
+        from: scrollbar_vertical
+        size: [20, 20]
   scrollpane:
     width_from: Parent
     height_from: Parent
@@ -375,7 +381,7 @@ widgets:
     wants_mouse: true
     layout: Vertical
     layout_spacing: [5, 5]
-    border: { left: 5, right: 5, top: 33, bot: 5 }
+    border: { left: 5, right: 5, top: 29, bot: 5 }
     size: [300, 400]
     child_align: Top
     children:
@@ -383,7 +389,7 @@ widgets:
         wants_mouse: true
         background: gui/small_button
         size: [10, 30]
-        pos: [-6, -34]
+        pos: [-6, -30]
         border: { all: 5 }
         width_from: Parent
         child_align: Center
@@ -406,12 +412,9 @@ widgets:
         align: BotRight
         pos: [-2, 0]
   tree:
-    width_from: Parent
+    size_from: [Parent, Children]
     border: { all: 5 }
     background: gui/window_bg
-    custom_floats:
-      collapsed_width: 0
-      collapsed_height: 34
     children:
       expand:
         from: button
@@ -419,11 +422,11 @@ widgets:
         pos: [0, 0]
         text: "+"
         text_align: Center
-        size: [24, 24]
+        size: [20, 20]
       collapse:
         from: button
         align: TopLeft
         pos: [0, 0]
         text: "-"
         text_align: Center
-        size: [24, 24]
+        size: [20, 20]

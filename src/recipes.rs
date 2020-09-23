@@ -203,18 +203,14 @@ impl Frame {
 
     /**
     A tree widget.  Depending on its internal `expanded` state (see [`struct.Frame.html#method.is_expanded`]), this
-    widget will either show both its `title` and `children` widgets, or just its `title` widgets.  The `collapsed_width`
-    and `collapsed_height` [`custom_float`](struct.Frame.html#method.custom_float) custom fields are used to specify the
-    size when the widget is collapsed.
+    widget will either show both its `title` and `children` widgets, or just its `title` widgets.  It is intended that
+    you use [`height_from`](struct.WidgetBuilder.html#method.height_from) with [`Children`](enum.HeightRelative.html).
 
     ```yaml
     tree:
-      width_from: Parent
+      size_from: [Parent, Children]
       border: { all: 5 }
       background: gui/window_bg
-      custom_floats:
-        collapsed_width: 0
-        collapsed_height: 34
       children:
         expand:
           from: button
@@ -234,29 +230,16 @@ impl Frame {
     **/
     pub fn tree<F: FnOnce(&mut Frame), G: FnOnce(&mut Frame)>(&mut self, theme: &str, id: &str, title: F, children: G) {
         let expanded = self.is_expanded(id);
-        let size = if !expanded {
-            let w = self.custom_float(theme, "collapsed_width", 0.0);
-            let h = self.custom_float(theme, "collapsed_height", 0.0);
-            Some((w, h))
-        } else {
-            None
-        };
 
-        let mut builder = self.start(theme);
-        if let Some((w, h)) = size {
-            builder = builder.size(w, h);
-        }
+        self.start(theme).children(|ui| {
+            (title)(ui);
 
-        builder.children(|ui| {
+            if expanded {
+                if ui.child("collapse").clicked {
+                    ui.set_expanded(id, false);
+                }
 
-        (title)(ui);
-
-        if expanded {
-            if ui.child("collapse").clicked {
-                ui.set_expanded(id, false);
-            }
-
-            (children)(ui);
+                (children)(ui);
             } else if ui.child("expand").clicked {
                 ui.set_expanded(id, true);
             }

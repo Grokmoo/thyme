@@ -298,8 +298,10 @@ fn stats_panel(ui: &mut Frame, character: &mut Character) {
     for stat in Stat::iter() {
         let value = character.stats.entry(stat).or_insert(10);
 
-        ui.start("stat_panel")
-        .children(|ui| {
+        ui.tree(
+        "stat_panel",
+        &format!("stat_panel_{:?}", stat),
+        |ui| {
             ui.label("label", format!("{:?}", stat));
 
             match ui.spinner("spinner", *value, MIN_STAT, if points_available == 0 { *value } else { MAX_STAT }) {
@@ -307,7 +309,9 @@ fn stats_panel(ui: &mut Frame, character: &mut Character) {
                 -1 => *value -= 1,
                 _ => (),
             }
-        }); 
+        }, |ui| {
+            ui.child("description");
+        });
     }
 
     ui.label("points_available", format!("Points Remaining: {}", points_available));

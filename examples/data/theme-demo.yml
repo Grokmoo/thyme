@@ -92,7 +92,6 @@ widgets:
     size: [0, 25]
   stats_panel:
     from: subpanel
-    size: [0, 305]
     children:
       title:
         text: Stats
@@ -108,17 +107,17 @@ widgets:
         from: label
         text_align: Right
       stat_panel:
-        size: [0, 30]
-        width_from: Parent
+        from: tree
+        background: gui/small_button_normal
         layout: Horizontal
         layout_spacing: [5, 5]
-        child_align: Left
+        child_align: TopLeft
         children:
           label:
             from: label
-            size: [90, 0]
+            size: [110, 20]
             text_align: Right
-            width_from: Normal
+            size_from: [Normal, Normal]
           decrease:
             from: button
             text: "-"
@@ -134,6 +133,13 @@ widgets:
             text: "+"
             background: gui/small_button
             size: [20, 20]
+          description:
+            from: label
+            text_align: Left
+            size_from: [Parent, Normal]
+            size: [0, 40]
+            pos: [0, 20]
+            text: "This is a detailed description of the Stat."
   item_picker:
     from: window
     align: Center
@@ -159,7 +165,6 @@ widgets:
             from: label
   inventory_panel:
     from: subpanel
-    size: [0, 200]
     children:
       title:
         text: Items
@@ -179,10 +184,11 @@ widgets:
             width_from: Normal
       items_panel:
         from: items_panel
-        size: [0, -40]
   items_panel:
-    from: scrollpane
+    from: scrollpane_vertical
     layout: Vertical
+    height_from: Normal
+    size: [0, 100]
     children:
       content:
         children:
