@@ -19,6 +19,7 @@ pub struct SubImage {
 
 #[derive(Clone)]
 enum ImageKind {
+    Empty,
     Collected {
         sub_images: Vec<SubImage>,
     },
@@ -67,6 +68,15 @@ pub struct Image {
 }
 
 impl Image {
+    pub(crate) fn create_empty() -> Image {
+        Image {
+            texture: TextureHandle::default(),
+            color: Color::white(),
+            kind: ImageKind::Empty,
+            base_size: Point::default(),
+        }
+    }
+
     pub fn texture(&self) -> TextureHandle { self.texture }
 
     pub fn base_size(&self) -> Point { self.base_size }
@@ -77,6 +87,7 @@ impl Image {
         params: ImageDrawParams,
     ) {
         match &self.kind {
+            ImageKind::Empty => (),
             ImageKind::Collected { sub_images } => {
                 for sub_image in sub_images {
                     let image = &sub_image.image;

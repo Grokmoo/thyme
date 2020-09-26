@@ -266,6 +266,10 @@ will interpret `main_window_titlebar` into the equivalent of this:
         size: [25, 25]
 ```
 
+### Overriding images
+`background` and `foreground` image attributes may be overridden as normal.  If you want to remove this attribute, you can use
+the special ID `empty`, which draws nothing.
+
 ### Widget Attributes
 Each widget theme has many optional attributes that may be defined in the theme file, UI building source code, or both.  Source code
 methods on [`WidgetBuilder`](struct.WidgetBuilder.html) will take precedence over items defined in the theme file.  The

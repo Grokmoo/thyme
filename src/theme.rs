@@ -104,6 +104,9 @@ impl ThemeSet {
             image_handles.insert(id, handle);
         }
 
+        image_handles.insert("empty".to_string(), ImageHandle { id: images_out.len() });
+        images_out.push(Image::create_empty());
+
         // build the set of themes
         let mut theme_handles = HashMap::new();
         let mut themes = Vec::new();
