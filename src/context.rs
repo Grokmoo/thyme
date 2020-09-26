@@ -18,13 +18,26 @@ pub(crate) struct PersistentStateData {
     pub scroll: Point,
 }
 
-/// The internal state stored by Thyme for a given Widget that
-/// persists between frames.
-///
-/// Note that Thyme will generally be able to automatically generate
-/// unique IDs for many widgets such as buttons.  But, if you want to
-/// access this data for a particular widget you will need to specify
-/// a known ID for that widget.
+/**
+The internal state stored by Thyme for a given Widget that
+persists between frames.
+
+Note that Thyme will generally be able to automatically generate
+unique IDs for many widgets such as buttons.  But, if you want to
+access this data for a particular widget you will need to specify
+a known ID for that widget.
+
+# Example
+```
+fn reset_window_state(ui: &mut Frame, window_id: &str) {
+    ui.modify(window_id, |state| {
+        state.resize = Point::default();
+        state.moved = Point::default();
+        state.is_open = true;
+    });
+}
+```
+*/
 #[derive(Debug)]
 pub struct PersistentState {
     /// Whether the widget will be shown.  Defaults to true.

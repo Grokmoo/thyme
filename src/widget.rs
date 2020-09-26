@@ -165,8 +165,25 @@ impl Widget {
     }
 }
 
-/// The current state of a widget on this frame, this is returned when you finish
-/// most widgets, such as with a call to [`WidgetBuilder.finish`](struct.WidgetBuilder.html#method.finish).
+/**
+The current state of a widget on this frame, this is returned when you finish
+most widgets, such as with a call to [`WidgetBuilder.finish`](struct.WidgetBuilder.html#method.finish).
+
+# Example
+```
+fn create_button(ui: &mut Frame) {
+    let result = ui.button("button", "Click me!");
+
+    if result.clicked {
+        println!("Button clicked!");
+    }
+
+    if result.hover {
+        ui.tooltip("tooltip", "This is a clickable button");
+    }
+}
+```
+*/
 pub struct WidgetState {
     /// Whether this widget was drawn.  In general, if a widget is not visible, any children
     /// were not created and closures, such as passed to [`WidgetBuilder.children`](struct.WidgetBuilder.html#method.children)

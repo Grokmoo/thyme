@@ -24,7 +24,9 @@ The adapter registers image and font data as textures, and renders each frame.
 
 This renderer is implemented fairly naively at present and there is definitely room for optimization.
 However, it is nonetheless already quite fast.
-**/
+
+See the thyme examples for how to setup and use this renderer.
+*/
 pub struct WgpuRenderer {
     device: Rc<Device>,
     queue: Rc<Queue>,

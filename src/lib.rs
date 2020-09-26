@@ -17,6 +17,46 @@ the renderer and then individual fonts for use in your UI are defined in the the
 Widgets themselves can be defined fully in source code, with only some basic templates in the theme file, or
 you can largely leave only logic in the source, with layout, alignment, etc defined in the theme file.
 
+# Example
+
+A quick snippet showing how the UI code looks:
+```
+// This method would be called in your main loop.  Each frame, you would call
+// `create_frame` on your context and the typically pass it into a function
+// like this one to construct the UI.
+fn create_ui(ui: &mut Frame) {
+    // all widgets need a theme, which is the first argument to widget builder methods
+    ui.label("label", "My Title");
+
+    // when a widget has children, the "ui" object is passed through a closure.
+    // All of the widget types such as window, scrollpane, etc are built using
+    // the Public API - meaning you can build your own custom versions if you wish.
+    ui.window("data_window", |ui| {
+      ui.label("label", "Data Points");
+
+      // many widgets return state data.  Here, clicked will only
+      // return true on the frame the button was clicked
+      if ui.button("button", "Calculate").clicked {
+        // do some expensive calculation
+      }
+    });
+
+    // You can either specify layout and alignment in the theme, or directly in code.
+    // If you specify your theme as a file read from disk (see the demo examples), you
+    // can tweak these aspects live using Thyme's built in live-reload.
+
+    // Here, we hardcode some layout
+    ui.child("custom_widget")
+    .align(Align::BotRight)
+    .layout(Layout::Vertical)
+    .children(|ui| {
+      for i in 1..10 {
+        ui.label("label", format!("Row #{}", i));
+      }
+    });
+}
+```
+
 # Overview
 
 In general, you first create the [`ContextBuilder`](struct.ContextBuilder.html) and register resources with it.

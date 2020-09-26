@@ -12,7 +12,19 @@ Once you are finished setting up the scrollpane, you call [`children`](#method.c
 content and add the widget to the frame.  Note that the children are added to the scrollpane's content, *not* directly to
 the scrollpane itself.
 
-## Theme definition
+# Example
+```
+fn build_scrollpane(ui: &mut Frame, unique_id: &str) {
+    ui.start("scrollpane")
+    .scrollpane(unique_id)
+    .show_horizontal_scrollbar(ShowElement::Never)
+    .children(|ui| {
+        // scrollable UI here
+    })
+}
+```
+
+# Theme definition
 An example of a theme definition for a scrollpane:
 
 ```yaml
@@ -78,7 +90,7 @@ An example of a theme definition for a scrollpane:
         align: Top
         border: { all: 4 }
 ```
-**/
+*/
 pub struct ScrollpaneBuilder<'a> {
     builder: WidgetBuilder<'a>,
     state: ScrollpaneState,

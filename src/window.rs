@@ -14,7 +14,20 @@ There is also a [`window method on Frame`](struct.Frame.html#method.window) as a
 Once you are finished setting up the window, you call [`children`](#method.children) to add children and add the widget
 to the frame.
 
-## Theme definition
+# Example
+```
+fn create_window(ui: &mut Frame, unique_id: &str) {
+    ui.start("window")
+    .window(unique_id)
+    .title("My Window")
+    .resizable(false)
+    .children(|ui| {
+        // window content here
+    });
+}
+```
+
+# Theme definition
 An example of a theme definition for a window:
 
 ```yaml
@@ -56,8 +69,7 @@ An example of a theme definition for a window:
         align: BotRight
         pos: [-1, -1]
 ```
-
-**/
+*/
 pub struct WindowBuilder<'a> {
     builder: WidgetBuilder<'a>,
     state: WindowState,

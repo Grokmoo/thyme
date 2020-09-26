@@ -20,17 +20,13 @@ use crate::{Frame, Point, Color, Rect};
 /// After the UI has been built, the [`Frame`](struct.Frame.html) should be passed to the renderer
 /// for drawing.
 ///
-/// This adapter is written with overall performance in mind and is fairly fast, able to render fairly complex
-/// UIs consisting of many widgets and text in less than 1 ms on moderately powerful GPUs.
-///
 /// Fonts are prerendered to a texture on the GPU, based on the ttf
 /// font data and the theme specified size.
 ///
 /// Data is structured to minimize number of draw calls, with one to three draw calls per render group
 /// (created with [`WidgetBuilder.new_render_group`](struct.WidgetBuilder.html#method.new_render_group))
 /// being typical.  Unless you need UI groups where different widgets may overlap and change draw
-/// ordering frame-by-frame, a single render group will usually be enough for most frames
-/// of your UI.
+/// ordering frame-by-frame, a single render group will usually be enough for most of your UI.
 ///
 /// Widget clipping is handled using `glClipDistance`, again to minimize draw calls.  Since the data to send
 /// to the GPU is constructed each frame in the immediate mode UI model, the amount of data is minimized

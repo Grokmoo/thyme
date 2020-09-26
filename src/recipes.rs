@@ -2,10 +2,21 @@ use std::fmt::Display;
 
 use crate::{Align, Frame, Point, Rect, WidgetState};
 
-/// Specific widget builders and convenience methods
+// Specific widget builders and convenience methods
 impl Frame {
-    /// The simplest way to construct a child widget.  The widget has no special behavior in code at all.
-    /// It is defined entirely based on its `theme`.
+    /**
+    The simplest way to construct a child widget.  The widget has no special behavior in code at all.
+    It is defined entirely based on its `theme`.
+
+    # Example
+    ```
+    fn create_window(ui: &mut Frame) {
+        // the label can have its size, position, text, etc defined in-theme
+        ui.child("title_label");
+    }
+    ```
+    */
+    
     pub fn child(&mut self, theme: &str) -> WidgetState {
         self.start(theme).finish()
     }
@@ -39,7 +50,16 @@ impl Frame {
       size: [150, 24]
       border: { all: 5 }
     ```
-    **/
+
+    # Example
+    ```
+    fn test_button(ui: &mut Frame) {
+        if ui.button("button", "Click Me!").clicked {
+            println!("Hello world!");
+        }
+    }
+    ```
+    */
     pub fn button<T: Into<String>>(&mut self, theme: &str, label: T) -> WidgetState {
         self.start(theme).text(label).wants_mouse(true).finish()
     }
@@ -66,7 +86,7 @@ impl Frame {
           from: button
           size: [15, 15]
     ```
-    **/
+    */
     pub fn vertical_slider(&mut self, theme: &str, min: f32, max: f32, value: f32) -> Option<f32> {
         let mut inner = Rect::default();
         let mut new_value = None;
@@ -120,7 +140,16 @@ impl Frame {
           from: button
           size: [15, 15]
     ```
-    **/
+
+    # Example
+    ```
+    fn create_slider(ui: &mut Frame, value: &mut f32) {
+        if let Some(new_value) = ui.horizontal_slider("slider", 0.0, 1.0, *value) {
+            *value = new_value;
+        }
+    }
+    ```
+    */
     pub fn horizontal_slider(&mut self, theme: &str, min: f32, max: f32, value: f32) -> Option<f32> {
         let mut inner = Rect::default();
         let mut new_value = None;
@@ -182,7 +211,14 @@ impl Frame {
           background: gui/small_button
           size: [20, 20]
     ```
-    **/
+
+    # Example
+    ```
+    fn int_spinner(ui: &mut Frame, value: &mut i32) {
+        *value = ui.spinner("spinner", *value, 0, 10);
+    }
+    ```
+    */
     pub fn spinner<T: PartialOrd + Display>(&mut self, theme: &str, value: T, min: T, max: T) -> i32 {
         let mut delta = 0;
 
@@ -227,7 +263,18 @@ impl Frame {
           text_align: Center
           size: [24, 24]
     ```
-    **/
+
+    # Example
+    ```
+    fn create_tree(ui: &mut Frame, name: &str, description: &str) {
+        ui.tree("tree", "unique_id", |ui| {
+          ui.label("label", name);
+        }, |ui| {
+          ui.label("label", description);
+        });
+    }
+    ```
+    */
     pub fn tree<F: FnOnce(&mut Frame), G: FnOnce(&mut Frame)>(&mut self, theme: &str, id: &str, title: F, children: G) {
         let expanded = self.is_expanded(id);
 
@@ -279,7 +326,7 @@ impl Frame {
             scrollbar_vertical:
               size: [20, 20]
     ```
-    **/
+    */
     pub fn combo_box<'a, T: Display>(&mut self, theme: &str, id: &str, current: &T, values: &'a [T]) -> Option<&'a T> {
         let popup_id = format!("{}_popup", id);
 
@@ -346,7 +393,16 @@ impl Frame {
           height_from: Parent
           background: gui/caret
     ```
-    **/
+
+    # Example
+    ```
+    fn select_name(ui: &mut Frame, name: &mut String) {
+        if let Some(text) = ui.input_field("input_field", "unique_id", None) {
+            *name = text;
+        }
+    }
+    ```
+    */
     pub fn input_field(&mut self, theme: &str, id: &str, initial_value: Option<String>) -> Option<String> {
         let mut text_out = None;
 
@@ -442,13 +498,30 @@ impl Frame {
         .finish();
     }
 
-    /// A convenience method to create a window with the specified `theme`.  The `theme` is also
-    /// used for the window ID, which must be unique in your application. If this is not the case,
-    /// you should use the full [`WindowBuilder`](struct.WindowBuilder.html) form.
-    /// The specified closure is called to add `children` to the window.
-    /// The window will include a titlebar, close button, be moveable, and resizable.
-    /// See [`WindowBuilder`](struct.WindowBuilder.html) for more details and more
-    /// flexible window creation. 
+    /**
+    A convenience method to create a window with the specified `theme`.  The `theme` is also
+    used for the window ID, which must be unique in your application. If this is not the case,
+    you should use the full [`WindowBuilder`](struct.WindowBuilder.html) form.
+    The specified closure is called to add `children` to the window.
+    The window will include a titlebar, close button, be moveable, and resizable.
+    See [`WindowBuilder`](struct.WindowBuilder.html) for more details and more
+    flexible window creation. 
+
+    # Example
+    ```
+    struct Person {
+      name: String,
+      age: u32,
+    }
+
+    fn create_person_window(ui: &mut Frame, person: &Person) {
+        ui.window("person_window", |ui| {
+            ui.label("name_label", &person.name);
+            ui.label("age_label", person.age.to_string());
+        });
+    }
+    ```
+    */
     pub fn window<F: FnOnce(&mut Frame)>(&mut self, theme: &str, children: F) {
         self
         .start(theme)

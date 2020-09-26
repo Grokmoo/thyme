@@ -33,7 +33,16 @@ pub struct ContextBuilder {
 }
 
 impl ContextBuilder {
-    /// Creates a new `ContextBuilder`, using the default [`BuildOptions`](struct.BuildOptions.html)
+    /**
+    Creates a new `ContextBuilder`, using the default [`BuildOptions`](struct.BuildOptions.html)
+
+    # Example
+    ```no_run
+        let mut context_builder = thyme::ContextBuilder::with_defaults();
+        context_builder.register_theme(theme)?;
+        ...
+    ```
+    **/
     pub fn with_defaults() -> ContextBuilder {
         ContextBuilder::new(BuildOptions::default())
     }

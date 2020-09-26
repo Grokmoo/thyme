@@ -205,6 +205,33 @@ impl Frame {
         &mut self.widgets[index]
     }
 
+    /**
+    Starts creating a new child widget within the current parent, using the specified `theme`.
+    See [`the crate root`](index.html) for a discussion of the theme format.  This method
+    returns a [`WidgetBuilder`](struct.WidgetBuilder.html) which can be used for fully
+    customizing the new widget.
+
+    # Example
+    ```
+    fn create_ui(ui: &mut Frame) {
+        ui.start("cancel_button").finish();
+    }
+    ```
+
+    */
+    #[must_use]
+    pub fn start(&mut self, theme: &str) -> WidgetBuilder {
+        let parent = &self.widgets[self.parent_index];
+
+        let theme_id = if parent.theme_id().is_empty() {
+            theme.to_string()
+        } else {
+            format!("{}/{}", parent.theme_id(), theme)
+        };
+
+        WidgetBuilder::new(self, self.parent_index, theme_id, theme)
+    }
+
     // ui builder methods
 
     /// Returns the current window display size, in logical pixels.
@@ -228,6 +255,22 @@ impl Frame {
         Rect::new(pos, size)
     }
 
+    /// Sets the mouse cursor to the specified image with alignment.  If you are hiding the default
+    /// OS cursor, this should be called at least once every frame you want to show a cursor.  If it
+    /// is called multiple times, the last call will take effect.  The image will automatically inherit
+    /// `Normal` and `Pressed` animation states.  See `set_mouse_state` to override this behavior.
+    pub fn set_mouse_cursor(&mut self, image: &str, align: Align) {
+        let image = self.context.find_image(image);
+        self.mouse_cursor = image.map(|image| (image, align));
+    }
+
+    /// Manually set the Mouse cursor to the specified `state`.  This is used when
+    /// drawing the specified mouse cursor image.  The mouse will automatically inherit
+    /// `Normal` and `Pressed` states by default.  This overrides that behavior.
+    pub fn set_mouse_state(&mut self, state: AnimState) {
+        self.mouse_anim_state = state;
+    }
+
     /// Adds a gap between the previous widget and the next to be specified, subject
     /// to the current parent's layout requirement.
     pub fn gap(&mut self, gap: f32) {
@@ -247,44 +290,16 @@ impl Frame {
     /// This has nothing to do with the mouse cursor.
     pub fn cursor(&self) -> Point { self.widgets[self.parent_index].cursor() }
 
-    /// Starts creating a new child widget within the current parent, using the specified `theme`.
-    /// See [`the crate root`](index.html) for a discussion of the theme format.  This method
-    /// returns a [`WidgetBuilder`](struct.WidgetBuilder.html) which can be used for fully
-    /// customizing the new widget.
-    #[must_use]
-    pub fn start(&mut self, theme: &str) -> WidgetBuilder {
-        let parent = &self.widgets[self.parent_index];
-
-        let theme_id = if parent.theme_id().is_empty() {
-            theme.to_string()
-        } else {
-            format!("{}/{}", parent.theme_id(), theme)
-        };
-
-        WidgetBuilder::new(self, self.parent_index, theme_id, theme)
-    }
-
-    // internal state modifiers
-
-    /// Sets the mouse cursor to the specified image with alignment.  If you are hiding the default
-    /// OS cursor, this should be called at least once every frame you want to show a cursor.  If it
-    /// is called multiple times, the last call will take effect.  The image will automatically inherit
-    /// `Normal` and `Pressed` animation states.  See `set_mouse_state` to override this behavior.
-    pub fn set_mouse_cursor(&mut self, image: &str, align: Align) {
-        let image = self.context.find_image(image);
-        self.mouse_cursor = image.map(|image| (image, align));
-    }
-
-    /// Manually set the Mouse cursor to the specified `state`.  This is used when
-    /// drawing the specified mouse cursor image.  The mouse will automatically inherit
-    /// `Normal` and `Pressed` states by default.  This overrides that behavior.
-    pub fn set_mouse_state(&mut self, state: AnimState) {
-        self.mouse_anim_state = state;
-    }
-
     /// Causes Thyme to focus the keyboard on the widget with the specified `id`.  Keyboard
     /// events will subsequently be sent to this widget, if it exists.  Only
     /// one widget may have keyboard focus at a time.
+    /// # Example
+    /// ```
+    /// fn open_query_popup(ui: &mut Frame) {
+    ///     ui.open("query_popup");
+    ///     ui.focus_keyboard("query_popup_input_field");  
+    /// }
+    /// ```
     pub fn focus_keyboard<T: Into<String>>(&mut self, id: T) {
         let mut context = self.context.internal().borrow_mut();
         context.set_focus_keyboard(id.into());
@@ -302,9 +317,22 @@ impl Frame {
     /// final position and size.
     pub fn parent_max_child_bounds(&self) -> Rect { self.parent_max_child_bounds }
 
-    /// Returns the current internal time being used by Thyme.  This is useful
-    /// if you want to set a timer to start running based on the current frame,
-    /// using [`set_base_time_millis`](#method.set_base_time_millis).
+    /**
+    Returns the current internal time being used by Thyme.  This is useful
+    if you want to set a timer to start running based on the current frame,
+    using [`set_base_time_millis`](#method.set_base_time_millis).
+
+    # Example
+    ```
+    fn set_timer(ui: &mut Frame) {
+        // widget will reach its zero animation time in 10 seconds
+        let time = ui.cur_time_millis();
+        ui.set_base_time_millis("my_timer_widget", time + 10_000);
+    }
+    ```
+
+    */
+    
     pub fn cur_time_millis(&self) -> u32 {
         let context = self.context.internal().borrow();
         context.time_millis()

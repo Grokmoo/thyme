@@ -5,11 +5,33 @@ use crate::point::Point;
 use crate::context::Context;
 use crate::render::IO;
 
-/// A Thyme Input/Output adapter for [`winit`](https://github.com/rust-windowing/winit).
-///
-/// This adapter handles events from `winit` and sends them to the Thyme [`Context`](struct.Context.html).
-/// WindowEvents should be passed to this handler, assuming [`Context.wants_mouse`](struct.Context.html#method.wants_mouse)
-/// returns true for the given frame.
+/**
+A Thyme Input/Output adapter for [`winit`](https://github.com/rust-windowing/winit).
+
+This adapter handles events from `winit` and sends them to the Thyme [`Context`](struct.Context.html).
+WindowEvents should be passed to this handler, assuming [`Context.wants_mouse`](struct.Context.html#method.wants_mouse)
+returns true for the given frame.
+
+# Example
+```
+fn main_loop(event_loop: winit::EventLoop<()>, thyme: thyme::Context) {
+    event_loop.run(move |event, _, control_flow| match event {
+        Event::MainEventsCleared => {
+            // Renderer specific code here
+
+            let mut ui = context.create_frame();
+            // create UI here
+
+            // draw the frame and finish up rendering here
+        }
+        Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => *control_flow = ControlFlow::Exit,
+        event => {
+            io.handle_event(&mut context, &event);
+        }
+    })
+}
+```
+*/
 pub struct WinitIo {
     scale_factor: f32,
     display_size: Point,
