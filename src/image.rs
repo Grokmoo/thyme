@@ -92,8 +92,18 @@ impl Image {
                         params.pos[1] + params.size[1] + sub_image.pos.y
                     };
 
-                    let w = params.size[0] + sub_image.size.x;
-                    let h = params.size[1] + sub_image.size.y;
+                    let w = if sub_image.size.x > 0.0 {
+                        sub_image.size.x
+                    } else {
+                        params.size[0] + sub_image.size.x
+                    };
+
+                    let h = if sub_image.size.y > 0.0 {
+                        sub_image.size.y
+                    } else {
+                        params.size[1] + sub_image.size.y
+                    };
+
                     let clip = params.clip.min(Rect::new(Point::new(x, y), Point::new(w, h)));
 
                     let sub_params = ImageDrawParams {
@@ -264,8 +274,8 @@ impl Image {
 
                     images_out.push(SubImage {
                         image,
-                        pos: Point::new(sub_image_def.position[0] as f32, sub_image_def.position[1] as f32),
-                        size: Point::new(sub_image_def.size[0] as f32, sub_image_def.size[1] as f32),
+                        pos: Point::new(sub_image_def.position[0] as f32 * scale, sub_image_def.position[1] as f32 * scale),
+                        size: Point::new(sub_image_def.size[0] as f32 * scale, sub_image_def.size[1] as f32 * scale),
                     })
                 }
 

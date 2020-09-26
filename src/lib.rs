@@ -128,7 +128,8 @@ over an area.
 #### Collected Images
 Collected images allow you to define an image that consists of one or more sub images, fairly arbitrarily.  Each sub image includes
 the image it references, a position, and a size.  Both position and size may be positive or negative.  When drawing, the size of the
-sub image is calculated as the main size of the image being drawn plus the sub image size.  For the position, the calculation is similar
+sub image is calculated as the main size of the image being drawn plus the sub image size for a negative or zero component, while a
+positive component indicates to just use the sub image size directly.  For the position, the calculation is similar
 except that for each x and y position component, a negative position means to add the main image position plus main image size plus
 sub image position.  This allows you to offset sub-images with respect to any of the top, bottom, left, or right of the main image.
 
