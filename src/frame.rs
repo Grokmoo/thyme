@@ -313,7 +313,7 @@ impl Frame {
     }
 
     /// Returns a [`Rect`](struct.Rect.html) encompassing all children that have currently
-    /// been added to the parent widget, recursively.  This includes each widgets actual
+    /// been added to the parent widget, recursively.  This includes each widget's actual
     /// final position and size.
     pub fn parent_max_child_bounds(&self) -> Rect { self.parent_max_child_bounds }
 
@@ -340,7 +340,7 @@ impl Frame {
 
     /// Sets the base time of the [`PersistentState`](struct.PersistentState.html) for the widget with the
     /// specified `id` to the specified `time`.
-    /// This time should probably be based on something obtained from [`cur_time_millis`](#method.cur_time_millis).
+    /// This time should probably be based on something obtained from [`cur_time_millis`](#method.cur_time_millis)
     /// or [`base_time_millis`](#method.base_time_millis).  The base time of a widget is used to specify the
     /// zero time of an Timed images associated with that widget.
     pub fn set_base_time_millis<T: Into<String>>(&mut self, id: T, time: u32) {

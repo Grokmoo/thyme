@@ -238,7 +238,7 @@ impl Frame {
     }
 
     /**
-    A tree widget.  Depending on its internal `expanded` state (see [`struct.Frame.html#method.is_expanded`]), this
+    A tree widget.  Depending on its internal `expanded` state (see [`Frame.is_expanded`](struct.Frame.html#method.is_expanded), this
     widget will either show both its `title` and `children` widgets, or just its `title` widgets.  It is intended that
     you use [`height_from`](struct.WidgetBuilder.html#method.height_from) with [`Children`](enum.HeightRelative.html).
 

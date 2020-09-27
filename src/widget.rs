@@ -681,7 +681,7 @@ impl<'a> WidgetBuilder<'a> {
     }
 
     /// Removes all constraints from the widget's clip [`Rectangle`](struct.Rect.html).  This will
-    /// allow the widget to render outside of its parent's area.  See [`clip`](#method.clip)
+    /// allow the widget to render outside of its parent's area.  See [`clip`](#method.clip).
     #[must_use]
     pub fn unclip(mut self) -> WidgetBuilder<'a> {
         let display_size = self.frame.context_internal().borrow().display_size();
@@ -750,7 +750,7 @@ impl<'a> WidgetBuilder<'a> {
     /// Assuming these attributes are not changed after this is method is
     /// called, they will have their final values after this method returns.
     /// The inner size and position (size and position adjusted by the
-    /// [`Border`](struct.Border.html) are written to the passed in
+    /// [`Border`](struct.Border.html)) are written to the passed in
     /// [`Rect`](struct.Rect.html)
     #[must_use]
     pub fn trigger_layout_inner(mut self, rect: &mut Rect) -> WidgetBuilder<'a> {
@@ -826,7 +826,7 @@ impl<'a> WidgetBuilder<'a> {
     }
 
     /// Turns this builder into a WindowBuilder.  You should use all `WidgetBuilder` methods
-    /// before calling this method.  The window must still be completed with one of the
+    /// you need before calling this method.  The window must still be completed with one of the
     /// [`WindowBuilder`](struct.WindowBuilder.html) methods.  You must pass a unique `id` for each window
     /// created by your application.
     #[must_use]
@@ -835,7 +835,7 @@ impl<'a> WidgetBuilder<'a> {
     }
 
     /// Turns this builder into a [`ScrollpaneBuilder`](struct.ScrollpaneBuilder.html).  You should use all
-    /// `WidgetBuilder` methods before calling this method.  The scrollpane must still be completed
+    /// `WidgetBuilder` methods you need before calling this method.  The scrollpane must still be completed
     /// with one of the methods on [`ScrollpaneBuilder`](struct.ScrollpaneBuilder.html).  You must pass a unique
     /// `content_id` for the scrollpane's content.
     #[must_use]

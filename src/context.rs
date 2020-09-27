@@ -423,7 +423,7 @@ impl Context {
     /// set up to read source data from files, i.e. using
     /// [`ContextBuilder#register_theme_from_files`](struct.ContextBuilder.html#method.register_theme_from_files)
     /// This does not rebuild the theme; you will
-    /// need to call [`rebuild`](#method.rebuild) for that.
+    /// need to call [`rebuild_all`](#method.rebuild_all) for that.
     pub fn add_theme_file<P: Into<PathBuf>>(&mut self, path: P) {
         let path = path.into();
         let mut internal = self.internal.borrow_mut();
@@ -433,7 +433,7 @@ impl Context {
     /// Removes the theme source file with the specified path from the resources
     /// being used by the theme for this context, if it is present.  If it is not
     /// present, does nothing.  This does not rebuild the theme; you will
-    /// need to call [`rebuild`](#method.rebuild) for that.
+    /// need to call [`rebuild_all`](#method.rebuild_all) for that.
     pub fn remove_theme_file<P: Into<PathBuf>>(&mut self, path: P) {
         let path: &Path = &path.into();
         let mut internal = self.internal.borrow_mut();
