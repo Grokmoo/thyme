@@ -97,6 +97,16 @@ image_sets:
           Active: small_button_active
           Active + Hover: small_button_active
           Active + Pressed: small_button_pressed
+      scroll_button:
+        from: small_button
+      scrollbar_vertical:
+        from: empty
+      scrollbar_horizontal:
+        from: empty
+      slider_button:
+        from: small_button
+      frame:
+        from: small_button_normal
       close_icon_normal:
         position: [97, 66]
         size: [12, 12]
@@ -210,6 +220,7 @@ widgets:
         background: gui/slider_horizontal
       slider_button:
         from: button
+        background: gui/slider_button
         size: [15, 15]
   combo_box:
     from: button
@@ -261,14 +272,15 @@ widgets:
         from: scrollbar_vertical
   scroll_button:
     wants_mouse: true
-    background: gui/small_button
+    background: gui/scroll_button
     size: [20, 20]
     border: { all: 4 }
   scrollbar_horizontal:
-    size: [0, 20]
+    size: [-29, 20]
     pos: [0, 0]
     align: BotLeft
     width_from: Parent
+    background: gui/scrollbar_horizontal
     children:
       left:
         from: scroll_button
@@ -277,7 +289,7 @@ widgets:
       right:
         from: scroll_button
         align: Right
-        pos: [20, 0]
+        pos: [0, 0]
         foreground: gui/arrow_right
       scroll:
         wants_mouse: true
@@ -285,10 +297,11 @@ widgets:
         align: Left
         border: { all: 4 }
   scrollbar_vertical:
-    size: [20, 0]
+    size: [20, -20]
     pos: [0, 0]
     align: TopRight
     height_from: Parent
+    background: gui/scrollbar_vertical
     children:
       up:
         from: scroll_button
@@ -298,7 +311,7 @@ widgets:
         from: scroll_button
         align: Bot
         foreground: gui/arrow_down
-        pos: [0, 20]
+        pos: [0, 0]
       scroll:
         wants_mouse: true
         background: gui/small_button
@@ -340,10 +353,6 @@ widgets:
     border: { width: 5 }
     text_align: Center
     size_from: [Parent, FontLine]
-  window_handle:
-    wants_mouse: true
-    background: gui/window_handle
-    size: [12, 12]
   check_button:
     from: button
     background: gui/small_button_no_active
@@ -376,7 +385,7 @@ widgets:
         text: "+"
         background: gui/small_button
         size: [20, 20]
-  window:
+  window_base:
     background: gui/window_bg
     wants_mouse: true
     layout: Vertical
@@ -408,13 +417,17 @@ widgets:
             border: { all: 4 }
             align: TopRight
       handle:
-        from: window_handle
+        wants_mouse: true
+        background: gui/window_handle
+        size: [12, 12]
         align: BotRight
         pos: [-2, 0]
+  window:
+    from: window_base
   tree:
     size_from: [Parent, Children]
     border: { all: 5 }
-    background: gui/window_bg
+    background: gui/frame
     children:
       expand:
         from: button

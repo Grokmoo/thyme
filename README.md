@@ -65,7 +65,9 @@ It is also written from scratch in 100% Rust!
 ## License
 [License]: #license
 
-Licensed under Apache License, Version 2.0, ([LICENSE](LICENSE) or http://www.apache.org/licenses/LICENSE-2.0)
+Licensed under Apache License, Version 2.0, ([LICENSE](LICENSE) or http://www.apache.org/licenses/LICENSE-2.0).
+
+Note that some of the sample theme images are licensed under a Creative Commons license, see [attribution](examples/data/images/attribution.txt).
 
 ### License of contributions
 

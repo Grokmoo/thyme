@@ -1,0 +1,233 @@
+# Image definitions for "gui-golden.png" image.
+
+widgets:
+  window:
+    border: { left: 5, right: 5, top: 38, bot: 5 }
+    from: window_base
+    children:
+      titlebar:
+        pos: [-6, -38]
+        background: empty
+        children:
+          close:
+            background: gui/window_close
+            foreground: empty
+            size: [24, 32]
+            pos: [-8, -4]
+          title:
+            pos: [-4, 0]
+      handle:
+        pos: [-4, -4]
+image_sets:
+  gui:
+    source: golden
+    scale: 0.5
+    images:
+      window_bg:
+        sub_images:
+          window_bg_top:
+            position: [0, 0]
+            size: [-32, 68]
+          window_bg_main:
+            position: [0, 68]
+            size: [0, -68]
+      window_bg_top:
+        position: [0, 0]
+        grid_size_horiz: [32, 68]
+      window_bg_main:
+        position: [0, 72]
+        grid_size: [32, 32]
+      window_close_normal:
+        position: [112, 0]
+        size: [48, 64]
+      window_close_hover:
+        position: [112, 64]
+        size: [48, 64]
+      window_close_pressed:
+        position: [112, 128]
+        size: [48, 64]
+      window_close_disabled:
+        position: [112, 192]
+        size: [48, 64]
+      window_close:
+        states:
+          Normal: window_close_normal
+          Hover: window_close_hover
+          Pressed: window_close_pressed
+          Disabled: window_close_disabled
+      cursor_normal:
+        position: [0, 176]
+        size: [24, 32]
+      cursor_pressed:
+        position: [32, 176]
+        size: [24, 32]
+      cursor:
+        states:
+          Normal: cursor_normal
+          Hover: cursor_normal
+          Pressed: cursor_pressed
+      small_button_normal:
+        position: [168, 0]
+        grid_size: [24, 12]
+      small_button_hover:
+        position: [168, 36]
+        grid_size: [24, 12]
+      small_button_pressed:
+        position: [168, 72]
+        grid_size: [24, 12]
+      small_button_disabled:
+        position: [168, 108]
+        grid_size: [24, 12]
+      small_button_active:
+        position: [168, 144]
+        grid_size: [24, 12]
+      small_button_black:
+        position: [168, 180]
+        grid_size: [24, 12]
+      small_button_flash1:
+        position: [168, 216]
+        grid_size: [24, 12]
+      small_button_normal_flash:
+        frame_time_millis: 200
+        frames:
+          - small_button_hover
+          - small_button_flash1
+          - small_button_hover
+          - small_button_normal
+      input_field:
+        states:
+          Normal: small_button_black
+          Hover: small_button_hover
+          Pressed: small_button_pressed
+          Disabled: small_button_disabled
+      small_button:
+        states:
+          Normal: small_button_normal
+          Hover: small_button_hover
+          Pressed: small_button_pressed
+          Disabled: small_button_disabled
+          Active: small_button_active
+          Active + Hover: small_button_active
+          Active + Pressed: small_button_pressed
+      small_button_no_active:
+        states:
+          Normal: small_button_normal
+          Hover: small_button_hover
+          Pressed: small_button_pressed
+          Disabled: small_button_disabled
+          Active: small_button_normal
+          Active + Hover: small_button_hover
+          Active + Pressed: small_button_pressed
+      small_button_flash:
+        states:
+          Normal: small_button_normal_flash
+          Hover: small_button_hover
+          Pressed: small_button_pressed
+          Disabled: small_button_disabled
+          Active: small_button_active
+          Active + Hover: small_button_active
+          Active + Pressed: small_button_pressed
+      circle_button_normal:
+        position: [250, 140]
+        size: [30, 30]
+      circle_button_hover:
+        position: [280, 140]
+        size: [30, 30]
+      circle_button_pressed:
+        position: [310, 140]
+        size: [30, 30]
+      circle_button_disabled:
+        position: [340, 140]
+        size: [30, 30]
+      circle_button:
+        states:
+          Normal: circle_button_normal
+          Hover: circle_button_hover
+          Pressed: circle_button_pressed
+          Disabled: circle_button_disabled
+      scroll_button:
+        from: small_button
+      scrollbar_vertical:
+        position: [265, 188]
+        grid_size_vert: [12, 17]
+      scrollbar_horizontal:
+        position: [304, 240]
+        grid_size_horiz: [17, 12]
+      slider_button:
+        from: circle_button
+      frame:
+        from: window_bg_main
+      close_icon:
+        position: [0, 0]
+        size: [0, 0]
+      progress_bar:
+        position: [252, 0]
+        grid_size: [8, 8]
+      window_handle_normal:
+        position: [252, 36]
+        size: [24, 24]
+      window_handle_hover:
+        position: [252, 60]
+        size: [24, 24]
+      window_handle_pressed:
+        position: [252, 84]
+        size: [24, 24]
+      window_handle_disabled:
+        position: [252, 108]
+        size: [24, 24]
+      window_handle:
+        states:
+          Normal: window_handle_normal
+          Hover: window_handle_hover
+          Pressed: window_handle_pressed
+          Disabled: window_handle_disabled
+      caret_on:
+        position: [288, 0]
+        size: [4, 14]
+        fill: Stretch
+      caret_off:
+        position: [293, 0]
+        size: [4, 14]
+        fill: Stretch
+      caret:
+        frame_time_millis: 500
+        frames:
+          - caret_on
+          - caret_off
+      arrow_right:
+        position: [288, 24]
+        size: [24, 24]
+      arrow_left:
+        position: [324, 24]
+        size: [24, 24]
+      arrow_down:
+        position: [324, 60]
+        size: [24, 24]
+      arrow_up:
+        position: [288, 60]
+        size: [24, 24]
+      check_normal:
+        position: [288, 96]
+        size: [24, 24]
+      check_active:
+        position: [324, 96]
+        size: [24, 24]
+      check:
+        states:
+          Normal: check_normal
+          Hover: check_normal
+          Pressed: check_normal
+          Disabled: check_normal
+          Active: check_active
+          Active + Hover: check_active
+          Active + Pressed: check_active
+      slider_horizontal:
+        position: [252, 240]
+        grid_size_horiz: [17, 12]
+      slider_vertical:
+        position: [252, 188]
+        grid_size_vert: [12, 17]
+      greyed_out:
+        position: [301, 1]
+        size: [4, 4]
+        fill: Stretch

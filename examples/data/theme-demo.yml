@@ -74,7 +74,7 @@ widgets:
         font: medium
   subpanel:
     from: tree
-    background: gui/small_button_normal
+    background: gui/frame
     layout: Vertical
     layout_spacing: [5, 5]
     children:
@@ -108,7 +108,7 @@ widgets:
         text_align: Right
       stat_panel:
         from: tree
-        background: gui/small_button_normal
+        background: gui/frame
         layout: Horizontal
         layout_spacing: [5, 5]
         child_align: TopLeft

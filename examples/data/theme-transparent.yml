@@ -83,6 +83,16 @@ image_sets:
           Active: small_button_active
           Active + Hover: small_button_active
           Active + Pressed: small_button_pressed
+      scroll_button:
+        from: small_button
+      scrollbar_vertical:
+        from: empty
+      scrollbar_horizontal:
+        from: empty
+      slider_button:
+        from: small_button
+      frame:
+        from: small_button_normal
       close_icon_normal:
         position: [156, 84]
         size: [24, 24]

@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use winit::{event::{Event, WindowEvent}, event_loop::{EventLoop, ControlFlow}};
 use thyme::{Align, bench};
 
@@ -37,19 +35,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut renderer = thyme::WgpuRenderer::new(std::rc::Rc::clone(&device), std::rc::Rc::clone(&queue));
     let mut context_builder = thyme::ContextBuilder::with_defaults();
 
-    // register resources in thyme by reading from files.  this enables live reload.
-    context_builder.register_theme_from_files(
-        &[
-            Path::new("examples/data/theme-base.yml"),
-            Path::new("examples/data/theme-demo.yml"),
-            // note we dynamically add to this list later if the user selects a new theme
-        ],
-        serde_yaml::from_str::<serde_yaml::Value>
-    )?;
-    context_builder.register_texture_from_file("pixel", Path::new("examples/data/images/gui-pixel.png"));
-    context_builder.register_texture_from_file("fantasy", Path::new("examples/data/images/gui-fantasy.png"));
-    context_builder.register_texture_from_file("transparent", Path::new("examples/data/images/gui-transparent.png"));
-    context_builder.register_font_from_file("roboto", Path::new("examples/data/fonts/Roboto-Medium.ttf"));
+    demo::register_assets(&mut context_builder);
+
     let mut context = context_builder.build(&mut renderer, &mut io)?;
 
     let mut party = demo::Party::default();

@@ -2,17 +2,38 @@
 //! ui layout and logic.  `demo_glium.rs` and `demo_wgpu.rs` both use this file.
 //! This file contains example uses of many of Thyme's features.
 
+use std::path::Path;
 use std::collections::HashMap;
-use thyme::{Context, Frame, bench, ShowElement, Renderer};
+use thyme::{Context, ContextBuilder, Frame, bench, ShowElement, Renderer};
+
+pub fn register_assets(context_builder: &mut ContextBuilder) {
+    // register resources in thyme by reading from files.  this enables live reload.
+    context_builder.register_theme_from_files(
+        &[
+            Path::new("examples/data/theme-base.yml"),
+            Path::new("examples/data/theme-demo.yml"),
+            // note we dynamically add to this list later if the user selects a new theme
+        ],
+        serde_yaml::from_str::<serde_yaml::Value>
+    ).unwrap();
+    context_builder.register_texture_from_file("pixel", Path::new("examples/data/images/gui-pixel.png"));
+    context_builder.register_texture_from_file("fantasy", Path::new("examples/data/images/gui-fantasy.png"));
+    context_builder.register_texture_from_file("transparent", Path::new("examples/data/images/gui-transparent.png"));
+    context_builder.register_texture_from_file("golden", Path::new("examples/data/images/gui-golden.png"));
+    context_builder.register_font_from_file("roboto", Path::new("examples/data/fonts/Roboto-Medium.ttf"));
+}
 
 #[derive(Debug, Copy, Clone)]
 enum ThemeChoice {
     Pixels,
     Fantasy,
     Transparent,
+    Golden,
 }
 
-const THEME_CHOICES: [ThemeChoice; 3] = [ThemeChoice::Pixels, ThemeChoice::Fantasy, ThemeChoice::Transparent];
+const THEME_CHOICES: [ThemeChoice; 4] = [
+    ThemeChoice::Pixels, ThemeChoice::Fantasy, ThemeChoice::Transparent, ThemeChoice::Golden
+];
 
 impl ThemeChoice {
     fn path(self) -> Option<&'static str> {
@@ -20,6 +41,7 @@ impl ThemeChoice {
             ThemeChoice::Fantasy => Some("examples/data/theme-fantasy.yml"),
             ThemeChoice::Pixels => None,
             ThemeChoice::Transparent => Some("examples/data/theme-transparent.yml"),
+            ThemeChoice::Golden => Some("examples/data/theme-golden.yml"),
         }
     }
 }
