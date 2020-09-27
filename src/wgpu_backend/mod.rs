@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use wgpu::{
     Buffer, BufferDescriptor, BufferUsage, BufferAddress,
@@ -28,8 +28,8 @@ However, it is nonetheless already quite fast.
 See the thyme examples for how to setup and use this renderer.
 */
 pub struct WgpuRenderer {
-    device: Rc<Device>,
-    queue: Rc<Queue>,
+    device: Arc<Device>,
+    queue: Arc<Queue>,
 
     image_pipe: RenderPipeline,
     font_pipe: RenderPipeline,
@@ -53,7 +53,7 @@ impl WgpuRenderer {
 
     /// Creates a new wgpu renderer, using the specified `device` and `queue`.  For now, these must be
     /// wrapped in an Rc so the renderer can hold on to a reference, but this should be relaxed in the future.
-    pub fn new(device: Rc<Device>, queue: Rc<Queue>) -> WgpuRenderer {
+    pub fn new(device: Arc<Device>, queue: Arc<Queue>) -> WgpuRenderer {
         /*
         Note that the SPIRV shaders are manually built using [`shaderc`](https://github.com/google/shaderc).
         This is slightly inconvenient, but I have found configuring shaders to compile at build time reliably

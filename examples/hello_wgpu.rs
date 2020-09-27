@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use winit::{
     event::{Event, WindowEvent},
@@ -36,7 +36,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // create thyme backend
     let mut io = thyme::WinitIo::new(&event_loop, window_size.into());
-    let mut renderer = thyme::WgpuRenderer::new(Rc::clone(&device), Rc::clone(&queue));
+    let mut renderer = thyme::WgpuRenderer::new(Arc::clone(&device), Arc::clone(&queue));
     let mut context_builder = thyme::ContextBuilder::new(thyme::BuildOptions { enable_live_reload: false });
 
     // register resources in thyme and create the context
@@ -98,7 +98,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 async fn setup_wgpu(
     instance: &wgpu::Instance,
     surface: &wgpu::Surface
-) -> (wgpu::Adapter, Rc<wgpu::Device>, Rc<wgpu::Queue>) {
+) -> (wgpu::Adapter, Arc<wgpu::Device>, Arc<wgpu::Queue>) {
     let adapter = instance.request_adapter(&wgpu::RequestAdapterOptions {
         power_preference: wgpu::PowerPreference::Default,
         // Request an adapter which can render to our surface
@@ -115,7 +115,7 @@ async fn setup_wgpu(
         None,
     ).await.expect("Failed to create WGPU device");
 
-    (adapter, Rc::new(device), Rc::new(queue))
+    (adapter, Arc::new(device), Arc::new(queue))
 }
 
 fn swapchain_desc(width: u32, height: u32) -> wgpu::SwapChainDescriptor {
