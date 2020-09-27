@@ -462,7 +462,7 @@ impl<'a> WidgetBuilder<'a> {
     pub fn initially_open(self, open: bool) -> WidgetBuilder<'a> {
         {
             let mut context = self.frame.context_internal().borrow_mut();
-            context.init_state(&self.widget.id, open);
+            context.init_state(&self.widget.id, open, true);
         }
         self
     }

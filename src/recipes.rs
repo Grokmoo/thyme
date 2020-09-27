@@ -275,7 +275,15 @@ impl Frame {
     }
     ```
     */
-    pub fn tree<F: FnOnce(&mut Frame), G: FnOnce(&mut Frame)>(&mut self, theme: &str, id: &str, title: F, children: G) {
+    pub fn tree<F: FnOnce(&mut Frame), G: FnOnce(&mut Frame)>(
+        &mut self,
+        theme: &str,
+        id: &str,
+        initially_expanded: bool,
+        title: F,
+        children: G
+    ) {
+        self.context_internal().borrow_mut().init_state(id, true, initially_expanded);
         let expanded = self.is_expanded(id);
 
         self.start(theme).children(|ui| {

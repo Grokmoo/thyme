@@ -252,7 +252,7 @@ widgets:
         size: [-18, 0]
       scrollbar_vertical:
         from: scrollbar_vertical
-        size: [20, 20]
+        size: [20, 0]
   scrollpane:
     width_from: Parent
     height_from: Parent

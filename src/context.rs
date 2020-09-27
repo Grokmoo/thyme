@@ -222,10 +222,11 @@ impl ContextInternal {
 
     pub(crate) fn themes(&self) -> &ThemeSet { &self.themes }
 
-    pub(crate) fn init_state<T: Into<String>>(&mut self, id: T, open: bool) {
+    pub(crate) fn init_state<T: Into<String>>(&mut self, id: T, open: bool, expanded: bool) {
         self.persistent_state.entry(id.into()).or_insert(
             PersistentState {
                 is_open: open,
+                expanded,
                 ..Default::default()
             }
         );

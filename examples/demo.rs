@@ -241,7 +241,7 @@ pub fn build_ui(ui: &mut Frame, party: &mut Party) {
     
                 ui.gap(10.0);
     
-                ui.tree("stats_panel", "stats_panel",
+                ui.tree("stats_panel", "stats_panel", true,
                 |ui| {
                     ui.child("title");
                 },|ui| {
@@ -250,7 +250,7 @@ pub fn build_ui(ui: &mut Frame, party: &mut Party) {
                 
                 ui.gap(10.0);
     
-                ui.tree("inventory_panel", "inventory_panel",
+                ui.tree("inventory_panel", "inventory_panel", true,
                 |ui| {
                     ui.child("title");
                 }, |ui| {
@@ -323,6 +323,7 @@ fn stats_panel(ui: &mut Frame, character: &mut Character) {
         ui.tree(
         "stat_panel",
         &format!("stat_panel_{:?}", stat),
+        false,
         |ui| {
             ui.label("label", format!("{:?}", stat));
 
