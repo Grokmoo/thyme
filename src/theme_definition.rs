@@ -133,6 +133,9 @@ pub struct CollectedSubImage {
 #[serde(untagged)]
 #[serde(deny_unknown_fields)]
 pub enum ImageDefinitionKind {
+    Alias {
+        from: String,
+    },
     Collected {
         sub_images: HashMap<String, CollectedSubImage>,
     },

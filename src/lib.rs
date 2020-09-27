@@ -203,6 +203,14 @@ Images which contain references to other images are parsed in a particular order
 image types may contain references to the basic image types - `Simple`, `Composed`, `ComposedHorizontal`, and
 `ComposedVertical`.
 
+### Aliases
+For convenience, you can create an image ID which is an alias to another image.  For example, you may want a particular
+type of button to be easily changable to its own unique image in the future.
+```yaml
+  scroll_button:
+    from: button
+```
+
 ## Widgets
 The widgets section defines themes for all widgets you will use in your UI.  Whenever you create a widget, such as through
 [`Frame.start`](struct.Frame.html#method.start), you specify a `theme_id`.  This `theme_id` must match one

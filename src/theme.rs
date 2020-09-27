@@ -47,6 +47,8 @@ impl ThemeSet {
             font_handles.insert(font_id.to_string(), FontSummary { handle, line_height });
         }
 
+        let mut aliases: Vec<(String, String)> = Vec::new();
+
         let mut images = HashMap::new();
         for (set_id, set) in &definition.image_sets {
             let mut images_in_set = HashMap::new();
@@ -61,10 +63,15 @@ impl ThemeSet {
 
             // first parse all images without dependencies
             for (image_id, image_def) in &set.images {
-                match image_def.kind {
+                match &image_def.kind {
                     ImageDefinitionKind::Animated { .. } => animated_images.push((image_id, image_def)),
                     ImageDefinitionKind::Timed { .. } => timed_images.push((image_id, image_def)),
                     ImageDefinitionKind::Collected { .. } => collected_images.push((image_id, image_def)),
+                    ImageDefinitionKind::Alias { from } => {
+                        let to = format!("{}/{}", set_id, image_id);
+                        let from = format!("{}/{}", set_id, from);
+                        aliases.push((to, from));
+                    },
                     _ => {
                         let image = Image::new(&image_id, image_def, texture, &images_in_set, set.scale)?;
                         images_in_set.insert(image_id.to_string(), image);
@@ -104,8 +111,23 @@ impl ThemeSet {
             image_handles.insert(id, handle);
         }
 
+        // insert empty image references for just "empty" and all sets as well
         image_handles.insert("empty".to_string(), ImageHandle { id: images_out.len() });
         images_out.push(Image::create_empty());
+
+        for set_id in definition.image_sets.keys() {
+            image_handles.insert(format!("{}/{}", set_id, "empty"), ImageHandle { id: images_out.len() });
+            images_out.push(Image::create_empty());
+        }
+
+        // add in aliases
+        for (to, from) in aliases {
+            let handle = *image_handles.get(&from).ok_or_else(||
+                Error::Theme(format!("Unable to locate image alias from '{}'", from))
+            )?;
+
+            image_handles.insert(to, handle);
+        }
 
         // build the set of themes
         let mut theme_handles = HashMap::new();
