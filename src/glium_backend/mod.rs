@@ -39,7 +39,7 @@ pub struct GliumRenderer {
 
     // assets loaded from the context
     textures: Vec<GliumTexture>,
-    fonts: Vec<GliumFont>,
+    fonts: Vec<GliumTexture>,
 
     // per frame data
     draw_list: GliumDrawList,
@@ -96,7 +96,7 @@ impl GliumRenderer {
         })
     }
 
-    fn font(&self, font: FontHandle) -> &GliumFont {
+    fn font(&self, font: FontHandle) -> &GliumTexture {
         &self.fonts[font.id()]
     }
 
@@ -338,19 +338,14 @@ impl Renderer for GliumRenderer {
 
         assert!(handle.id() <= self.fonts.len());
         if handle.id() == self.fonts.len() {
-            self.fonts.push(GliumFont { texture: font_tex, sampler });
+            self.fonts.push(GliumTexture { texture: font_tex, sampler });
         } else {
-            self.fonts[handle.id()] = GliumFont { texture: font_tex, sampler };
+            self.fonts[handle.id()] = GliumTexture { texture: font_tex, sampler };
         }
         
 
         Ok(writer_out.font)
     }
-}
-
-struct GliumFont {
-    texture: Texture2d,
-    sampler: SamplerBehavior,
 }
 
 struct GliumTexture {
