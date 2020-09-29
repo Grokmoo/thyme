@@ -51,8 +51,8 @@ pub struct WgpuRenderer {
 impl WgpuRenderer {
     // TODO rework context builder so we don't need to hold on to device and queue reference
 
-    /// Creates a new wgpu renderer, using the specified `device` and `queue`.  For now, these must be
-    /// wrapped in an Rc so the renderer can hold on to a reference, but this should be relaxed in the future.
+    /// Creates a new wgpu renderer, using the specified `device` and `queue`.  These must be wrapped in an
+    /// `Arc` so that the renderer can hold onto the references.
     pub fn new(device: Arc<Device>, queue: Arc<Queue>) -> WgpuRenderer {
         /*
         Note that the SPIRV shaders are manually built using [`shaderc`](https://github.com/google/shaderc).
