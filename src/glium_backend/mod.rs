@@ -3,10 +3,10 @@ use std::fmt::Display;
 use std::error::Error;
 use std::borrow::Cow;
 
-use glium::{implement_vertex, uniform, DrawParameters, program::{ProgramCreationError}, Program, Surface};
+use glium::{implement_vertex, uniform, DrawParameters, program::{ProgramCreationError, ProgramCreationInput}, Program, Surface};
 use glium::backend::{Context, Facade};
 use glium::uniforms::{MagnifySamplerFilter, MinifySamplerFilter, Sampler, SamplerBehavior, SamplerWrapFunction};
-use glium::texture::{Texture2d, RawImage2d, SrgbTexture2d};
+use glium::texture::{Texture2d, RawImage2d};
 use glium::index::PrimitiveType;
 
 use crate::{image::ImageDrawParams};
@@ -52,18 +52,32 @@ impl GliumRenderer {
     pub fn new<F: Facade>(facade: &F) -> Result<GliumRenderer, GliumError> {
         let context = Rc::clone(facade.get_context());
 
-        let base_program = Program::from_source(
+        let base_program = Program::new(
             facade,
-            VERT_SHADER_SRC,
-            FRAGMENT_SHADER_SRC,
-            Some(GEOM_SHADER_SRC),
+            ProgramCreationInput::SourceCode {
+                vertex_shader: VERT_SHADER_SRC,
+                tessellation_control_shader: None,
+                tessellation_evaluation_shader: None,
+                geometry_shader: Some(GEOM_SHADER_SRC),
+                fragment_shader: FRAGMENT_SHADER_SRC,
+                transform_feedback_varyings: None,
+                outputs_srgb: true,
+                uses_point_size: false,
+            },
         )?;
 
-        let font_program = Program::from_source(
+        let font_program = Program::new(
             facade,
-            VERT_SHADER_SRC,
-            FONT_FRAGMENT_SHADER_SRC,
-            Some(GEOM_SHADER_SRC)
+            ProgramCreationInput::SourceCode {
+                vertex_shader: VERT_SHADER_SRC,
+                tessellation_control_shader: None,
+                tessellation_evaluation_shader: None,
+                geometry_shader: Some(GEOM_SHADER_SRC),
+                fragment_shader: FONT_FRAGMENT_SHADER_SRC,
+                transform_feedback_varyings: None,
+                outputs_srgb: true,
+                uses_point_size: false,
+            },
         )?;
 
         Ok(GliumRenderer {
@@ -263,7 +277,7 @@ impl Renderer for GliumRenderer {
         dimensions: (u32, u32),
     ) -> Result<TextureData, crate::Error> {
         let image = RawImage2d::from_raw_rgba(image_data.to_vec(), dimensions);
-        let texture = SrgbTexture2d::new(&self.context, image).unwrap();
+        let texture = Texture2d::new(&self.context, image).unwrap();
 
         let sampler = SamplerBehavior {
             minify_filter: MinifySamplerFilter::Linear,
@@ -340,7 +354,7 @@ struct GliumFont {
 }
 
 struct GliumTexture {
-    texture: SrgbTexture2d,
+    texture: Texture2d,
     sampler: SamplerBehavior,
 }
 

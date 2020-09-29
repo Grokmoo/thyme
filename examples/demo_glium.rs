@@ -46,7 +46,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             party.check_context_changes(&mut context, &mut renderer);
 
             let mut target = display.draw();
-            target.clear_color(0.5, 0.5, 0.5, 1.0);
+            target.clear_color(0.21404, 0.21404, 0.21404, 1.0); // manual sRGB conversion for 0.5
 
             bench::run("thyme", || {
                 let mut ui = context.create_frame();
