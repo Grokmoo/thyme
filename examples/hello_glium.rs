@@ -7,7 +7,7 @@ use glium::{Display, Surface};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // initialize very basic logger so error messages go to stdout
-    thyme::log::init_all().unwrap();
+    thyme::log::init(log::Level::Warn).unwrap();
 
     // load assets
     let font_src = include_bytes!("data/fonts/Roboto-Medium.ttf");

@@ -12,7 +12,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     use glium::{Display, Surface};
 
     // initialize our very basic logger so error messages go to stdout
-    thyme::log::init_all().unwrap();
+    thyme::log::init(log::Level::Warn).unwrap();
 
     let window_size = [1280.0, 720.0];
     let events_loop = EventLoop::new();
