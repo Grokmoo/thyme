@@ -383,7 +383,14 @@ impl WgpuRenderer {
         self.queue.write_buffer(&self.view_matrix_buffer, 0, data);
     }
 
-    fn create_texture(&self, image_data: &[u8], width: u32, height: u32, format: wgpu::TextureFormat) -> BindGroup {
+    fn create_texture(
+        &self,
+        image_data: &[u8],
+        width: u32,
+        height: u32,
+        format: wgpu::TextureFormat,
+        filter: FilterMode,
+    ) -> BindGroup {
         let texture = self.device.create_texture(&wgpu::TextureDescriptor {
             size: wgpu::Extent3d { width, height, depth: 1, },
             mip_level_count: 1,
@@ -417,9 +424,9 @@ impl WgpuRenderer {
             address_mode_u: AddressMode::ClampToEdge,
             address_mode_v: AddressMode::ClampToEdge,
             address_mode_w: AddressMode::ClampToEdge,
-            mag_filter: FilterMode::Linear,
-            min_filter: FilterMode::Linear,
-            mipmap_filter: FilterMode::Linear,
+            mag_filter: filter,
+            min_filter: filter,
+            mipmap_filter: filter,
             lod_min_clamp: -100.0,
             lod_max_clamp: 100.0,
             compare: None,
@@ -463,6 +470,7 @@ impl<'a> Renderer for WgpuRenderer {
             writer_out.tex_width,
             writer_out.tex_height,
             wgpu::TextureFormat::R8Unorm,
+            FilterMode::Nearest,
         );
 
         assert!(handle.id() <= self.fonts.len());
@@ -486,7 +494,8 @@ impl<'a> Renderer for WgpuRenderer {
             image_data,
             dimensions.0,
             dimensions.1,
-            wgpu::TextureFormat::Rgba8Unorm
+            wgpu::TextureFormat::Rgba8Unorm,
+            FilterMode::Linear,
         );
 
         assert!(handle.id() <= self.textures.len());
