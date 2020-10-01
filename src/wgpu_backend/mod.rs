@@ -45,7 +45,8 @@ pub struct WgpuRenderer {
 
     // per frame data
     draw_list: WgpuDrawList,
-    groups: Vec<BufferedGroup>,
+    draw_groups: Vec<DrawGroup>,
+    buffered: Option<BufferedData>,
 }
 
 impl WgpuRenderer {
@@ -192,7 +193,8 @@ impl WgpuRenderer {
             device,
             queue,
             draw_list: WgpuDrawList::new(),
-            groups: Vec::new(),
+            draw_groups: Vec::new(),
+            buffered: None,
         }
     }
 
@@ -206,12 +208,13 @@ impl WgpuRenderer {
         let scale = context.scale_factor();
         
         self.update_view_matrix(Point::default(), context.display_size());
-        self.groups.clear();
+        self.draw_groups.clear();
+        self.draw_list.clear();
+        self.buffered.take();
 
         // render all widget groups to buffers
         for render_group in render_groups.into_iter().rev() {
             let mut draw_mode = None;
-            self.draw_list.clear();
 
             // render backgrounds
             for widget in render_group.iter(&widgets) {
@@ -305,7 +308,6 @@ impl WgpuRenderer {
                 scale
             };
 
-            self.draw_list.clear();
             image.draw(&mut self.draw_list, params);
             self.buffer(DrawMode::Image(image.texture()));
         }
@@ -314,22 +316,33 @@ impl WgpuRenderer {
         render_pass.set_bind_group(0, &self.view_matrix_bind_group, &[]);
 
         // draw buffers to render pass
-        for group in &self.groups {
-            let texture = match &group.mode {
-                DrawMode::Image(handle) => {
-                   render_pass.set_pipeline(&self.image_pipe);
-                   &self.textures[handle.id()]
-                },
-                DrawMode::Font(handle) => {
-                    render_pass.set_pipeline(&self.font_pipe);
-                    &self.fonts[handle.id()]
-                }
-            };
+        let vertices = self.create_vertex_buffer(&self.draw_list.vertices);
+        let indices = self.create_index_buffer(&self.draw_list.indices);
+        // we need to store this data somewhere to satisfy wgpu's lifetime requirements
+        self.buffered = Some(BufferedData {
+            vertices,
+            indices,
+        });
 
-            render_pass.set_bind_group(1, &texture.bind_group, &[]);
-            render_pass.set_vertex_buffer(0, group.vertex.slice(..));
-            render_pass.set_index_buffer(group.index.slice(..));
-            render_pass.draw_indexed(0..group.vertices, 0, 0..1);
+        if let Some(data) = &self.buffered {
+            render_pass.set_vertex_buffer(0, data.vertices.slice(..));
+            render_pass.set_index_buffer(data.indices.slice(..));
+    
+            for group in &self.draw_groups {
+                let texture = match &group.mode {
+                    DrawMode::Image(handle) => {
+                       render_pass.set_pipeline(&self.image_pipe);
+                       &self.textures[handle.id()]
+                    },
+                    DrawMode::Font(handle) => {
+                        render_pass.set_pipeline(&self.font_pipe);
+                        &self.fonts[handle.id()]
+                    }
+                };
+    
+                render_pass.set_bind_group(1, &texture.bind_group, &[]);
+                render_pass.draw_indexed(group.start..group.end, 0, 0..1);
+            }
         }
     }
 
@@ -348,15 +361,18 @@ impl WgpuRenderer {
     }
 
     fn buffer(&mut self, mode: DrawMode) {
-        let vertex = self.create_vertex_buffer(&self.draw_list.vertices);
-        let index = self.create_index_buffer(&self.draw_list.indices);
-        self.groups.push(BufferedGroup {
-            vertex,
-            index,
+        let end = self.draw_list.indices.len() as u32;
+        // if this is the first draw group, start at 0
+        let start = match self.draw_groups.last() {
+            None => 0,
+            Some(group) => group.end,
+        };
+
+        self.draw_groups.push(DrawGroup {
+            start,
+            end,
             mode,
-            vertices: self.draw_list.indices.len() as u32,
         });
-        self.draw_list.clear();
     }
 
     fn create_vertex_buffer(&self, vertices: &[Vertex]) -> Buffer {
@@ -509,11 +525,15 @@ impl<'a> Renderer for WgpuRenderer {
     }
 }
 
-struct BufferedGroup {
-    vertex: Buffer,
-    index: Buffer,
+struct DrawGroup {
+    start: u32,
+    end: u32,
     mode: DrawMode,
-    vertices: u32,
+}
+
+struct BufferedData {
+    vertices: Buffer,
+    indices: Buffer,
 }
 
 struct Texture {
