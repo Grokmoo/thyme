@@ -43,6 +43,7 @@ pub struct GliumRenderer {
 
     // per frame data
     draw_list: GliumDrawList,
+    groups: Vec<DrawGroup>,
     matrix: [[f32; 4]; 4],
     params: DrawParameters<'static>,
 }
@@ -87,6 +88,7 @@ impl GliumRenderer {
             fonts: Vec::new(),
             textures: Vec::new(),
             draw_list: GliumDrawList::new(),
+            groups: Vec::new(),
             matrix: view_matrix(Point::default(), Point { x: 100.0, y: 100.0 }),
             params: DrawParameters {
                 blend: glium::Blend::alpha_blending(),
@@ -116,9 +118,11 @@ impl GliumRenderer {
         let scale = context.scale_factor();
         self.matrix = view_matrix(display_pos, display_size);
 
+        self.draw_list.clear();
+        self.groups.clear();
+
         for render_group in render_groups.into_iter().rev() {
             let mut draw_mode = None;
-            self.draw_list.clear();
 
             // render backgrounds
             for widget in render_group.iter(&widgets) {
@@ -130,7 +134,7 @@ impl GliumRenderer {
                 let time_millis = time_millis - context.base_time_millis_for(widget.id());
                 let image = context.themes().image(image_handle);
     
-                self.render_if_changed(target, &mut draw_mode, DrawMode::Image(image.texture()))?;
+                self.write_group_if_changed(&mut draw_mode, DrawMode::Image(image.texture()));
                 
                 image.draw(
                     &mut self.draw_list,
@@ -156,7 +160,7 @@ impl GliumRenderer {
                 if let Some(image_handle) = widget.foreground() {
                     let time_millis = time_millis - context.base_time_millis_for(widget.id());
                     let image = context.themes().image(image_handle);
-                    self.render_if_changed(target, &mut draw_mode, DrawMode::Image(image.texture()))?;
+                    self.write_group_if_changed(&mut draw_mode, DrawMode::Image(image.texture()));
     
                     image.draw(
                         &mut self.draw_list,
@@ -173,7 +177,7 @@ impl GliumRenderer {
     
                 if let Some(text) = widget.text() {
                     if let Some(font_sum) = widget.font() {
-                        self.render_if_changed(target, &mut draw_mode, DrawMode::Font(font_sum.handle))?;
+                        self.write_group_if_changed(&mut draw_mode, DrawMode::Font(font_sum.handle));
                         let font = context.themes().font(font_sum.handle);
     
                         font.draw(
@@ -191,7 +195,7 @@ impl GliumRenderer {
 
             // render anything from the final draw calls
             if let Some(mode) = draw_mode {
-                self.render(target, mode)?;
+                self.write_group(mode);
             }
         }
 
@@ -211,61 +215,76 @@ impl GliumRenderer {
                 scale
             };
 
-            self.draw_list.clear();
             image.draw(&mut self.draw_list, params);
-            self.render(target, DrawMode::Image(image.texture()))?;
+            self.write_group(DrawMode::Image(image.texture()));
         }
 
-        Ok(())
-    }
-
-    fn render_if_changed<T: Surface>(
-        &mut self,
-        target: &mut T,
-        mode: &mut Option<DrawMode>,
-        desired_mode: DrawMode,
-    ) -> Result<(), GliumError> {
-        match mode {
-            None => *mode = Some(desired_mode),
-            Some(cur_mode) => if *cur_mode != desired_mode {
-                self.render(target, *cur_mode)?;
-                *mode = Some(desired_mode);
-            }
-        }
-
-        Ok(())
-    }
-
-    fn render<T: Surface>(
-        &mut self,
-        target: &mut T,
-        mode: DrawMode,
-    ) -> Result<(), GliumError> {
+        // create the vertex buffer and draw all groups
         let vertices = glium::VertexBuffer::immutable(
             &self.context, &self.draw_list.vertices
         )?;
         let indices = glium::index::NoIndices(PrimitiveType::Points);
-        match mode {
-            DrawMode::Font(font_handle) => {
-                let font = self.font(font_handle);
-                let uniforms = uniform! {
-                    tex: Sampler(&font.texture, font.sampler),
-                    matrix: self.matrix,
-                };
-                target.draw(&vertices, &indices, &self.font_program, &uniforms, &self.params)?;
-            },
-            DrawMode::Image(tex_handle) => {
-                let texture = self.texture(tex_handle);
-                let uniforms = uniform! {
-                    tex: Sampler(&texture.texture, texture.sampler),
-                    matrix: self.matrix,
-                };
-                target.draw(&vertices, &indices, &self.base_program, &uniforms, &self.params)?;
-            }
-        };
+        for group in &self.groups {
+            match group.mode {
+                DrawMode::Font(font_handle) => {
+                    let font = self.font(font_handle);
+                    let uniforms = uniform! {
+                        tex: Sampler(&font.texture, font.sampler),
+                        matrix: self.matrix,
+                    };
+                    target.draw(
+                        vertices.slice(group.start..group.end).unwrap(),
+                        &indices,
+                        &self.font_program,
+                        &uniforms,
+                        &self.params
+                    )?;
+                },
+                DrawMode::Image(tex_handle) => {
+                    let texture = self.texture(tex_handle);
+                    let uniforms = uniform! {
+                        tex: Sampler(&texture.texture, texture.sampler),
+                        matrix: self.matrix,
+                    };
+                    target.draw(vertices.slice(group.start..group.end).unwrap(),
+                        &indices,
+                        &self.base_program,
+                        &uniforms,
+                        &self.params
+                    )?;
+                }
+            };
+        }
 
-        self.draw_list.clear();
         Ok(())
+    }
+
+    fn write_group_if_changed(
+        &mut self,
+        mode: &mut Option<DrawMode>,
+        desired_mode: DrawMode,
+    ) {
+        match mode {
+            None => *mode = Some(desired_mode),
+            Some(cur_mode) => if *cur_mode != desired_mode {
+                self.write_group(*cur_mode);
+                *mode = Some(desired_mode);
+            }
+        }
+    }
+
+    fn write_group(&mut self, mode: DrawMode) {
+        let end = self.draw_list.vertices.len();
+        // if this is the first draw group, start at 0
+        let start = match self.groups.last() {
+            None => 0,
+            Some(group) => group.end,
+        };
+        self.groups.push(DrawGroup {
+            start,
+            end,
+            mode,
+        });
     }
 }
 
@@ -346,6 +365,12 @@ impl Renderer for GliumRenderer {
 
         Ok(writer_out.font)
     }
+}
+
+struct DrawGroup {
+    start: usize,
+    end: usize,
+    mode: DrawMode,
 }
 
 struct GliumTexture {
