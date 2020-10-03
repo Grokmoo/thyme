@@ -311,6 +311,7 @@ pub struct WidgetTheme {
     pub wants_scroll: Option<bool>,
     pub text_align: Option<Align>,
     pub pos: Option<Point>,
+    pub screen_pos: Option<Point>,
     pub size: Option<Point>,
     pub width_from: Option<WidthRelative>,
     pub height_from: Option<HeightRelative>,
@@ -341,6 +342,7 @@ impl WidgetTheme {
             wants_scroll: None,
             text_align: None,
             pos: None,
+            screen_pos: None,
             size: None,
             width_from: None,
             height_from: None,
@@ -427,6 +429,7 @@ impl WidgetTheme {
             wants_scroll: def.wants_scroll,
             text_align: def.text_align,
             pos: def.pos,
+            screen_pos: def.screen_pos,
             size: def.size,
             width_from,
             height_from,
@@ -488,6 +491,7 @@ fn merge_from(
     if to.foreground.is_none() { to.foreground = from.foreground; }
     if to.text_align.is_none() { to.text_align = from.text_align; }
     if to.pos.is_none() { to.pos = from.pos; }
+    if to.screen_pos.is_none() { to.screen_pos = from.screen_pos; }
     if to.size.is_none() { to.size = from.size; }
     if to.width_from.is_none() { to.width_from = from.width_from; }
     if to.height_from.is_none() { to.height_from = from.height_from; }

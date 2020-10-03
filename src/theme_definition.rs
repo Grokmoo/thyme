@@ -70,6 +70,7 @@ pub struct WidgetThemeDefinition {
     pub wants_scroll: Option<bool>,
     pub text_align: Option<Align>,
     pub pos: Option<Point>,
+    pub screen_pos: Option<Point>,
     pub size: Option<Point>,
     pub size_from: Option<(WidthRelative, HeightRelative)>,
     pub width_from: Option<WidthRelative>,

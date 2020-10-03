@@ -71,15 +71,24 @@ impl Widget {
         let height_from = theme.height_from.unwrap_or_default();
         let size = size(parent, raw_size, border, font, width_from, height_from);
 
-        let align = theme.align.unwrap_or(parent.child_align);
-        let manual_pos = theme.pos.is_some() || align != parent.child_align;
+        let mut align = theme.align.unwrap_or(parent.child_align);
+        let mut manual_pos = theme.pos.is_some() || align != parent.child_align;
         let cursor_pos = if align == parent.child_align {
             parent.cursor + parent.scroll
         } else {
             parent.scroll
         };
-        let raw_pos = theme.pos.unwrap_or(cursor_pos) + parent.scroll;
-        let pos = pos(parent, raw_pos, size, align);
+        let mut raw_pos = theme.pos.unwrap_or(cursor_pos) + parent.scroll;
+        let mut pos = pos(parent, raw_pos, size, align);
+        let mut recalc_pos_size = true;
+
+        if let Some(screen_pos) = theme.screen_pos {
+            raw_pos = screen_pos;
+            pos = screen_pos;
+            align = Align::TopLeft;
+            manual_pos = true;
+            recalc_pos_size = false;
+        }
 
         let data = WidgetData {
             manual_pos,
@@ -92,7 +101,7 @@ impl Widget {
             align,
             enabled: true,
             active: false,
-            recalc_pos_size: true,
+            recalc_pos_size,
             next_render_group: false,
             unparent: false,
         };
@@ -572,6 +581,7 @@ impl<'a> WidgetBuilder<'a> {
     /// Manually specify a position for this widget, basedon the specified
     /// `x` and `y` logical pixel positions.  This position ignores alignment
     /// or any other considerations.
+    /// This may also be specified in the widget's [`theme`](index.html).
     #[must_use]
     pub fn screen_pos(mut self, x: f32, y: f32) -> WidgetBuilder<'a> {
         self.data.raw_pos = Point { x, y };
