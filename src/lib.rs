@@ -356,7 +356,7 @@ pub use frame::Frame;
 pub use point::{Rect, Point, Border};
 pub use widget::{WidgetBuilder, WidgetState};
 pub use context_builder::{BuildOptions, ContextBuilder};
-pub use context::{Context, PersistentState};
+pub use context::{Context, PersistentState, InputModifiers};
 pub use scrollpane::{ScrollpaneBuilder, ShowElement};
 pub use theme_definition::{AnimStateKey, AnimState, Align, Color, Layout, WidthRelative, HeightRelative};
 pub use window::WindowBuilder;

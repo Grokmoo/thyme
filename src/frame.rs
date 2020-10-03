@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::context::{Context, ContextInternal};
+use crate::context::{Context, ContextInternal, InputModifiers};
 use crate::{
     AnimState, AnimStateKey, Rect, Point, WidgetBuilder, PersistentState, Align,
 };
@@ -237,6 +237,12 @@ impl Frame {
     /// Returns the current window display size, in logical pixels.
     pub fn display_size(&self) -> Point {
         self.context_internal().borrow().display_size()
+    }
+
+    /// Returns the current state of the keyboard modifier keys
+    pub fn input_modifiers(&self) -> InputModifiers {
+        let context = self.context_internal().borrow();
+        context.input_modifiers()
     }
 
     /// Returns the current mouse position and size, in logical pixels

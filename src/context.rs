@@ -95,6 +95,20 @@ impl Default for PersistentState {
     }
 }
 
+/// The current state of the various keyboard modifier keys - Shift, Control, and Alt
+/// You can get this using [`Frame.input_modiifers`](struct.Frame.html#method.input_modifiers)
+#[derive(Default, Copy, Clone)]
+pub struct InputModifiers {
+    /// whether the Shift key is pressed
+    pub shift: bool,
+
+    /// whether the Control key is pressed
+    pub ctrl: bool,
+
+    /// Whether the Alt key is pressed
+    pub alt: bool,
+}
+
 pub struct ContextInternal {
     resources: ResourceSet,
     themes: ThemeSet,
@@ -113,6 +127,7 @@ pub struct ContextInternal {
     persistent_state: HashMap<String, PersistentState>,
     empty_persistent_state: PersistentState,
 
+    input_modifiers: InputModifiers,
     last_mouse_pos: Point,
     mouse_pos: Point,
     mouse_pressed: [bool; 3],
@@ -254,6 +269,10 @@ impl ContextInternal {
         false
     }
 
+    pub(crate) fn input_modifiers(&self) -> InputModifiers {
+        self.input_modifiers
+    }
+
     pub(crate) fn next_frame(&mut self, mouse_taken: Option<(String, RendGroup)>, mouse_in_rend_group: Option<RendGroup>) {
         let mut clear_modal = false;
         if let Some(modal) = self.modal.as_mut() {
@@ -305,6 +324,7 @@ impl Context {
             empty_persistent_state: PersistentState::default(),
             mouse_pos: Point::default(),
             last_mouse_pos: Point::default(),
+            input_modifiers: InputModifiers::default(),
             mouse_pressed: [false; 3],
             mouse_clicked: [false; 3],
             mouse_wheel: Point::default(),
@@ -375,6 +395,11 @@ impl Context {
         let mut internal = self.internal.borrow_mut();
 
         internal.mouse_wheel = internal.mouse_wheel + delta;
+    }
+
+    pub(crate) fn set_input_modifiers(&mut self, input_modifiers: InputModifiers) {
+        let mut internal = self.internal.borrow_mut();
+        internal.input_modifiers = input_modifiers;
     }
 
     pub(crate) fn set_mouse_pressed(&mut self, pressed: bool, index: usize) {

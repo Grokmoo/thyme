@@ -2,7 +2,7 @@ use winit::event::{Event, WindowEvent, MouseButton, MouseScrollDelta, ElementSta
 use winit::event_loop::EventLoop;
 
 use crate::point::Point;
-use crate::context::Context;
+use crate::context::{InputModifiers, Context};
 use crate::render::IO;
 
 /**
@@ -69,6 +69,13 @@ impl WinitIo {
                 let size: Point = (x as f32, y as f32).into();
                 self.display_size = size;
                 context.set_display_size(size);
+            },
+            ModifiersChanged(m) => {
+                context.set_input_modifiers(InputModifiers {
+                    shift: m.shift(),
+                    ctrl: m.ctrl(),
+                    alt: m.alt(),
+                });
             },
             WindowEvent::ScaleFactorChanged { scale_factor, .. } => {
                 let scale = *scale_factor as f32;
