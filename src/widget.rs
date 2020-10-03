@@ -972,6 +972,8 @@ impl<'a> WidgetBuilder<'a> {
 
         if !self.data.unparent {
             self.frame.set_max_child_bounds(old_max_child_bounds.max(self_bounds));
+        } else {
+            self.frame.set_max_child_bounds(old_max_child_bounds);
         }
 
         let (clicked, mut anim_state, mut dragged) = if self.data.enabled && self.data.wants_mouse {
