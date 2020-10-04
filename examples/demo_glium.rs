@@ -18,10 +18,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let events_loop = EventLoop::new();
 
     // create glium display
-    let context = glutin::ContextBuilder::new();
     let builder = WindowBuilder::new()
         .with_title("Thyme Demo")
         .with_inner_size(glutin::dpi::LogicalSize::new(window_size[0], window_size[1]));
+    let context = glutin::ContextBuilder::new();
     let display = Display::new(builder, context, &events_loop)?;
 
     // hide the default cursor
@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut context_builder = thyme::ContextBuilder::with_defaults();
 
     demo::register_assets(&mut context_builder);
-    
+
     let mut context = context_builder.build(&mut renderer, &mut io)?;
 
     let mut party = demo::Party::default();
