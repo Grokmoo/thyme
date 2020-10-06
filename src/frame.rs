@@ -261,6 +261,12 @@ impl Frame {
         Rect::new(pos, size)
     }
 
+    /// Returns whether or not the Thyme UI wants the mouse this frame.
+    /// See [`Context.wants_mouse`](struct.Context.html#wants_mouse)
+    pub fn wants_mouse(&self) -> bool {
+        self.context.wants_mouse()
+    }
+
     /// Sets the mouse cursor to the specified image with alignment.  If you are hiding the default
     /// OS cursor, this should be called at least once every frame you want to show a cursor.  If it
     /// is called multiple times, the last call will take effect.  The image will automatically inherit
