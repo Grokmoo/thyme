@@ -377,6 +377,14 @@ impl Context {
         internal.mouse_taken_last_frame.is_some() || internal.modal.is_some()
     }
 
+    /// Returns true if thyme wants to use keyboard input in the current frame, generally
+    /// because a widget that accepts text input is keyboard focused.  If this returns true,
+    /// you probably don't want to handle keyboard events in your own application code.
+    pub fn wants_keyboard(&self) -> bool {
+        let internal = self.internal.borrow();
+        internal.modal.is_some() || internal.keyboard_focus_widget.is_some()
+    }
+
     pub(crate) fn internal(&self) -> &Rc<RefCell<ContextInternal>> {
         &self.internal
     }

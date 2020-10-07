@@ -267,6 +267,12 @@ impl Frame {
         self.context.wants_mouse()
     }
 
+    /// Returns whether or not the Thyme UI wants the keyboard this frame.
+    /// See [`Context.wants_keyboard`](struct.Context.html#wants_keyboard)
+    pub fn wants_keyboard(&self) -> bool {
+        self.context.wants_keyboard()
+    }
+
     /// Sets the mouse cursor to the specified image with alignment.  If you are hiding the default
     /// OS cursor, this should be called at least once every frame you want to show a cursor.  If it
     /// is called multiple times, the last call will take effect.  The image will automatically inherit
