@@ -62,6 +62,7 @@ pub struct WidgetThemeDefinition {
     pub font: Option<String>,
     pub background: Option<String>,
     pub foreground: Option<String>,
+    pub tooltip: Option<String>,
 
     // all fields are options instead of using default so
     // we can detect when to override them

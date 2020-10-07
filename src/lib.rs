@@ -293,6 +293,7 @@ the widget will layout its children.
      font: medium
      background: gui/button
      foreground: gui/button_icon
+     tooltip: "This is a button!"
      wants_mouse: true
      wants_scroll: false
      pos: [10, 10]

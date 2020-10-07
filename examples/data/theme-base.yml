@@ -205,7 +205,8 @@ widgets:
     background: gui/small_button_normal
     font: small
     text_align: Center
-    size: [100, 30]
+    size: [200, 30]
+    border: { all: 2 }
   greyed_out:
     background: gui/greyed_out
   horizontal_slider:

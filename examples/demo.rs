@@ -386,6 +386,7 @@ fn items_panel(ui: &mut Frame, character: &mut Character) {
         }
         
         if result.hovered {
+            // manually specify a tooltip
             ui.tooltip("tooltip", "Remove Item");
         }
     }

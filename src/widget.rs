@@ -104,6 +104,7 @@ impl Widget {
             recalc_pos_size,
             next_render_group: false,
             unparent: false,
+            tooltip: theme.tooltip.clone(),
         };
 
         let widget = Widget {
@@ -328,6 +329,8 @@ pub(crate) struct WidgetData {
     recalc_pos_size: bool,
     next_render_group: bool,
     unparent: bool,
+
+    tooltip: Option<String>,
 }
 
 /// A `WidgetBuilder` is used to customize widgets within your UI tree, following a builder pattern.
@@ -500,6 +503,15 @@ impl<'a> WidgetBuilder<'a> {
     #[must_use]
     pub fn text<T: Into<String>>(mut self, text: T) -> WidgetBuilder<'a> {
         self.widget.text = Some(text.into());
+        self
+    }
+
+    /// Specify `tooltip` to display as a tooltip if this widget is hovered with the mouse.
+    /// The tooltip will use the "tooltip" theme which must be present in the theme.
+    /// This may also be specified in the widget's [`theme`](index.html).
+    #[must_use]
+    pub fn tooltip<T: Into<String>>(mut self, tooltip: T) -> WidgetBuilder<'a> {
+        self.data.tooltip = Some(tooltip.into());
         self
     }
 
@@ -983,10 +995,19 @@ impl<'a> WidgetBuilder<'a> {
             (false, AnimState::disabled(), Point::default())
         };
 
+
         if self.data.wants_scroll {
             if let Some(wheel) = self.frame.check_mouse_wheel(widget_index) {
                 dragged.x += wheel.x;
                 dragged.y += wheel.y;
+            }
+        }
+
+        let state = WidgetState::new(anim_state, clicked, dragged);
+
+        if state.hovered {
+            if let Some(tooltip) = self.data.tooltip.take() {
+                self.frame.tooltip("tooltip", tooltip);
             }
         }
 
@@ -1005,7 +1026,7 @@ impl<'a> WidgetBuilder<'a> {
 
         self.frame.widget_mut(widget_index).anim_state = anim_state;
 
-        let state = WidgetState::new(anim_state, clicked, dragged);
+        
         let size = self.frame.widget(widget_index).size;
         if !self.data.manual_pos {
             use Align::*;

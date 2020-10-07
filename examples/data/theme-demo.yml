@@ -16,6 +16,7 @@ widgets:
         from: combo_box
         size_from: [Normal, Parent]
         size: [120, 0]
+        tooltip: "Select a different theme"
   bench:
     from: label
     background: gui/small_button_normal

@@ -304,6 +304,7 @@ pub struct WidgetTheme {
     pub font: Option<FontSummary>,
     pub background: Option<ImageHandle>,
     pub foreground: Option<ImageHandle>,
+    pub tooltip: Option<String>,
 
     // all fields are options instead of using default so
     // we can detect when to override them
@@ -338,6 +339,7 @@ impl WidgetTheme {
             font: None,
             background: None,
             foreground: None,
+            tooltip: None,
             wants_mouse: None,
             wants_scroll: None,
             text_align: None,
@@ -425,6 +427,7 @@ impl WidgetTheme {
             font,
             background,
             foreground,
+            tooltip: def.tooltip.clone(),
             wants_mouse: def.wants_mouse,
             wants_scroll: def.wants_scroll,
             text_align: def.text_align,
@@ -501,6 +504,7 @@ fn merge_from(
     if to.layout.is_none() { to.layout = from.layout; }
     if to.layout_spacing.is_none() { to.layout_spacing = from.layout_spacing; }
     if to.text.is_none() { to.text = from.text.clone(); }
+    if to.tooltip.is_none() { to.tooltip = from.tooltip.clone(); }
 
     for (id, value) in from.custom_floats.iter() {
         match to.custom_floats.entry(id.to_string()) {
