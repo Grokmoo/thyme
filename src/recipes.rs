@@ -496,14 +496,21 @@ impl Frame {
     **/
     pub fn tooltip<T: Into<String>>(&mut self, theme: &str, label: T) {
         let mouse = self.mouse_rect();
+        let display_size = self.display_size();
 
-        self.start(theme)
+        let mut rect = Rect::default();
+
+        let builder = self.start(theme)
         .unclip()
         .unparent()
         .text(label)
-        .screen_pos(mouse.right(), mouse.bot())
         .new_render_group()
-        .finish();
+        .trigger_layout(&mut rect);
+
+        let x = mouse.right().min(display_size.x - rect.size.x);
+        let y = mouse.bot().min(display_size.y - rect.size.y);
+
+        builder.screen_pos(x, y).finish();
     }
 
     /**
