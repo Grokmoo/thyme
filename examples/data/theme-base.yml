@@ -129,13 +129,13 @@ image_sets:
         position: [97, 0]
         size: [12, 12]
       window_handle_hover:
-        position: [97, 12]
+        position: [97, 13]
         size: [12, 12]
       window_handle_pressed:
-        position: [97, 24]
+        position: [97, 26]
         size: [12, 12]
       window_handle_disabled:
-        position: [97, 36]
+        position: [97, 39]
         size: [12, 12]
       window_handle:
         states:
@@ -144,11 +144,11 @@ image_sets:
           Pressed: window_handle_pressed
           Disabled: window_handle_disabled
       caret_on:
-        position: [97, 49]
+        position: [5, 111]
         size: [2, 16]
         fill: Stretch
       caret_off:
-        position: [100, 49]
+        position: [8, 111]
         size: [2, 16]
         fill: Stretch
       caret:
@@ -191,7 +191,7 @@ image_sets:
         grid_size_vert: [4, 5]
       greyed_out:
         position: [17, 98]
-        size: [5, 5]
+        size: [4, 4]
         fill: Stretch
 fonts:
   medium:
