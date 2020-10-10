@@ -236,7 +236,8 @@ impl Frame {
 
     /// Returns the current window display size, in logical pixels.
     pub fn display_size(&self) -> Point {
-        self.context_internal().borrow().display_size()
+        let context = self.context_internal().borrow();
+        context.display_size() / context.scale_factor()
     }
 
     /// Returns the current state of the keyboard modifier keys
