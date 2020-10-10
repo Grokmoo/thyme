@@ -110,6 +110,13 @@ all images will be drawn at 1 image pixel to 1 physical screen pixel when the di
 2 physical screen pixels on a hi-dpi display with a scale factor of 2.  By setting the scale factor of the image set to 0.5, you
 can use the full resolution on hi-dpi displays, but you will need twice the image resolution to get the same UI size.
 
+### Image Sampling
+Building images as sub-images of a larger spritesheet is convenient, but you need to be aware of texture sampling issues.  Because of
+floating point rounding, graphics cards will sometimes partially sample pixels just outside the defined area of your images.  To avoid
+unsightly lines and other graphical glitches, it is safest to have a 1 pixel wide border around all images, so that none of them
+are touching.  For images that need to seamlessly repeat or stretch many times (i.e. Simple Images below), the border pixels should
+maintain the same color as the nearby sub-image.  Otherwise you may not always get a seamless effect.
+
 ### Images
 Each image set can contain many `images`, which are defined as subsets of the overall image file in various ways.  The type of
 image for each image within the set is determined based on the parameters specified.
