@@ -38,10 +38,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut party = demo::Party::default();
 
+    let mut last_frame = std::time::Instant::now();
+    let frame_time = std::time::Duration::from_millis(16);
+    
     // run main loop
     events_loop.run(move |event, _, control_flow| match event {
         Event::MainEventsCleared => {
-            let frame_start = std::time::Instant::now();
+            if std::time::Instant::now() > last_frame + frame_time {
+                display.gl_window().window().request_redraw();
+            }
+            *control_flow = ControlFlow::WaitUntil(last_frame + frame_time);
+        },
+        Event::RedrawRequested(_) => {
+            last_frame = std::time::Instant::now();
 
             party.check_context_changes(&mut context, &mut renderer);
 
@@ -63,8 +72,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             });
 
             target.finish().unwrap();
-
-            *control_flow = ControlFlow::WaitUntil(frame_start + std::time::Duration::from_millis(16));
         },
         Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => *control_flow = ControlFlow::Exit,
         event => {
