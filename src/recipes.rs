@@ -504,7 +504,7 @@ impl Frame {
         .unclip()
         .unparent()
         .text(label)
-        .new_render_group()
+        .always_top()
         .trigger_layout(&mut rect);
 
         let x = mouse.right().min(display_size.x - rect.size.x);

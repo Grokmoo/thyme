@@ -102,7 +102,7 @@ impl Widget {
             enabled: true,
             active: false,
             recalc_pos_size,
-            next_render_group: false,
+            next_render_group: NextRenderGroup::None,
             unparent: false,
             tooltip: theme.tooltip.clone(),
         };
@@ -313,6 +313,12 @@ fn pos(parent: &Widget, pos: Point, self_size: Point, align: Align) -> Point {
     pos - align.adjust_for(self_size).round()
 }
 
+pub(crate) enum NextRenderGroup {
+    None,
+    Normal,
+    AlwaysTop,
+}
+
 pub(crate) struct WidgetData {
     manual_pos: bool,
     wants_mouse: bool,
@@ -327,7 +333,7 @@ pub(crate) struct WidgetData {
     enabled: bool,
     active: bool,
     recalc_pos_size: bool,
-    next_render_group: bool,
+    next_render_group: NextRenderGroup,
     unparent: bool,
 
     tooltip: Option<String>,
@@ -425,8 +431,16 @@ impl<'a> WidgetBuilder<'a> {
         self.frame.widget(self.parent)
     }
 
-    pub(crate) fn set_next_render_group(&mut self, val: bool) {
+    pub(crate) fn set_next_render_group(&mut self, val: NextRenderGroup) {
         self.data.next_render_group = val;
+    }
+
+    /// Specifies that this widget and its children should be part of a new Render Group that is always shown on top of other groups.
+    /// See [`new_render_group`](#method.new_render_group)
+    #[must_use]
+    pub fn always_top(mut self) -> WidgetBuilder<'a> {
+        self.data.next_render_group = NextRenderGroup::AlwaysTop;
+        self
     }
 
     /// Specifies that this widget and its children should be part of a new Render Group.  Render groups are used to handle cases where
@@ -435,7 +449,7 @@ impl<'a> WidgetBuilder<'a> {
     /// [`Windows`](struct.WindowBuilder.html) make use of render groups.
     #[must_use]
     pub fn new_render_group(mut self) -> WidgetBuilder<'a> {
-        self.data.next_render_group = true;
+        self.data.next_render_group = NextRenderGroup::Normal;
         self
     }
 
@@ -935,8 +949,10 @@ impl<'a> WidgetBuilder<'a> {
 
         let prev_rend_group = self.frame.cur_render_group();
 
-        if self.data.next_render_group {
-            self.frame.next_render_group(self_bounds, self.widget.id.to_string());
+        match self.data.next_render_group {
+            NextRenderGroup::None => (),
+            NextRenderGroup::Normal => self.frame.next_render_group(self_bounds, self.widget.id.to_string(), false),
+            NextRenderGroup::AlwaysTop => self.frame.next_render_group(self_bounds, self.widget.id.to_string(), true),
         }
 
         let widget_index = self.frame.num_widgets();
@@ -963,9 +979,10 @@ impl<'a> WidgetBuilder<'a> {
 
                 self.frame.widget_mut(widget_index).size.y += this_children_max_bounds.size.y + border;
 
-                if self.data.next_render_group {
-                    // if we just created the render group, rebound it
-                    self.frame.rebound_cur_render_group(self_bounds);
+                // if we just created the render group, rebound it
+                match self.data.next_render_group {
+                    NextRenderGroup::None => (),
+                    NextRenderGroup::Normal | NextRenderGroup::AlwaysTop => self.frame.rebound_cur_render_group(self_bounds),
                 }
             }
 
@@ -975,9 +992,10 @@ impl<'a> WidgetBuilder<'a> {
 
                 self.frame.widget_mut(widget_index).size.x += this_children_max_bounds.size.x + border;
                 
-                if self.data.next_render_group {
-                    // if we just created the render group, rebound it
-                    self.frame.rebound_cur_render_group(self_bounds);
+                // if we just created the render group, rebound it
+                match self.data.next_render_group {
+                    NextRenderGroup::None => (),
+                    NextRenderGroup::Normal | NextRenderGroup::AlwaysTop => self.frame.rebound_cur_render_group(self_bounds),
                 }
             }
         }
@@ -1011,8 +1029,9 @@ impl<'a> WidgetBuilder<'a> {
             }
         }
 
-        if self.data.next_render_group {
-            self.frame.prev_render_group(prev_rend_group);
+        match self.data.next_render_group {
+            NextRenderGroup::None => (),
+            NextRenderGroup::Normal | NextRenderGroup::AlwaysTop => self.frame.prev_render_group(prev_rend_group),
         }
 
         // unset modal tree value only if this widget was the modal one

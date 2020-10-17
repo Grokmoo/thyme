@@ -63,6 +63,7 @@ impl Frame {
                 group: cur_rend_group,
                 start: 0,
                 num: 0,
+                always_top: false,
             }],
             parent_index: 0,
             in_modal_tree: false,
@@ -526,7 +527,7 @@ impl Frame {
         self.cur_rend_group = group;
     }
 
-    pub(crate) fn next_render_group(&mut self, rect: Rect, id: String) {
+    pub(crate) fn next_render_group(&mut self, rect: Rect, id: String, always_top: bool) {
         let widgets_len = self.widgets.len();
         let index = self.render_groups.len() as u16;
         let cur_rend_group = RendGroup { index };
@@ -537,6 +538,7 @@ impl Frame {
             group: cur_rend_group,
             start: widgets_len,
             num: 0,
+            always_top,
         });
         self.cur_rend_group = cur_rend_group;
     }
@@ -556,7 +558,13 @@ impl Frame {
 
         let mut render_groups = self.render_groups;
         render_groups.sort_by_key(|group| {
-            if group.group == top_rend_group { 0 } else { 1 }
+            if group.always_top {
+                -1
+            } else if group.group == top_rend_group {
+                0
+            } else {
+                1
+            }
         });
 
         let mut mouse_in_rend_group = None;
@@ -585,6 +593,7 @@ pub(crate) struct RendGroupDef {
     group: RendGroup,
     start: usize,
     num: usize,
+    always_top: bool,
 }
 
 impl RendGroupDef {
