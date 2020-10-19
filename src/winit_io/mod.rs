@@ -1,3 +1,5 @@
+use std::error::Error;
+
 use winit::event::{Event, WindowEvent, MouseButton, MouseScrollDelta, ElementState};
 use winit::event_loop::EventLoop;
 
@@ -46,13 +48,13 @@ impl IO for WinitIo {
 impl WinitIo {
     /// Creates a new adapter from the given `EventLoop`, with the specified initial display size,
     /// in logical pixels.  This may change over time.
-    pub fn new<T>(event_loop: &EventLoop<T>, logical_display_size: Point) -> WinitIo {
-        let monitor = event_loop.primary_monitor();
+    pub fn new<T>(event_loop: &EventLoop<T>, logical_display_size: Point) -> Result<WinitIo, WinitError> {
+        let monitor = event_loop.primary_monitor().ok_or(WinitError::PrimaryMonitorNotFound)?;
         let scale_factor = monitor.scale_factor() as f32;
-        WinitIo {
+        Ok(WinitIo {
             scale_factor,
             display_size: logical_display_size * scale_factor,
-        }
+        })
     }
 
     /// Handles a winit `Event` and passes it to the Thyme [`Context`](struct.Context.html).
@@ -116,6 +118,29 @@ impl WinitIo {
                 context.push_character(*c);
             }
             _ => (),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum WinitError {
+    PrimaryMonitorNotFound,
+}
+
+impl std::fmt::Display for WinitError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        use self::WinitError::*;
+        match self {
+            PrimaryMonitorNotFound => write!(f, "Primary monitor not found."),
+        }
+    }
+}
+
+impl Error for WinitError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        use self::WinitError::*;
+        match self {
+            PrimaryMonitorNotFound => None,
         }
     }
 }

@@ -35,7 +35,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut swap_chain = device.create_swap_chain(&surface, &sc_desc);
 
     // create thyme backend
-    let mut io = thyme::WinitIo::new(&event_loop, window_size.into());
+    let mut io = thyme::WinitIo::new(&event_loop, window_size.into())?;
     let mut renderer = thyme::WgpuRenderer::new(Arc::clone(&device), Arc::clone(&queue));
     let mut context_builder = thyme::ContextBuilder::new(thyme::BuildOptions { enable_live_reload: false });
 
