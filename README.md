@@ -1,5 +1,8 @@
 # Thyme - Themable Immediate Mode GUI
 
+[![Crates.io](https://img.shields.io/crates/v/thyme.svg)](https://crates.io/crates/thyme)
+[![Docs.rs](https://docs.rs/thyme/badge.svg)](https://docs.rs/thyme)
+
 Thyme is a Graphical User Interface (GUI) library written in pure, safe, Rust.  All widgets are rendered using image sources, instead of the line art more commonly used by other Immediate Mode GUIs.  The image definitions, fonts, and style attributes are all specified in a unified theme.  This is generally drawn from a file, but any [Serde](https://serde.rs/) compatible source should work.  Live Reload is supported for asset files for a more efficient workflow.
 
 A composite image showcasing three different themes:
