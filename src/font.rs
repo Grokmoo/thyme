@@ -1,3 +1,5 @@
+use rustc_hash::FxHashMap;
+
 use crate::render::{TexCoord, DrawList, FontHandle, DummyDrawList};
 use crate::{Point, Rect, Align, Color};
 
@@ -31,13 +33,13 @@ pub struct FontSummary {
 
 pub struct Font {
     handle: FontHandle,
-    characters: Vec<FontChar>,
+    characters: FxHashMap<char, FontChar>,
     line_height: f32,
     ascent: f32,
 }
 
 impl Font {
-    pub(crate) fn new(handle: FontHandle, characters: Vec<FontChar>, line_height: f32, ascent: f32) -> Font {
+    pub(crate) fn new(handle: FontHandle, characters: FxHashMap<char, FontChar>, line_height: f32, ascent: f32) -> Font {
         Font {
             handle,
             characters,
@@ -47,7 +49,7 @@ impl Font {
     }
 
     fn char(&self, c: char) -> Option<&FontChar> {
-        self.characters.get(c as usize) // TODO smarter lookup
+        self.characters.get(&c)
     }
 
     pub fn line_height(&self) -> f32 { self.line_height }
@@ -299,7 +301,7 @@ pub(crate) struct FontTextureWriter<'a> {
     
     //output
     data: Vec<u8>,
-    characters: Vec<FontChar>,
+    characters: FxHashMap<char, FontChar>,
 }
 
 impl<'a> FontTextureWriter<'a> {
@@ -318,30 +320,24 @@ impl<'a> FontTextureWriter<'a> {
             font,
             font_scale,
             data,
-            characters: Vec::new(),
+            characters: FxHashMap::default(),
         }
     }
 
     pub fn write(mut self, handle: FontHandle) -> Result<FontTextureOut, crate::Error> {
-        // push empty characters to fill array indices
-        for _ in 0..32 {
-            self.characters.push(FontChar::default());
-        }
+        self.characters.insert('\n', FontChar::default());
 
         // write ASCII printable characters
-        for i in 32..=126 {
-            let font_char = self.add_char(i);
-            self.characters.push(font_char);
+        for c in 32..=126 {
+            let c: char = c.into();
+            let font_char = self.add_char(c);
+            self.characters.insert(c, font_char);
         }
 
-        // push empty characters to fill array indices
-        for _ in 127..161 {
-            self.characters.push(FontChar::default());
-        }
-
-        for i in 161..=255 {
-            let font_char = self.add_char(i);
-            self.characters.push(font_char);
+        for c in 161..=255 {
+            let c: char = c.into();
+            let font_char = self.add_char(c);
+            self.characters.insert(c, font_char);
         }
 
         let v_metrics = self.font.v_metrics(self.font_scale);
@@ -363,10 +359,8 @@ impl<'a> FontTextureWriter<'a> {
     
     fn add_char(
         &mut self,
-        i: usize,
+        c: char,
     ) -> FontChar {
-        let c: char = i as u8 as char;
-
         let glyph = self.font.glyph(c)
             .scaled(self.font_scale)
             .positioned(rusttype::Point { x: 0.0, y: 0.0 });
