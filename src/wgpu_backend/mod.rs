@@ -15,6 +15,7 @@ use wgpu::{
 use crate::render::{DrawMode, view_matrix, TextureData, TexCoord, DrawList};
 use crate::font::FontTextureWriter;
 use crate::image::ImageDrawParams;
+use crate::theme_definition::CharacterRange;
 use crate::{Renderer, Frame, Point, Color, Rect};
 
 /**
@@ -473,13 +474,14 @@ impl<'a> Renderer for WgpuRenderer {
         &mut self,
         handle: crate::render::FontHandle,
         source: &crate::font::FontSource,
+        ranges: &[CharacterRange],
         size: f32,
         scale: f32,
     ) -> Result<crate::font::Font, crate::Error> {
         let font = &source.font;
 
-        let writer = FontTextureWriter::new(font, size, scale);
-        let writer_out = writer.write(handle)?;
+        let writer = FontTextureWriter::new(font, ranges, size, scale);
+        let writer_out = writer.write(handle, ranges)?;
 
         let bind_group = self.create_texture(
             &writer_out.data,

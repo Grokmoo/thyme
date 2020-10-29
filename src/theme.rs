@@ -6,6 +6,7 @@ use crate::theme_definition::{
 use crate::font::{Font, FontSummary, FontSource};
 use crate::image::{Image, ImageHandle};
 use crate::render::{TextureData, Renderer, FontHandle};
+use crate::theme_definition::CharacterRange;
 use crate::{Color, Error, Point, Border, Align, Layout, WidthRelative, HeightRelative};
 
 pub struct ThemeSet {
@@ -27,6 +28,11 @@ impl ThemeSet {
         renderer: &mut R,
         display_scale: f32,
     ) -> Result<ThemeSet, Error> {
+        let default_font_ranges = vec![
+            CharacterRange { lower: 32, upper: 126 },
+            CharacterRange { lower: 161, upper: 255 },
+        ];
+
         // TODO need to be able to rebuild fonts when scale factor changes
         // FontSummary size will stay the same for this
         let mut font_handles = HashMap::new();
@@ -37,7 +43,20 @@ impl ThemeSet {
                 Error::Theme(format!("Unable to locate font handle {}", font.source))
             )?;
 
-            let font = renderer.register_font(font_handle, source, font.size, display_scale)?;
+            let ranges = if font.characters.is_empty() {
+                &default_font_ranges
+            } else {
+                &font.characters
+            };
+
+            let font = renderer.register_font(
+                font_handle,
+                source,
+                ranges,
+                font.size,
+                display_scale
+            )?;
+
             font_handle = font_handle.next();
 
             let line_height = font.line_height() / display_scale;

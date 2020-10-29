@@ -12,6 +12,7 @@ use glium::index::PrimitiveType;
 use crate::{image::ImageDrawParams};
 use crate::render::{view_matrix, TexCoord, DrawList, DrawMode, Renderer, TextureHandle, TextureData, FontHandle};
 use crate::font::{Font, FontSource, FontTextureWriter};
+use crate::theme_definition::CharacterRange;
 use crate::{Frame, Point, Color, Rect};
 
 /// A Thyme [`Renderer`](trait.Renderer.html) for [`Glium`](https://github.com/glium/glium).
@@ -323,14 +324,15 @@ impl Renderer for GliumRenderer {
         &mut self,
         handle: FontHandle,
         source: &FontSource,
+        ranges: &[CharacterRange],
         size: f32,
         scale: f32,
     ) -> Result<Font, crate::Error> {
         let font = &source.font;
 
-        let writer = FontTextureWriter::new(font, size, scale);
+        let writer = FontTextureWriter::new(font, ranges, size, scale);
 
-        let writer_out = writer.write(handle)?;
+        let writer_out = writer.write(handle, ranges)?;
 
         let font_tex = Texture2d::with_format(
             &self.context,

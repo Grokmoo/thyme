@@ -470,6 +470,16 @@ impl Align {
 pub struct FontDefinition {
     pub source: String,
     pub size: f32,
+
+    #[serde(default)]
+    pub characters: Vec<CharacterRange>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct CharacterRange {
+    pub lower: u32,
+    pub upper: u32,
 }
 
 /// What to compute the width of a widget relative to.

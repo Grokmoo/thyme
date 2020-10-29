@@ -74,18 +74,25 @@ compatible source, with the examples in this project using [`YAML`](https://yaml
 The theme has several sections: `fonts`, `image_sets`, and `widgets`.
 
 ## Fonts
-Defining fonts is very simple.  The `fonts` section consists of a mapping, with `IDs` mapped
+The `fonts` section consists of a mapping, with `IDs` mapped
 to font data.  The font IDs are used elsewhere in the widgets section and in code when specifying
 a [`font`](struct.WidgetBuilder.html#method.font).
 
 The data consists of a `source`, which is a string which must match one of the fonts registered
 with the [`ContextBuilder`](struct.ContextBuilder.html#method.register_font_source), and a `size`
-in logical pixels.
+in logical pixels.  Fonts may optionally specify one or more (inclusive) ranges of characters to display,
+subject to those characters being present in the actual font TTF data.  By default, printable
+characters from U+0000 to U+00FF are added.  In the future, once this is supported by RustType,
+ the default should change to automatically support all characters present in the source font data.
 ```yaml
 fonts:
   medium:
     source: roboto
     size: 20
+    # only support ASCII printable characters for this font
+    characters:
+      - lower: 0x0020
+      - upper: 0x007e
   small:
     source: roboto
     size: 16

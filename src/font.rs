@@ -1,5 +1,6 @@
 use rustc_hash::FxHashMap;
 
+use crate::theme_definition::CharacterRange;
 use crate::render::{TexCoord, DrawList, FontHandle, DummyDrawList};
 use crate::{Point, Rect, Align, Color};
 
@@ -277,9 +278,6 @@ impl<'a, D: DrawList> FontRenderer<'a, D> {
     }
 }
 
-// TODO this should be sized appropriately based on how much space is needed
-const FONT_TEX_SIZE: u32 = 512;
-
 pub(crate) struct FontTextureOut {
     pub font: Font,
     pub data: Vec<u8>,
@@ -305,9 +303,20 @@ pub(crate) struct FontTextureWriter<'a> {
 }
 
 impl<'a> FontTextureWriter<'a> {
-    pub fn new(font: &'a rusttype::Font<'a>, size: f32, scale: f32) -> FontTextureWriter<'a> {
-        let tex_width = FONT_TEX_SIZE;
-        let tex_height = FONT_TEX_SIZE;
+    pub fn new(font: &'a rusttype::Font<'a>, ranges: &[CharacterRange], size: f32, scale: f32) -> FontTextureWriter<'a> {
+        // TODO if the approximation here doesn't work in practice, may need to do 2 passes over the font.
+        // first pass would just determine the texture bounds.
+
+        // count number of characters and size texture conservatively based on how much space the characters should need
+        let count = ranges.iter().fold(0, |accum, range| accum + (range.upper - range.lower + 1));
+        let rows = (count as f32).sqrt().ceil();
+        const FUDGE_FACTOR: f32 = 1.2; // factor for characters with tails and wider than usual characters
+        let tex_size = (rows * size * FUDGE_FACTOR * scale).ceil() as u32;
+        log::info!("Using texture of size {} for {} characters in font of size {}.", tex_size, count, size * scale);
+
+        let tex_width = tex_size;
+        let tex_height = tex_size;
+
         let data = vec![0u8; (tex_width * tex_height) as usize];
         let font_scale = rusttype::Scale { x: size * scale, y: size * scale };
 
@@ -324,20 +333,21 @@ impl<'a> FontTextureWriter<'a> {
         }
     }
 
-    pub fn write(mut self, handle: FontHandle) -> Result<FontTextureOut, crate::Error> {
+    pub fn write(mut self, handle: FontHandle, ranges: &[CharacterRange]) -> Result<FontTextureOut, crate::Error> {
         self.characters.insert('\n', FontChar::default());
 
-        // write ASCII printable characters
-        for c in 32..=126 {
-            let c: char = c.into();
-            let font_char = self.add_char(c);
-            self.characters.insert(c, font_char);
-        }
+        for range in ranges {
+            for codepoint in range.lower..=range.upper {
+                let c = match std::char::from_u32(codepoint) {
+                    None => {
+                        log::warn!("Character range {:?} contains invalid codepoint {}", range, codepoint);
+                        break;
+                    }, Some(c) => c,
+                };
 
-        for c in 161..=255 {
-            let c: char = c.into();
-            let font_char = self.add_char(c);
-            self.characters.insert(c, font_char);
+                let font_char = self.add_char(c);
+                self.characters.insert(c, font_char);
+            }
         }
 
         let v_metrics = self.font.v_metrics(self.font_scale);
@@ -370,7 +380,7 @@ impl<'a> FontTextureWriter<'a> {
         let bounding_box = glyph.pixel_bounding_box()
             .map_or((1, 1), |bb| (bb.width() as u32, bb.height() as u32));
         
-        if self.tex_x + bounding_box.0 >= FONT_TEX_SIZE {
+        if self.tex_x + bounding_box.0 >= self.tex_width {
             // move to next row
             self.tex_x = 0;
             self.tex_y = self.tex_y + self.max_row_height + 1;
@@ -383,19 +393,19 @@ impl<'a> FontTextureWriter<'a> {
         self.max_row_height = self.max_row_height.max(bounding_box.1);
 
         glyph.draw(|x, y, val| {
-            let index = (self.tex_x + x) + (self.tex_y + y) * FONT_TEX_SIZE;
+            let index = (self.tex_x + x) + (self.tex_y + y) * self.tex_width;
             let value = (val * 255.0).round() as u8;
             self.data[index as usize] = value;
         });
 
         let tex_coords = [
             TexCoord::new(
-                self.tex_x as f32 / FONT_TEX_SIZE as f32,
-                self.tex_y as f32 / FONT_TEX_SIZE as f32
+                self.tex_x as f32 / self.tex_width as f32,
+                self.tex_y as f32 / self.tex_height as f32
             ),
             TexCoord::new(
-                (self.tex_x + bounding_box.0) as f32 / FONT_TEX_SIZE as f32,
-                (self.tex_y + bounding_box.1) as f32 / FONT_TEX_SIZE as f32
+                (self.tex_x + bounding_box.0) as f32 / self.tex_width as f32,
+                (self.tex_y + bounding_box.1) as f32 / self.tex_height as f32
             ),
         ];
 

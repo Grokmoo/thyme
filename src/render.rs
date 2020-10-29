@@ -2,6 +2,7 @@ use std::num::NonZeroU16;
 
 use crate::{Color, Rect, Point, Error};
 use crate::font::{FontSource, Font};
+use crate::theme_definition::CharacterRange;
 
 /// A trait to be implemented on the type to be used for Event handling.  See [`WinitIO`](struct.WinitIO.html)
 /// for an example implementation.  The IO handles events from an external source and passes them to the Thyme
@@ -22,6 +23,7 @@ pub trait Renderer {
         &mut self,
         handle: FontHandle,
         source: &FontSource,
+        ranges: &[CharacterRange],
         size: f32,
         scale: f32,
     ) -> Result<Font, Error>;
