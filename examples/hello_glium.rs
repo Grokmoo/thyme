@@ -13,7 +13,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let font_src = include_bytes!("data/fonts/Roboto-Medium.ttf");
     let image_src = include_bytes!("data/images/gui-pixel.png");
     let image = image::load_from_memory(image_src).unwrap().to_rgba();
-    let theme_src = include_str!("data/theme-base.yml");
+    let theme_src = include_str!("data/themes/base.yml");
     let theme: serde_yaml::Value = serde_yaml::from_str(theme_src)?;
     let window_size = [1280.0, 720.0];
 

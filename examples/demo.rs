@@ -10,8 +10,8 @@ pub fn register_assets(context_builder: &mut ContextBuilder) {
     // register resources in thyme by reading from files.  this enables live reload.
     context_builder.register_theme_from_files(
         &[
-            Path::new("examples/data/theme-base.yml"),
-            Path::new("examples/data/theme-demo.yml"),
+            Path::new("examples/data/themes/base.yml"),
+            Path::new("examples/data/themes/demo.yml"),
             // note we dynamically add to this list later if the user selects a new theme
         ],
         serde_yaml::from_str::<serde_yaml::Value>
@@ -38,10 +38,10 @@ const THEME_CHOICES: [ThemeChoice; 4] = [
 impl ThemeChoice {
     fn path(self) -> Option<&'static str> {
         match self {
-            ThemeChoice::Fantasy => Some("examples/data/theme-fantasy.yml"),
+            ThemeChoice::Fantasy => Some("examples/data/themes/fantasy.yml"),
             ThemeChoice::Pixels => None,
-            ThemeChoice::Transparent => Some("examples/data/theme-transparent.yml"),
-            ThemeChoice::Golden => Some("examples/data/theme-golden.yml"),
+            ThemeChoice::Transparent => Some("examples/data/themes/transparent.yml"),
+            ThemeChoice::Golden => Some("examples/data/themes/golden.yml"),
         }
     }
 }
