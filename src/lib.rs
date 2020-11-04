@@ -59,11 +59,16 @@ fn create_ui(ui: &mut Frame) {
 
 # Overview
 
-In general, you first create the [`ContextBuilder`](struct.ContextBuilder.html) and register resources with it.
-Once done, you [`build`](struct.ContextBuilder.html#method.build) the associated [`Context`](struct.Context.html).
+For common use cases, the [`AppBuilder`](struct.AppBuilder.html) struct is available to allow you to create a simple
+application with just a few lines of code.
+
+In more general cases, you first create the [`ContextBuilder`](struct.ContextBuilder.html) and register resources
+with it. Once done, you [`build`](struct.ContextBuilder.html#method.build) the associated [`Context`](struct.Context.html).
 At each frame of your app, you [`create a Thyme frame`](struct.Context.html#method.create_frame).  The
 [`Frame`](struct.Frame.html) is then passed along through your UI building routines, and is used to create
 [`WidgetBuilders`](struct.WidgetBuilder.html) and populate your Widget tree.
+
+See the examples for details on how to use both of the above methods.
 
 # Theme Definition
 When creating a [`ContextBuilder`](struct.ContextBuilder.html), you need to specify a theme.  You can keep the
@@ -339,6 +344,7 @@ obtain neccessary parameters from the theme itself, rather than relying on anoth
 pub mod bench;
 pub mod log;
 
+mod app_builder;
 mod context;
 mod context_builder;
 mod font;
@@ -367,6 +373,11 @@ mod wgpu_backend;
 #[cfg(feature = "wgpu_backend")]
 pub use wgpu_backend::WgpuRenderer;
 
+pub use app_builder::AppBuilder;
+
+#[cfg(feature="glium_backend")]
+pub use app_builder::GliumApp;
+
 pub use frame::Frame;
 pub use point::{Rect, Point, Border};
 pub use widget::{WidgetBuilder, WidgetState};
@@ -394,9 +405,19 @@ pub enum Error {
     /// An error that occurred attempting to use the filesystem
     IO(std::io::Error),
 
+    /// An error creating the display
+    DisplayCreation(String),
+
+    /// An error originating from Winit
+    Winit(crate::winit_io::WinitError),
+
     /// An error that occurred reading an image using the `image` crate.
     #[cfg(feature="image")]
     Image(::image::error::ImageError),
+
+    /// An error originating from Glium
+    #[cfg(feature="glium_backend")]
+    Glium(crate::glium_backend::GliumError),
 }
 
 impl std::fmt::Display for Error {
@@ -407,9 +428,14 @@ impl std::fmt::Display for Error {
             Theme(msg) => write!(f, "Error creating theme from theme definition: {}", msg),
             FontSource(msg) => write!(f, "Error reading font source: {}", msg),
             IO(error) => write!(f, "IO Error: {}", error),
+            DisplayCreation(msg) => write!(f, "Error creating display: {}", msg),
+            Winit(error) => write!(f, "Winit error: {}", error),
 
             #[cfg(feature="image")]
             Image(error) => write!(f, "Image Error: {}", error),
+
+            #[cfg(feature="glium_backend")]
+            Glium(error) => write!(f, "Glium Error: {}", error),
         }
     }
 }
@@ -422,9 +448,14 @@ impl std::error::Error for Error {
             Theme(..) => None,
             FontSource(..) => None,
             IO(error) => Some(error),
+            DisplayCreation(..) => None,
+            Winit(error) => Some(error),
 
             #[cfg(feature="image")]
             Image(error) => Some(error),
+
+            #[cfg(feature="glium_backend")]
+            Glium(error) => Some(error),
         }
     }
 }

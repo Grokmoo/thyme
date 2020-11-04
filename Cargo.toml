@@ -42,6 +42,7 @@ winit = "0.23"
 parking_lot = { version = "0.11" }
 notify = { version = "4" }
 rustc-hash = "1"
+serde_yaml = "0.8"
 
 image = { version = "0.23", optional = true, default_features = false, features = [ "png", "jpeg" ] }
 glium = { version = "0.28", optional = true }
@@ -50,5 +51,4 @@ futures = { version = "0.3", optional = true }
 bytemuck = { version = "1", optional = true }
 
 [dev-dependencies]
-serde_yaml = "0.8"
 image = { version = "0.23", default_features = false, features = [ "png" ] }

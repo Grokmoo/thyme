@@ -382,6 +382,7 @@ struct GliumTexture {
 
 #[derive(Debug)]
 pub enum GliumError {
+    DisplayCreation(glium::backend::glutin::DisplayCreationError),
     Draw(glium::DrawError),
     Index(glium::index::BufferCreationError),
     Font(String),
@@ -395,6 +396,7 @@ impl Display for GliumError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         use self::GliumError::*;
         match self {
+            DisplayCreation(e) => write!(f, "Error creating display: {}", e),
             Draw(e) => write!(f, "Error drawing to target: {}", e),
             Index(e) => write!(f, "Index buffer creation failed: {}", e),
             Font(e) => write!(f, "{}", e),
@@ -402,7 +404,6 @@ impl Display for GliumError {
             InvalidFont(handle) => write!(f, "Invalid font: {:?}", handle),
             Program(e) => write!(f, "Shader program creation failed: {}", e),
             Vertex(e) => write!(f, "Vertex buffer creation failed: {}", e),
-
         }
     }
 }
@@ -411,6 +412,7 @@ impl Error for GliumError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         use self::GliumError::*;
         match self {
+            DisplayCreation(e) => Some(e),
             Draw(e) => Some(e),
             InvalidTexture(_) => None,
             InvalidFont(_) => None,
