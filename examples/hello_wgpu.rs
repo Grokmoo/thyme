@@ -13,7 +13,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // load assets
     let font_src = include_bytes!("data/fonts/Roboto-Medium.ttf");
-    let image_src = include_bytes!("data/images/gui-pixel.png");
+    let image_src = include_bytes!("data/images/pixel.png");
     let image = image::load_from_memory(image_src).unwrap().to_rgba();
     let theme_src = include_str!("data/themes/base.yml");
     let theme: serde_yaml::Value = serde_yaml::from_str(theme_src)?;
@@ -43,7 +43,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let image_dims = image.dimensions();
     context_builder.register_theme(theme)?;
     context_builder.register_texture("pixel", image.into_raw(), image_dims);
-    context_builder.register_font("roboto", font_src.to_vec());
+    context_builder.register_font("Roboto-Medium", font_src.to_vec());
     let mut context = context_builder.build(&mut renderer, &mut io)?;
 
     // run main loop

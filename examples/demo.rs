@@ -16,11 +16,11 @@ pub fn register_assets(context_builder: &mut ContextBuilder) {
         ],
         serde_yaml::from_str::<serde_yaml::Value>
     ).unwrap();
-    context_builder.register_texture_from_file("pixel", Path::new("examples/data/images/gui-pixel.png"));
-    context_builder.register_texture_from_file("fantasy", Path::new("examples/data/images/gui-fantasy.png"));
-    context_builder.register_texture_from_file("transparent", Path::new("examples/data/images/gui-transparent.png"));
-    context_builder.register_texture_from_file("golden", Path::new("examples/data/images/gui-golden.png"));
-    context_builder.register_font_from_file("roboto", Path::new("examples/data/fonts/Roboto-Medium.ttf"));
+    context_builder.register_texture_from_file("pixel", Path::new("examples/data/images/pixel.png"));
+    context_builder.register_texture_from_file("fantasy", Path::new("examples/data/images/fantasy.png"));
+    context_builder.register_texture_from_file("transparent", Path::new("examples/data/images/transparent.png"));
+    context_builder.register_texture_from_file("golden", Path::new("examples/data/images/golden.png"));
+    context_builder.register_font_from_file("Roboto-Medium", Path::new("examples/data/fonts/Roboto-Medium.ttf"));
 }
 
 #[derive(Debug, Copy, Clone)]

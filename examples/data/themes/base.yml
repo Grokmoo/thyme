@@ -195,10 +195,10 @@ image_sets:
         fill: Stretch
 fonts:
   medium:
-    source: roboto
+    source: Roboto-Medium
     size: 20
   small:
-    source: roboto
+    source: Roboto-Medium
     size: 16
 widgets:
   tooltip:

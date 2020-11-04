@@ -1,14 +1,14 @@
-gui-golden.png
+golden.png
 License CC-BY-SA 3.0 https://creativecommons.org/licenses/by-sa/3.0/
 Sampled from "Golden UI - Bigger than Ever Edition" by Buch
 Various higher scale icons created based on theme.  Buttons adapted for more scaling and new states created.
 https://opengameart.org/content/golden-ui-bigger-than-ever-edition
 https://opengameart.org/users/buch
 
-gui-transparent.png
+transparent.png
 Some elements adapted from gui-fantasy below.
 
-gui-pixel.png
+pixel.png
 Base theme taken and expanded upon from "Sci-Fi User Interface" by Buch
 https://opengameart.org/content/sci-fi-user-interface
 https://opengameart.org/users/buch
@@ -17,7 +17,7 @@ Repeat fill texture taken from "Seamless Textures" by arikel
 https://opengameart.org/content/seamless-textures
 https://opengameart.org/users/arikel
 
-gui-fantasy.png
+fantasy.png
 Base theme taken from and edited
 https://opengameart.org/content/fantasy-gui-0
 https://opengameart.org/users/melle
