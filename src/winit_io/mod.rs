@@ -125,6 +125,7 @@ impl WinitIo {
 #[derive(Debug)]
 pub enum WinitError {
     PrimaryMonitorNotFound,
+    OS(winit::error::OsError),
 }
 
 impl std::fmt::Display for WinitError {
@@ -132,6 +133,7 @@ impl std::fmt::Display for WinitError {
         use self::WinitError::*;
         match self {
             PrimaryMonitorNotFound => write!(f, "Primary monitor not found."),
+            OS(e) => write!(f, "OS Error: {}", e),
         }
     }
 }
@@ -141,6 +143,7 @@ impl Error for WinitError {
         use self::WinitError::*;
         match self {
             PrimaryMonitorNotFound => None,
+            OS(e) => Some(e),
         }
     }
 }

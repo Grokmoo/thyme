@@ -1,5 +1,8 @@
 use std::path::{PathBuf};
 
+#[cfg(feature="wgpu_backend")]
+use std::sync::Arc;
+
 use crate::{Error, Point, ContextBuilder, Context, WinitIo, Frame};
 
 /// An easy to use but still fairly configurable builder, allowing you to get
@@ -211,8 +214,40 @@ impl AppBuilder {
     /// Creates a [`WgpuApp`](struct.WgpuApp.html) object, setting up Thyme as specified
     /// in this Builder and using the [`WgpuRenderer`](struct.WgpuRenderer.html).
     #[cfg(feature="wgpu_backend")]
-    pub fn build_wgpu(self) -> Result<(), Error> {
-        unimplemented!();
+    pub fn build_wgpu(self) -> Result<WgpuApp, Error> {
+        use winit::{
+            event_loop::EventLoop,
+            window::WindowBuilder,
+            dpi::LogicalSize
+        };
+
+        if self.logger {
+            crate::log::init(log::Level::Warn).unwrap();
+        }
+
+        let event_loop = EventLoop::new();
+        let window = WindowBuilder::new()
+            .with_title(&self.title)
+            .with_inner_size(LogicalSize::new(self.window_size.x, self.window_size.y))
+            .build(&event_loop).map_err(crate::winit_io::WinitError::OS).map_err(Error::Winit)?;
+
+        // setup WGPU
+        let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
+        let surface = unsafe { instance.create_surface(&window) };
+        let (_adapter, device, queue) = futures::executor::block_on(setup_wgpu(&instance, &surface));
+        let sc_desc = swapchain_desc(self.window_size.x as u32, self.window_size.y as u32);
+        let swap_chain = device.create_swap_chain(&surface, &sc_desc);
+
+        // create thyme backend
+        let mut io = crate::WinitIo::new(&event_loop, self.window_size).map_err(Error::Winit)?;
+        let mut renderer = crate::WgpuRenderer::new(Arc::clone(&device), Arc::clone(&queue));
+        let mut context_builder = crate::ContextBuilder::with_defaults();
+
+        self.register_resources(&mut context_builder)?;
+
+        let context = context_builder.build(&mut renderer, &mut io)?;
+
+        Ok(WgpuApp { io, renderer, context, event_loop, window, surface, swap_chain, device, queue })
     }
 
     fn register_resources(&self, context_builder: &mut ContextBuilder) -> Result<(), Error> {
@@ -248,6 +283,103 @@ impl AppBuilder {
     }
 }
 
+/// The WgpuApp object, containing the Thyme [`Context`](struct.Context.html), [`Renderer`](struct.WgpuRenderer.html),
+/// and [`IO`](struct.WinitIo.html).   You can manually use the public members of this struct, or use [`main_loop`](#method.main_loop)
+/// for basic use cases.
+#[cfg(feature="wgpu_backend")]
+pub struct WgpuApp {
+    /// The Thyme IO
+    pub io: WinitIo,
+
+    /// The Thyme Renderer
+    pub renderer: crate::WgpuRenderer,
+
+    /// The Thyme Context
+    pub context: Context,
+
+    /// Winit Event loop
+    pub event_loop: winit::event_loop::EventLoop<()>,
+
+    /// Winit window
+    pub window: winit::window::Window,
+
+    /// The Wgpu output surface
+    pub surface: wgpu::Surface,
+
+    /// Wgpu Swapchain
+    pub swap_chain: wgpu::SwapChain,
+
+    /// Wgpu output device
+    pub device: Arc<wgpu::Device>,
+
+    /// Wgpu output queue
+    pub queue: Arc<wgpu::Queue>,
+}
+
+#[cfg(feature="wgpu_backend")]
+impl WgpuApp {
+    /// Runs the Winit main loop for this app
+    pub fn main_loop<F: Fn(&mut Frame) + 'static>(self, f: F) -> ! {
+        use winit::{
+            event::{Event, WindowEvent},
+            event_loop::ControlFlow,
+        };
+
+        let event_loop = self.event_loop;
+        let mut renderer = self.renderer;
+        let mut io = self.io;
+        let mut context = self.context;
+        let window = self.window;
+        let mut swap_chain = self.swap_chain;
+        let queue = self.queue;
+        let device = self.device;
+        let surface = self.surface;
+
+        event_loop.run(move |event, _, control_flow| {
+            match event {
+                Event::MainEventsCleared => {
+                    let frame = swap_chain.get_current_frame().unwrap().output;
+                    let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+    
+                    let mut ui = context.create_frame();
+    
+                    (f)(&mut ui);
+    
+                    {
+                        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                            color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
+                                attachment: &frame.view,
+                                resolve_target: None,
+                                ops: wgpu::Operations {
+                                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                                    store: true,
+                                },
+                            }],
+                            depth_stencil_attachment: None,
+                        });
+    
+                        renderer.draw_frame(ui, &mut render_pass);
+                    }
+    
+                    queue.submit(Some(encoder.finish()));
+                },
+                Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => *control_flow = ControlFlow::Exit,
+                event => {
+                    // recreate swap chain on resize, but also still pass the event to thyme
+                    if let Event::WindowEvent { event: WindowEvent::Resized(_), ..} = event {
+                        let size: (u32, u32) = window.inner_size().into();
+    
+                        let sc_desc = swapchain_desc(size.0, size.1);
+                        swap_chain = device.create_swap_chain(&surface, &sc_desc);
+                    }
+    
+                    io.handle_event(&mut context, &event);
+                }
+            }
+        })
+    }
+}
+
 /// The GliumApp object, containing the Thyme [`Context`](struct.Context.html), [`Renderer`](struct.GliumRenderer.html),
 /// and [`IO`](struct.WinitIo.html).  You can manually use the public members of this struct, or use [`main_loop`](#method.main_loop)
 /// for basic use cases.
@@ -269,6 +401,7 @@ pub struct GliumApp {
     pub event_loop: winit::event_loop::EventLoop<()>,
 }
 
+#[cfg(feature="glium_backend")]
 impl GliumApp {
     /// Runs the Winit main loop for this app
     pub fn main_loop<F: Fn(&mut Frame) + 'static>(self, f: F) -> ! {
@@ -358,4 +491,39 @@ fn add_path(path: PathBuf, out: &mut Vec<(String, PathBuf)>) {
     };
 
     out.push((stem.to_string(), path));
+}
+
+#[cfg(feature="wgpu_backend")]
+async fn setup_wgpu(
+    instance: &wgpu::Instance,
+    surface: &wgpu::Surface
+) -> (wgpu::Adapter, Arc<wgpu::Device>, Arc<wgpu::Queue>) {
+    let adapter = instance.request_adapter(&wgpu::RequestAdapterOptions {
+        power_preference: wgpu::PowerPreference::Default,
+        // Request an adapter which can render to our surface
+        compatible_surface: Some(&surface),
+    }).await.unwrap();
+    
+    // Create the logical device and command queue
+    let (device, queue) = adapter.request_device(
+        &wgpu::DeviceDescriptor {
+            features: wgpu::Features::empty(),
+            limits: wgpu::Limits::default(),
+            shader_validation: true,
+        },
+        None,
+    ).await.expect("Failed to create WGPU device");
+
+    (adapter, Arc::new(device), Arc::new(queue))
+}
+
+#[cfg(feature="wgpu_backend")]
+fn swapchain_desc(width: u32, height: u32) -> wgpu::SwapChainDescriptor {
+    wgpu::SwapChainDescriptor {
+        usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+        format: wgpu::TextureFormat::Bgra8Unorm,
+        width,
+        height,
+        present_mode: wgpu::PresentMode::Mailbox,
+    }
 }
