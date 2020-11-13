@@ -92,7 +92,7 @@ pub struct WidgetThemeDefinition {
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ImageSet {
-    pub source: String,
+    pub source: Option<String>,
 
     #[serde(default="f32_one")]
     pub scale: f32,

@@ -336,9 +336,15 @@ impl ResourceSet {
     }
 
     fn build_images<R: Renderer>(&self, renderer: &mut R) -> Result<HashMap<String, TextureData>, Error> {
+        let mut output = HashMap::new();
         let mut handle = TextureHandle::default();
 
-        let mut output = HashMap::new();
+        // register a 1x1 pixel texture for use with minimal themes
+        let tex_data = [0xff, 0xff, 0xff, 0xff];
+        let tex_data = renderer.register_texture(handle, &tex_data, (1, 1))?;
+        output.insert(INTERNAL_SINGLE_PIX_IMAGE_ID.to_string(), tex_data);
+        handle = handle.next();
+        
         for (id, source) in self.images.iter() {
             let (tex_data, width, height) = source.data.as_ref().unwrap();
             let dims = (*width, *height);
@@ -351,6 +357,8 @@ impl ResourceSet {
         Ok(output)
     }
 }
+
+pub(crate) const INTERNAL_SINGLE_PIX_IMAGE_ID: &str = "__INTERNAL_SINGLE_PIX__";
 
 fn watcher_loop(rx: Receiver<DebouncedEvent>) {
     loop {

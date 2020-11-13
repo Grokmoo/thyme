@@ -72,9 +72,13 @@ impl ThemeSet {
         for (set_id, set) in &definition.image_sets {
             let mut images_in_set = HashMap::new();
 
-            let texture = textures.get(&set.source).ok_or_else(||
-                Error::Theme(format!("Unable to locate texture {}", set.source))
-            )?;
+            let texture = if let Some(source) = set.source.as_ref() {
+                textures.get(source).ok_or_else(||
+                    Error::Theme(format!("Unable to locate texture {}", source))
+                )?
+            } else {
+                &textures[crate::resource::INTERNAL_SINGLE_PIX_IMAGE_ID]
+            };
 
             let mut collected_images: Vec<(&str, &ImageDefinition)> = Vec::new();
             let mut timed_images: Vec<(&str, &ImageDefinition)> = Vec::new();

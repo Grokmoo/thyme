@@ -106,7 +106,9 @@ fonts:
 ## Image Sets
 Images are defined as a series of `image_sets`.  Each image_set has an `id`, used as the first
 part of the ID of each image in the set.  The complete image ID is equal to `image_set_id/image_id`.
-Each image_set may be `source`d from a different image file.
+Each image_set may be `source`d from a different image file.  If you leave the `source` out of the image definition,
+all images will be treated as sourced from a 1x1 pixel.  This can be useful to create simple, minimal themes
+without requiring an image source.
 Each image file must be registered with [`ContextBuilder`](struct.ContextBuilder.html#method.register_image),
 under an ID matching the `source` id.
 ```yaml
