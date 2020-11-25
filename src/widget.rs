@@ -920,7 +920,6 @@ impl<'a> WidgetBuilder<'a> {
         }
 
         self.widget.scroll = state.scroll;
-        self.widget.cursor = self.widget.cursor;
 
         if !state.is_open {
             self.widget.visible = false;
