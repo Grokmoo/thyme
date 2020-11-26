@@ -277,7 +277,7 @@ impl ResourceSet {
             let path = src.file.as_ref().unwrap();
 
             let image = match image::open(path) {
-                Ok(image) => image.into_rgba(),
+                Ok(image) => image.into_rgba8(),
                 Err(error) => return Err(Error::Image(error)),
             };
 
