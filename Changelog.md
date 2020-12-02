@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2020-12-01
+### Changed
+- Font character cache texture is more appropriately sized
+- Example themes are better organized
+
+### Added
+- Support for user specified arbitrary character ranges in fonts
+- AppBuilder helper class allow users to set up a basic app in very few lines of code
+- Thyme images can be defined without requiring an actual image on disk
+
 ## [0.4.0] - 2020-10-18
 ### Changed
 - Improved performance of wgpu and glium backends.

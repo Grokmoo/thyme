@@ -37,7 +37,7 @@ Add the following to your Cargo.toml file:
 
 ```toml
 [dependencies]
-thyme = { version = "0.4", features = ["wgpu_backend"] }
+thyme = { version = "0.5", features = ["wgpu_backend"] }
 ```
 
 See [hello_wgpu](examples/hello_wgpu.rs) or [hello_glium](examples/hello_glium.rs) for the bare minimum to get started with your preferred renderer.  As a starting point, you can copy the [data](examples/data) folder into your own project and import the resources there, as in the example.
