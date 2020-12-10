@@ -146,6 +146,19 @@ over an area.
     fill: Stretch
 ```
 
+#### Image Groups
+You can create an image group as a shorthand for multiple simple images.  You specify an overall scale factor and fill, then for each image,
+x, y, width, and height.  These four values are multipled by the scale factor.  All simple images in a group are immediately expanded
+as if they were specified as individual images for purposes of being referenced by other image types.
+```yaml
+  icons_set:
+    fill: Stretch
+    group_scale: [64, 64]
+    images:
+      up_arrow: [0, 0, 1, 1]
+      down_arrow: [1, 0, 1, 1]
+```
+
 #### Collected Images
 Collected images allow you to define an image that consists of one or more sub images, fairly arbitrarily.  Each sub image includes
 the image it references, a position, and a size.  Both position and size may be positive or negative.  When drawing, the size of the

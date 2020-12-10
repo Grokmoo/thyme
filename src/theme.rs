@@ -95,6 +95,20 @@ impl ThemeSet {
                         let from = format!("{}/{}", set_id, from);
                         aliases.push((to, from));
                     },
+                    ImageDefinitionKind::Group { group_scale, fill, images } => {
+                        for (generated_id, xywh) in images {
+                            let generated_def = ImageDefinition {
+                                color: image_def.color,
+                                kind: ImageDefinitionKind::Simple {
+                                    position: [xywh[0] * group_scale[0], xywh[1] * group_scale[1]],
+                                    size: [xywh[2] * group_scale[0], xywh[3] * group_scale[1]],
+                                    fill: *fill,
+                                }
+                            };
+                            let image = Image::new(generated_id, &generated_def, texture, &images_in_set, set.scale)?;
+                            images_in_set.insert(generated_id.to_string(), image);
+                        }
+                    },
                     _ => {
                         let image = Image::new(&image_id, image_def, texture, &images_in_set, set.scale)?;
                         images_in_set.insert(image_id.to_string(), image);

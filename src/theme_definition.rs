@@ -135,6 +135,11 @@ pub struct CollectedSubImage {
 #[serde(untagged)]
 #[serde(deny_unknown_fields)]
 pub enum ImageDefinitionKind {
+    Group {
+        group_scale: [u32; 2],
+        fill: ImageFill,
+        images: HashMap<String, [u32; 4]>,
+    },
     Alias {
         from: String,
     },

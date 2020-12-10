@@ -225,7 +225,7 @@ impl Image {
     )-> Result<Image, Error> {
         let base_size;
         let kind = match &def.kind {
-            ImageDefinitionKind::Alias { .. } => unreachable!(),
+            ImageDefinitionKind::Alias { .. } | ImageDefinitionKind::Group { .. } => unreachable!(),
             ImageDefinitionKind::Composed { grid_size, position} => {
                 let mut tex_coords = [[TexCoord::default(); 4]; 4];
                 for y in 0..4 {
