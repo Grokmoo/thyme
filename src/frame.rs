@@ -332,6 +332,12 @@ impl Frame {
         context.is_focus_keyboard(id)
     }
 
+    /// Returns a [`Rect](struct.Rect.html) with the current size and position of the
+    /// current parent widget.  (This is the widget that any currently created
+    /// widgets will be added as a child of).  Note that the size of the parent
+    /// might change later depending on the layout choice.
+    pub fn parent_bounds(&self) -> Rect { self.max_child_bounds }
+
     /// Returns a [`Rect`](struct.Rect.html) encompassing all children that have currently
     /// been added to the parent widget, recursively.  This includes each widget's actual
     /// final position and size.
