@@ -393,6 +393,13 @@ pub use app_builder::AppBuilder;
 #[cfg(feature="glium_backend")]
 pub use app_builder::GliumApp;
 
+#[cfg(feature = "gl_backend")]
+mod gl_backend;
+
+#[cfg(feature = "gl_backend")]
+pub use gl_backend::GLRenderer;
+
+
 pub use frame::Frame;
 pub use point::{Rect, Point, Border};
 pub use widget::{WidgetBuilder, WidgetState};
