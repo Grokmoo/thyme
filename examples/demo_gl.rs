@@ -1,128 +1,12 @@
-use glutin::event::{ElementState, Event, MouseButton, MouseScrollDelta, WindowEvent};
+use glutin::event::{Event, WindowEvent};
 use glutin::event_loop::ControlFlow;
 use std::os::raw::c_char;
-use thyme::{bench, Align, Point};
-use thyme::{Context, InputModifiers};
+use thyme::{bench, Align};
 
 mod demo;
 
-struct IOData {
-    scale_factor: f32,
-    display_size: Point,
-}
-
-impl thyme::IO for IOData {
-    fn scale_factor(&self) -> f32 {
-        self.scale_factor
-    }
-
-    fn display_size(&self) -> Point {
-        self.display_size
-    }
-}
-
-impl IOData {
-    pub fn handle_event<T>(&mut self, context: &mut Context, event: &Event<T>) {
-        let event = match event {
-            Event::WindowEvent { event, .. } => event,
-            _ => return,
-        };
-
-        use WindowEvent::*;
-        match event {
-            Resized(size) => {
-                let (x, y): (u32, u32) = (*size).into();
-                let size: Point = (x as f32, y as f32).into();
-                self.display_size = size;
-                context.set_display_size(size);
-            }
-            ModifiersChanged(m) => {
-                context.set_input_modifiers(InputModifiers {
-                    shift: m.shift(),
-                    ctrl: m.ctrl(),
-                    alt: m.alt(),
-                });
-            }
-            WindowEvent::ScaleFactorChanged { scale_factor, .. } => {
-                let scale = *scale_factor as f32;
-                self.scale_factor = scale;
-                context.set_scale_factor(scale);
-            }
-            MouseInput { state, button, .. } => {
-                let pressed = match state {
-                    ElementState::Pressed => true,
-                    ElementState::Released => false,
-                };
-
-                let index: usize = match button {
-                    MouseButton::Left => 0,
-                    MouseButton::Right => 1,
-                    MouseButton::Middle => 2,
-                    MouseButton::Other(index) => *index as usize + 3,
-                };
-
-                context.set_mouse_pressed(pressed, index);
-            }
-            MouseWheel { delta, .. } => {
-                match delta {
-                    MouseScrollDelta::LineDelta(x, y) => {
-                        // TODO configure line delta
-                        context.add_mouse_wheel(Point::new(*x * 10.0, *y * 10.0));
-                    }
-                    MouseScrollDelta::PixelDelta(pos) => {
-                        let x = pos.x as f32;
-                        let y = pos.y as f32;
-                        context.add_mouse_wheel(Point::new(x, y));
-                    }
-                }
-            }
-            CursorMoved { position, .. } => {
-                context.set_mouse_pos(
-                    (
-                        position.x as f32 / self.scale_factor,
-                        position.y as f32 / self.scale_factor,
-                    )
-                        .into(),
-                );
-            }
-            ReceivedCharacter(c) => {
-                context.push_character(*c);
-            }
-            _ => (),
-        }
-    }
-}
-
 const OPENGL_MAJOR_VERSION: u8 = 3;
 const OPENGL_MINOR_VERSION: u8 = 2;
-
-// this is passed as a fn pointer to gl::DebugMessageCallback
-// and cannot be marked as an "unsafe extern"
-#[no_mangle]
-#[allow(clippy::not_unsafe_ptr_arg_deref)]
-pub extern "system" fn debug_callback(
-    _: gl::types::GLenum,
-    err_type: gl::types::GLenum,
-    id: gl::types::GLuint,
-    severity: gl::types::GLenum,
-    _: gl::types::GLsizei,
-    message: *const c_char,
-    _: *mut std::ffi::c_void,
-) {
-    match err_type {
-        gl::DEBUG_TYPE_ERROR | gl::DEBUG_TYPE_UNDEFINED_BEHAVIOR => unsafe {
-            let err_text = std::ffi::CStr::from_ptr(message);
-            println!(
-                "Type: {:?} ID: {:?} Severity: {:?}:\n  {:#?}",
-                err_type,
-                id,
-                severity,
-                err_text.to_str().unwrap()
-            );
-        },
-        _ => {}
-    }
-}
 
 /// A basic RPG character sheet, using the "plain" OpenGL backend.
 /// This file contains the application setup code and wgpu specifics.
@@ -168,10 +52,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     demo::register_assets(&mut context_builder);
 
-    let mut io = IOData {
-        scale_factor: 1.0,
-        display_size: Point::new(1280.0, 780.0),
-    };
+    let window_size = [1280.0, 720.0];
+    let mut io = thyme::WinitIo::new(&event_loop, window_size.into())?;
     let mut context = context_builder.build(&mut renderer, &mut io)?;
     let mut party = demo::Party::default();
 
@@ -217,4 +99,32 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             io.handle_event(&mut context, &event);
         }
     })
+}
+
+// this is passed as a fn pointer to gl::DebugMessageCallback
+// and cannot be marked as an "unsafe extern"
+#[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
+pub extern "system" fn debug_callback(
+    _: gl::types::GLenum,
+    err_type: gl::types::GLenum,
+    id: gl::types::GLuint,
+    severity: gl::types::GLenum,
+    _: gl::types::GLsizei,
+    message: *const c_char,
+    _: *mut std::ffi::c_void,
+) {
+    match err_type {
+        gl::DEBUG_TYPE_ERROR | gl::DEBUG_TYPE_UNDEFINED_BEHAVIOR => unsafe {
+            let err_text = std::ffi::CStr::from_ptr(message);
+            println!(
+                "Type: {:?} ID: {:?} Severity: {:?}:\n  {:#?}",
+                err_type,
+                id,
+                severity,
+                err_text.to_str().unwrap()
+            );
+        },
+        _ => {}
+    }
 }

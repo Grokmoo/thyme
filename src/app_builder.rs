@@ -179,10 +179,7 @@ impl AppBuilder {
     /// in this Builder and using the [`GliumRenderer`](struct.GliumRenderer.html).
     #[cfg(feature="glium_backend")]
     pub fn build_glium(self) -> Result<GliumApp, Error> {
-        use glium::glutin::{
-            self,
-            event_loop::{EventLoop}, window::WindowBuilder
-        };
+        use glium::glutin::{event_loop::{EventLoop}, window::WindowBuilder};
         use glium::{Display};
         use crate::glium_backend::GliumError;
 
@@ -191,10 +188,10 @@ impl AppBuilder {
         }
 
         let event_loop = EventLoop::new();
-        let context = glutin::ContextBuilder::new();
+        let context = glium::glutin::ContextBuilder::new();
         let builder = WindowBuilder::new()
             .with_title(&self.title)
-            .with_inner_size(glutin::dpi::LogicalSize::new(self.window_size.x, self.window_size.y));
+            .with_inner_size(glium::glutin::dpi::LogicalSize::new(self.window_size.x, self.window_size.y));
         let display = Display::new(builder, context, &event_loop).map_err(GliumError::DisplayCreation)
             .map_err(Error::Glium)?;
 

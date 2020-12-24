@@ -8,7 +8,7 @@ mod demo;
 /// the `demo.rs` file contains the Thyme UI code and logic.
 /// A simple party creator and character sheet for an RPG.
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    use glium::glutin::{self, window::WindowBuilder};
+    use glium::glutin::{window::WindowBuilder};
     use glium::{Display, Surface};
 
     // initialize our very basic logger so error messages go to stdout
@@ -20,8 +20,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // create glium display
     let builder = WindowBuilder::new()
         .with_title("Thyme Demo")
-        .with_inner_size(glutin::dpi::LogicalSize::new(window_size[0], window_size[1]));
-    let context = glutin::ContextBuilder::new();
+        .with_inner_size(glium::glutin::dpi::LogicalSize::new(window_size[0], window_size[1]));
+    let context = glium::glutin::ContextBuilder::new();
     let display = Display::new(builder, context, &events_loop)?;
 
     // hide the default cursor
