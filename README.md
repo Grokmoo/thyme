@@ -23,6 +23,7 @@ git clone https://github.com/Grokmoo/thyme.git
 cd thyme
 cargo run --example demo_glium --features glium_backend # Run demo using glium
 cargo run --example demo_wgpu --features wgpu_backend # Run demo using wgpu
+cargo run --example demo_gl --features gl_backend # Run demo using OpenGL
 ```
 
 Run the hello_world example with either Glium or wgpu:

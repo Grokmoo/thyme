@@ -5,11 +5,13 @@ It is designed to be performant and flexible enough for use both in prototyping 
 Requiring a theme and image sources adds some additional development cost compared to many other immediate mode toolkits,
 however the advantage is full flexibility and control over the ultimate appearance of your UI.
 
-To use Thyme, you need the core library, a renderer (there are currently two - one using [Glium](https://github.com/glium/glium) and
-the other using [wgpu](https://github.com/gfx-rs/wgpu-rs)), event handling support (one using
-[winit](https://github.com/rust-windowing/winit) is included), and a theme definition
-with associated images and fonts.  Thyme logs errors using the [`log`](https://github.com/rust-lang/log) crate.  A very
-simple logger that sends messages to stdout is included to help you get started.
+To use Thyme, you need to choose a renderer and event handling support.
+There are currently three renderers built in - one using [Glium](https://github.com/glium/glium),
+one using [wgpu](https://github.com/gfx-rs/wgpu-rs)), and one using raw OpenGL (https://github.com/brendanzab/gl-rs/)).
+[winit](https://github.com/rust-windowing/winit) is currently supported for event handling.
+You also need a theme definition  with associated images and fonts.  Thyme logs errors using the
+[`log`](https://github.com/rust-lang/log) crate.  A very simple logger that sends messages to stdout
+is included to help you get started.
 
 All thyme widgets are drawn using images, with the image data registered with the renderer, and then individual
 widget components defined within that image within the theme file.  Likewise, `ttf` fonts are registered with

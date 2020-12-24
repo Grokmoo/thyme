@@ -15,7 +15,7 @@ use texture::GLTexture;
 mod vertex_buffer;
 use vertex_buffer::VAO;
 
-/// A Thyme [`Renderer`](trait.Renderer.html) for [`Glium`](https://github.com/glium/glium).
+/// A Thyme [`Renderer`](trait.Renderer.html) for raw [`OpenGL`](https://github.com/brendanzab/gl-rs/).
 ///
 /// This adapter registers image and font data as OpenGL textures using gl-rs, and renders each frame.
 /// After the UI has been built, the [`Frame`](struct.Frame.html) should be passed to the renderer
