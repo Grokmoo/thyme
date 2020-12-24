@@ -389,35 +389,50 @@ impl Context {
         &self.internal
     }
 
-    /// Change the scale factor
+    /// Sets the scale factor, sometimes referred to as HiDPI factor for the monitor.
+    /// This is normally handled by the [`IO`](trait.IO.html) backend, which will set
+    /// the scale factor based on a scale factor changed event.  User code should
+    /// not need to call this.
     pub fn set_scale_factor(&mut self, scale: f32) {
         let mut internal = self.internal.borrow_mut();
         internal.scale_factor = scale;
     }
 
-    /// Set the display size
+    /// Set the display size in logical pixels (physical pixels divided by the scale factor).
+    /// This is normally handled by the [`IO`](trait.IO.html) backend, which will set
+    /// this in response to a window resize event.  User code should
+    /// not need to call this.
     pub fn set_display_size(&mut self, size: Point) {
         let mut internal = self.internal.borrow_mut();
         internal.display_size = size;
     }
 
-    /// Add mouse wheel event.
+    /// Add mouse wheel event, with `delta` being the amount of device-dependant logical scrolling.
+    /// This is normally handled by the [`IO`](trait.IO.html) backend, which will set
+    /// this in response to a window resize event.  User code should
+    /// not need to call this.
     pub fn add_mouse_wheel(&mut self, delta: Point) {
         let mut internal = self.internal.borrow_mut();
 
         internal.mouse_wheel = internal.mouse_wheel + delta;
     }
 
-    /// Set the input modifiers. You should call this per frame.
+    /// Set the input modifiers - the status of keys such as `ctrl` and `shift`.
+    /// This is normally handled by the [`IO`](trait.IO.html) backend, which will set
+    /// this in response to a window resize event.  User code should
+    /// not need to call this.
     pub fn set_input_modifiers(&mut self, input_modifiers: InputModifiers) {
         let mut internal = self.internal.borrow_mut();
         internal.input_modifiers = input_modifiers;
     }
 
-    /// Set the mouse pressed state.
+    /// Set the mouse pressed state for a given mouse button.
     /// # Inputs:
     /// - button `pressed` state
     /// - index: 0 = LeftClick, 1 = Right Click, 2 = Middle Click
+    /// This is normally handled by the [`IO`](trait.IO.html) backend, which will set
+    /// this in response to a window resize event.  User code should
+    /// not need to call this.
     pub fn set_mouse_pressed(&mut self, pressed: bool, index: usize) {
         let mut internal = self.internal.borrow_mut();
 
@@ -442,7 +457,11 @@ impl Context {
         internal.mouse_pressed[index] = pressed;
     }
 
-    /// Push a character
+    /// Pushes a character (that was received from the keyboard) to thyme, to be
+    /// dispatched to the appropriate widget based on keyboard focus in the next Frame.
+    /// This is normally handled by the [`IO`](trait.IO.html) backend, which will set
+    /// this in response to a window resize event.  User code should
+    /// not need to call this.
     pub fn push_character(&mut self, c: char) {
         let mut internal = self.internal.borrow_mut();
 
@@ -455,8 +474,12 @@ impl Context {
         state.characters.push(c);
     }
 
-    /// Set mouse position. 
-    /// You need to take into account the scale factor when setting this. (see `demo_glium.rs`).
+    /// Set mouse position, based on mouse cursor movement.  The scale factor must
+    /// be taken into account to convert physical pixels to the logical pixels used by
+    /// this.
+    /// This is normally handled by the [`IO`](trait.IO.html) backend, which will set
+    /// this in response to a window resize event.  User code should
+    /// not need to call this.
     pub fn set_mouse_pos(&mut self, pos: Point) {
         let mut internal = self.internal.borrow_mut();
         internal.mouse_pos = pos;

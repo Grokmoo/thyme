@@ -124,7 +124,7 @@ pub extern "system" fn debug_callback(
     }
 }
 
-/// A basic RPG character sheet, using the wgpu backend.
+/// A basic RPG character sheet, using the "plain" OpenGL backend.
 /// This file contains the application setup code and wgpu specifics.
 /// the `demo.rs` file contains the Thyme UI code and logic.
 /// A simple party creator and character sheet for an RPG.
