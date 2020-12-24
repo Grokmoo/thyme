@@ -1,4 +1,3 @@
-use glutin;
 use glutin::event::{ElementState, Event, MouseButton, MouseScrollDelta, WindowEvent};
 use glutin::event_loop::ControlFlow;
 use std::os::raw::c_char;
@@ -97,7 +96,10 @@ impl IOData {
 const OPENGL_MAJOR_VERSION: u8 = 3;
 const OPENGL_MINOR_VERSION: u8 = 2;
 
+// this is passed as a fn pointer to gl::DebugMessageCallback
+// and cannot be marked as an "unsafe extern"
 #[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "system" fn debug_callback(
     _: gl::types::GLenum,
     err_type: gl::types::GLenum,

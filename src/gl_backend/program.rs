@@ -1,4 +1,3 @@
-use gl;
 pub struct Program {
     program_handle: u32,
 }

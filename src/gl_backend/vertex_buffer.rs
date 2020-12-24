@@ -1,5 +1,4 @@
 use super::GLVertex;
-use gl;
 use memoffset::offset_of;
 
 pub struct VAO {

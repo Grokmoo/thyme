@@ -6,8 +6,6 @@ use crate::render::{
 use crate::theme_definition::CharacterRange;
 use crate::{Color, Frame, Point, Rect};
 
-use gl;
-
 mod program;
 use program::Program;
 
@@ -47,6 +45,12 @@ pub struct GLRenderer {
     draw_list: GLDrawList,
     groups: Vec<DrawGroup>,
     matrix: [[f32; 4]; 4],
+}
+
+impl Default for GLRenderer {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl GLRenderer {
