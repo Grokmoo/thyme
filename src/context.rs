@@ -389,28 +389,36 @@ impl Context {
         &self.internal
     }
 
-    pub(crate) fn set_scale_factor(&mut self, scale: f32) {
+    /// Change the scale factor
+    pub fn set_scale_factor(&mut self, scale: f32) {
         let mut internal = self.internal.borrow_mut();
         internal.scale_factor = scale;
     }
 
-    pub(crate) fn set_display_size(&mut self, size: Point) {
+    /// Set the display size
+    pub fn set_display_size(&mut self, size: Point) {
         let mut internal = self.internal.borrow_mut();
         internal.display_size = size;
     }
 
-    pub(crate) fn add_mouse_wheel(&mut self, delta: Point) {
+    /// Add mouse wheel event.
+    pub fn add_mouse_wheel(&mut self, delta: Point) {
         let mut internal = self.internal.borrow_mut();
 
         internal.mouse_wheel = internal.mouse_wheel + delta;
     }
 
-    pub(crate) fn set_input_modifiers(&mut self, input_modifiers: InputModifiers) {
+    /// Set the input modifiers. You should call this per frame.
+    pub fn set_input_modifiers(&mut self, input_modifiers: InputModifiers) {
         let mut internal = self.internal.borrow_mut();
         internal.input_modifiers = input_modifiers;
     }
 
-    pub(crate) fn set_mouse_pressed(&mut self, pressed: bool, index: usize) {
+    /// Set the mouse pressed state.
+    /// # Inputs:
+    /// - button `pressed` state
+    /// - index: 0 = LeftClick, 1 = Right Click, 2 = Middle Click
+    pub fn set_mouse_pressed(&mut self, pressed: bool, index: usize) {
         let mut internal = self.internal.borrow_mut();
 
         if index >= internal.mouse_pressed.len() {
@@ -434,7 +442,8 @@ impl Context {
         internal.mouse_pressed[index] = pressed;
     }
 
-    pub(crate) fn push_character(&mut self, c: char) {
+    /// Push a character
+    pub fn push_character(&mut self, c: char) {
         let mut internal = self.internal.borrow_mut();
 
         let id = match &internal.keyboard_focus_widget {
@@ -446,7 +455,9 @@ impl Context {
         state.characters.push(c);
     }
 
-    pub(crate) fn set_mouse_pos(&mut self, pos: Point) {
+    /// Set mouse position. 
+    /// You need to take into account the scale factor when setting this. (see `demo_glium.rs`).
+    pub fn set_mouse_pos(&mut self, pos: Point) {
         let mut internal = self.internal.borrow_mut();
         internal.mouse_pos = pos;
     }
