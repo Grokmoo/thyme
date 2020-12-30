@@ -1,0 +1,180 @@
+# Thyme image definitions for a theme that doesn't rely on an actual source image, instead
+# constructing images.
+
+image_sets:
+  gui:
+    scale: 0.5
+    images:
+      cursor_normal:
+        position: [132, 194]
+        size: [42, 42]
+      cursor_pressed:
+        position: [178, 212]
+        size: [42, 42]
+      cursor:
+        states:
+          Normal: cursor_normal
+          Hover: cursor_normal
+          Pressed: cursor_pressed
+      window_bg:
+        solid: true
+        color: "#FF0000"
+      small_button_normal:
+        solid: true
+        color: "#888888"
+      small_button_hover:
+        solid: true
+        color: "#AAAAAA"
+      small_button_pressed:
+        solid: true
+        color: "#444444"
+      small_button_disabled:
+        solid: true
+        color: "#444444"
+      small_button_active:
+        solid: true
+        color: "#FF8888"
+      small_button_black:
+        solid: true
+        color: "#000000"
+      small_button_flash1:
+        solid: true
+        color: "#999999"
+      small_button_flash2:
+        solid: true
+        color: "#AAAAAA"
+      small_button_normal_flash:
+        frame_time_millis: 200
+        frames:
+          - small_button_flash1
+          - small_button_flash2
+          - small_button_flash1
+          - small_button_normal
+      input_field:
+        states:
+          Normal: small_button_black
+          Hover: small_button_hover
+          Pressed: small_button_pressed
+          Disabled: small_button_disabled
+      small_button:
+        states:
+          Normal: small_button_normal
+          Hover: small_button_hover
+          Pressed: small_button_pressed
+          Disabled: small_button_disabled
+          Active: small_button_active
+          Active + Hover: small_button_active
+          Active + Pressed: small_button_pressed
+      small_button_no_active:
+        states:
+          Normal: small_button_normal
+          Hover: small_button_hover
+          Pressed: small_button_pressed
+          Disabled: small_button_disabled
+          Active: small_button_normal
+          Active + Hover: small_button_hover
+          Active + Pressed: small_button_pressed
+      small_button_flash:
+        states:
+          Normal: small_button_normal_flash
+          Hover: small_button_hover
+          Pressed: small_button_pressed
+          Disabled: small_button_disabled
+          Active: small_button_active
+          Active + Hover: small_button_active
+          Active + Pressed: small_button_pressed
+      scroll_button:
+        from: small_button
+      scrollbar_vertical:
+        from: empty
+      scrollbar_horizontal:
+        from: empty
+      slider_button:
+        from: small_button
+      frame:
+        from: small_button_normal
+      close_icon_normal:
+        solid: true
+        color: "#FFF"
+      close_icon_pressed:
+        solid: true
+        color: "#FAA"
+      close_icon_disabled:
+        solid: true
+        color: "#AAA"
+      close_icon:
+        states:
+          Normal: close_icon_normal
+          Hover: close_icon_normal
+          Pressed: close_icon_pressed
+          Disabled: close_icon_disabled
+      progress_bar:
+        position: [100, 200]
+        grid_size: [10, 18]
+      window_handle_normal:
+        position: [194, 0]
+        size: [24, 24]
+      window_handle_hover:
+        position: [194, 24]
+        size: [24, 24]
+      window_handle_pressed:
+        position: [194, 48]
+        size: [24, 24]
+      window_handle_disabled:
+        position: [194, 72]
+        size: [24, 24]
+      window_handle:
+        states:
+          Normal: window_handle_normal
+          Hover: window_handle_hover
+          Pressed: window_handle_pressed
+          Disabled: window_handle_disabled
+      caret_on:
+        position: [194, 98]
+        size: [4, 32]
+        fill: Stretch
+      caret_off:
+        position: [200, 98]
+        size: [4, 32]
+        fill: Stretch
+      caret:
+        frame_time_millis: 500
+        frames:
+          - caret_on
+          - caret_off
+      arrow_right:
+        position: [48, 194]
+        size: [24, 24]
+      arrow_left:
+        position: [48, 218]
+        size: [24, 24]
+      arrow_down:
+        position: [72, 194]
+        size: [24, 24]
+      arrow_up:
+        position: [72, 218]
+        size: [24, 24]
+      check_normal:
+        position: [24, 208]
+        size: [24, 24]
+      check_active:
+        position: [24, 232]
+        size: [24, 24]
+      check:
+        states:
+          Normal: check_normal
+          Hover: check_normal
+          Pressed: check_normal
+          Disabled: check_normal
+          Active: check_active
+          Active + Hover: check_active
+          Active + Pressed: check_active
+      slider_horizontal:
+        position: [0, 196]
+        grid_size_horiz: [10, 8]
+      slider_vertical:
+        position: [0, 204]
+        grid_size_vert: [8, 10]
+      greyed_out:
+        solid: true
+        color: "#888888"
