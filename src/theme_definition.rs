@@ -102,7 +102,7 @@ pub struct ImageSet {
 
 fn f32_one() -> f32 { 1.0 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct ImageDefinition {
     #[serde(default)]
     pub color: Color,
@@ -124,17 +124,18 @@ impl Default for ImageFill {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct CollectedSubImage {
     pub position: [i32; 2],
     pub size: [i32; 2],
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(untagged)]
 #[serde(deny_unknown_fields)]
 pub enum ImageDefinitionKind {
+    Empty,
     Solid {
         solid: bool,
     },

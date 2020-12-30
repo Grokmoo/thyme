@@ -69,15 +69,6 @@ pub struct Image {
 }
 
 impl Image {
-    pub(crate) fn create_empty() -> Image {
-        Image {
-            texture: TextureHandle::default(),
-            color: Color::white(),
-            kind: ImageKind::Empty,
-            base_size: Point::default(),
-        }
-    }
-
     pub fn texture(&self) -> TextureHandle { self.texture }
 
     pub fn base_size(&self) -> Point { self.base_size }
@@ -235,6 +226,10 @@ impl Image {
     )-> Result<Image, Error> {
         let base_size;
         let kind = match &def.kind {
+            ImageDefinitionKind::Empty => {
+                base_size = Point::default();
+                ImageKind::Empty
+            },
             ImageDefinitionKind::Alias { .. } | ImageDefinitionKind::Group { .. } => unreachable!(),
             ImageDefinitionKind::Composed { grid_size, position} => {
                 let mut tex_coords = [[TexCoord::default(); 4]; 4];

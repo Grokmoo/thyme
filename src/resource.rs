@@ -190,7 +190,7 @@ impl ResourceSet {
         let textures = self.build_images(renderer)?;
         let fonts = self.build_fonts()?;
 
-        let theme_def = match &self.theme.data {
+        let theme_def = match self.theme.data.as_mut() {
             None => {
                 return Err(Error::Theme("Cannot build assets.  No theme specified.".to_string()));
             },

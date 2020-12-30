@@ -5,20 +5,37 @@ image_sets:
   gui:
     scale: 0.5
     images:
-      cursor_normal:
-        position: [132, 194]
-        size: [42, 42]
-      cursor_pressed:
-        position: [178, 212]
-        size: [42, 42]
-      cursor:
-        states:
-          Normal: cursor_normal
-          Hover: cursor_normal
-          Pressed: cursor_pressed
-      window_bg:
+      bg_black:
         solid: true
-        color: "#FF0000"
+        color: "#000"
+      bg_grey:
+        solid: true
+        color: "#FFF4"
+      outline_bot:
+        from: bg_black
+      outline_top:
+        from: bg_black
+      outline_left:
+        from: bg_black
+      outline_right:
+        from: bg_black
+      window_bg:
+        sub_images:
+          outline_bot:
+            position: [0, -1]
+            size: [0, 1]
+          outline_top:
+            position: [0, 0]
+            size: [0, 1]
+          outline_left:
+            position: [0, 0]
+            size: [1, 0]
+          outline_right:
+            position: [-1, 0]
+            size: [1, 0]
+          bg_grey:
+            position: [1, 1]
+            size: [-2, -2]
       small_button_normal:
         solid: true
         color: "#888888"

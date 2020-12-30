@@ -22,7 +22,8 @@ pub struct ThemeSet {
 
 impl ThemeSet {
     pub(crate) fn new<R: Renderer>(
-        definition: &ThemeDefinition,
+        // we pass in a mutable reference to allow easier expanding of image aliases with less copying
+        definition: &mut ThemeDefinition,
         textures: HashMap<String, TextureData>,
         font_sources: HashMap<String, FontSource>,
         renderer: &mut R,
@@ -66,10 +67,11 @@ impl ThemeSet {
             font_handles.insert(font_id.to_string(), FontSummary { handle, line_height });
         }
 
-        let mut aliases: Vec<(String, String)> = Vec::new();
-
         let mut images = HashMap::new();
-        for (set_id, set) in &definition.image_sets {
+        for (set_id, set) in definition.image_sets.iter_mut() {
+            // insert empty image for each set
+            set.images.insert("empty".to_string(), ImageDefinition { color: Color::white(), kind: ImageDefinitionKind::Empty });
+
             let mut images_in_set = HashMap::new();
 
             let texture = if let Some(source) = set.source.as_ref() {
@@ -84,16 +86,31 @@ impl ThemeSet {
             let mut timed_images: Vec<(&str, &ImageDefinition)> = Vec::new();
             let mut animated_images: Vec<(&str, &ImageDefinition)> = Vec::new();
 
-            // first parse all images without dependencies
+            // first expand all aliases
+            let mut aliases = HashMap::new();
+            for (image_id, image_def) in &set.images {
+                if let ImageDefinitionKind::Alias { from } = &image_def.kind {
+                    let from = match set.images.get(from) {
+                        None => {
+                            return Err(Error::Theme(format!("Unable to locate image alias from '{}'", from)));
+                        }, Some(from) => from,
+                    };
+                    aliases.insert(image_id.to_string(), from.clone());
+                }
+            }
+
+            for (id, def) in aliases {
+                set.images.insert(id, def);
+            }
+
+            // now all images without dependencies
             for (image_id, image_def) in &set.images {
                 match &image_def.kind {
                     ImageDefinitionKind::Animated { .. } => animated_images.push((image_id, image_def)),
                     ImageDefinitionKind::Timed { .. } => timed_images.push((image_id, image_def)),
                     ImageDefinitionKind::Collected { .. } => collected_images.push((image_id, image_def)),
-                    ImageDefinitionKind::Alias { from } => {
-                        let to = format!("{}/{}", set_id, image_id);
-                        let from = format!("{}/{}", set_id, from);
-                        aliases.push((to, from));
+                    ImageDefinitionKind::Alias { .. } => {
+                        unreachable!("Alias should have already been removed from image set");
                     },
                     ImageDefinitionKind::Group { group_scale, fill, images } => {
                         for (generated_id, xywh) in images {
@@ -146,24 +163,6 @@ impl ThemeSet {
             let handle = ImageHandle { id: index };
             images_out.push(image);
             image_handles.insert(id, handle);
-        }
-
-        // insert empty image references for just "empty" and all sets as well
-        image_handles.insert("empty".to_string(), ImageHandle { id: images_out.len() });
-        images_out.push(Image::create_empty());
-
-        for set_id in definition.image_sets.keys() {
-            image_handles.insert(format!("{}/{}", set_id, "empty"), ImageHandle { id: images_out.len() });
-            images_out.push(Image::create_empty());
-        }
-
-        // add in aliases
-        for (to, from) in aliases {
-            let handle = *image_handles.get(&from).ok_or_else(||
-                Error::Theme(format!("Unable to locate image alias from '{}'", from))
-            )?;
-
-            image_handles.insert(to, handle);
         }
 
         // build the set of themes
