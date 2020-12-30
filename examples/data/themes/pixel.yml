@@ -1,0 +1,193 @@
+# Image definitions for "pixel.png" image.
+
+image_sets:
+  gui:
+    source: pixel
+    scale: 1.0
+    images:
+      cursor_normal:
+        position: [66, 97]
+        size: [21, 21]
+      cursor_pressed:
+        position: [89, 106]
+        size: [21, 21]
+      cursor:
+        states:
+          Normal: cursor_normal
+          Hover: cursor_normal
+          Pressed: cursor_pressed
+      window_bg:
+        sub_images:
+          window_bg_base:
+            position: [0, 0]
+            size: [0, 0]
+          window_fill:
+            position: [5, 5]
+            size: [-10, -10]
+      window_bg_base:
+        position: [0, 0]
+        grid_size: [32, 32]
+      window_fill:
+        position: [128, 0]
+        size: [128, 128]
+        fill: Repeat
+      small_button_normal:
+        position: [110, 0]
+        grid_size: [5, 5]
+      small_button_hover:
+        position: [110, 15]
+        grid_size: [5, 5]
+      small_button_pressed:
+        position: [110, 30]
+        grid_size: [5, 5]
+      small_button_disabled:
+        position: [110, 45]
+        grid_size: [5, 5]
+      small_button_active:
+        position: [110, 60]
+        grid_size: [5, 5]
+      small_button_black:
+        position: [110, 75]
+        grid_size: [5, 5]
+      small_button_flash1:
+        position: [110, 90]
+        grid_size: [5, 5]
+      small_button_flash2:
+        position: [110, 105]
+        grid_size: [5, 5]
+      small_button_normal_flash:
+        frame_time_millis: 200
+        frames:
+          - small_button_flash1
+          - small_button_flash2
+          - small_button_flash1
+          - small_button_normal
+      input_field:
+        states:
+          Normal: small_button_black
+          Hover: small_button_hover
+          Pressed: small_button_pressed
+          Disabled: small_button_disabled
+      small_button_no_active:
+        states:
+          Normal: small_button_normal
+          Hover: small_button_hover
+          Pressed: small_button_pressed
+          Disabled: small_button_disabled
+          Active: small_button_normal
+          Active + Hover: small_button_hover
+          Active + Pressed: small_button_pressed
+      small_button:
+        states:
+          Normal: small_button_normal
+          Hover: small_button_hover
+          Pressed: small_button_pressed
+          Disabled: small_button_disabled
+          Active: small_button_active
+          Active + Hover: small_button_active
+          Active + Pressed: small_button_pressed
+      small_button_flash:
+        states:
+          Normal: small_button_normal_flash
+          Hover: small_button_hover
+          Pressed: small_button_pressed
+          Disabled: small_button_disabled
+          Active: small_button_active
+          Active + Hover: small_button_active
+          Active + Pressed: small_button_pressed
+      scroll_button:
+        from: small_button
+      scrollbar_vertical:
+        from: empty
+      scrollbar_horizontal:
+        from: empty
+      slider_button:
+        from: small_button
+      frame:
+        from: small_button_normal
+      close_icon_normal:
+        position: [97, 66]
+        size: [12, 12]
+      close_icon_pressed:
+        position: [97, 78]
+        size: [12, 12]
+      close_icon_disabled:
+        position: [97, 90]
+        size: [12, 12]
+      close_icon:
+        states:
+          Normal: close_icon_normal
+          Hover: close_icon_normal
+          Pressed: close_icon_pressed
+          Disabled: close_icon_disabled
+      progress_bar:
+        position: [50, 100]
+        grid_size: [5, 9]
+      window_handle_normal:
+        position: [97, 0]
+        size: [12, 12]
+      window_handle_hover:
+        position: [97, 13]
+        size: [12, 12]
+      window_handle_pressed:
+        position: [97, 26]
+        size: [12, 12]
+      window_handle_disabled:
+        position: [97, 39]
+        size: [12, 12]
+      window_handle:
+        states:
+          Normal: window_handle_normal
+          Hover: window_handle_hover
+          Pressed: window_handle_pressed
+          Disabled: window_handle_disabled
+      caret_on:
+        position: [5, 111]
+        size: [2, 16]
+        fill: Stretch
+      caret_off:
+        position: [8, 111]
+        size: [2, 16]
+        fill: Stretch
+      caret:
+        frame_time_millis: 500
+        frames:
+          - caret_on
+          - caret_off
+      arrow_right:
+        position: [24, 97]
+        size: [12, 12]
+      arrow_left:
+        position: [24, 109]
+        size: [12, 12]
+      arrow_down:
+        position: [36, 97]
+        size: [12, 12]
+      arrow_up:
+        position: [36, 109]
+        size: [12, 12]
+      check_normal:
+        position: [12, 104]
+        size: [12, 12]
+      check_active:
+        position: [12, 116]
+        size: [12, 12]
+      check:
+        states:
+          Normal: check_normal
+          Hover: check_normal
+          Pressed: check_normal
+          Disabled: check_normal
+          Active: check_active
+          Active + Hover: check_active
+          Active + Pressed: check_active
+      slider_horizontal:
+        position: [0, 97]
+        grid_size_horiz: [5, 4]
+      slider_vertical:
+        position: [0, 102]
+        grid_size_vert: [4, 5]
+      greyed_out:
+        position: [17, 98]
+        size: [4, 4]
+        fill: Stretch

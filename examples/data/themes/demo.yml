@@ -1,4 +1,4 @@
-# Specific widget definitions for the demo app.  Appended to theme-base
+# Specific widget definitions for the demo app.  Appended to the base theme
 
 widgets:
   theme_panel:

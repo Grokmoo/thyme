@@ -12,7 +12,8 @@ pub fn register_assets(context_builder: &mut ContextBuilder) {
         &[
             Path::new("examples/data/themes/base.yml"),
             Path::new("examples/data/themes/demo.yml"),
-            // note we dynamically add to this list later if the user selects a new theme
+            // note we dynamically add/remove from this list later if the user selects a new theme
+            Path::new("examples/data/themes/pixel.yml"),
         ],
         serde_yaml::from_str::<serde_yaml::Value>
     ).unwrap();
@@ -32,16 +33,16 @@ enum ThemeChoice {
 }
 
 const THEME_CHOICES: [ThemeChoice; 4] = [
-    ThemeChoice::Pixels, ThemeChoice::Fantasy, ThemeChoice::Transparent, ThemeChoice::Golden
+    ThemeChoice::Pixels, ThemeChoice::Fantasy, ThemeChoice::Transparent, ThemeChoice::Golden,
 ];
 
 impl ThemeChoice {
-    fn path(self) -> Option<&'static str> {
+    fn path(self) -> &'static str {
         match self {
-            ThemeChoice::Fantasy => Some("examples/data/themes/fantasy.yml"),
-            ThemeChoice::Pixels => None,
-            ThemeChoice::Transparent => Some("examples/data/themes/transparent.yml"),
-            ThemeChoice::Golden => Some("examples/data/themes/golden.yml"),
+            ThemeChoice::Fantasy => "examples/data/themes/fantasy.yml",
+            ThemeChoice::Pixels => "examples/data/theme/pixel.yml",
+            ThemeChoice::Transparent => "examples/data/themes/transparent.yml",
+            ThemeChoice::Golden => "examples/data/themes/golden.yml",
         }
     }
 }
@@ -72,13 +73,8 @@ pub struct Party {
 impl Party {
     pub fn check_context_changes<R: Renderer>(&mut self, context: &mut Context, renderer: &mut R) {
         if let Some(old_choice) = self.old_theme_choice.take() {
-            if let Some(path) = old_choice.path() {
-                context.remove_theme_file(path);
-            }
-
-            if let Some(path) = self.theme_choice.path() {
-                context.add_theme_file(path);
-            }
+            context.remove_theme_file(old_choice.path());
+            context.add_theme_file(self.theme_choice.path());
         }
 
         if self.reload_assets {

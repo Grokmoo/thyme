@@ -4,7 +4,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_title("Thyme wgpu Demo")
         .with_window_size(1280.0, 720.0)
         .with_base_dir("examples/data")
-        .with_theme_file("themes/base.yml")
+        .with_theme_files(&["themes/base.yml", "themes/pixel.yml"])
         .with_font_dir("fonts")
         .with_image_dir("images")
         .build_wgpu()?;
