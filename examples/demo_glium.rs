@@ -1,5 +1,5 @@
 use winit::{event::{Event, WindowEvent}, event_loop::{EventLoop, ControlFlow}};
-use thyme::{Align, bench};
+use thyme::{bench};
 
 mod demo;
 
@@ -23,9 +23,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_inner_size(glium::glutin::dpi::LogicalSize::new(window_size[0], window_size[1]));
     let context = glium::glutin::ContextBuilder::new();
     let display = Display::new(builder, context, &events_loop)?;
-
-    // hide the default cursor
-    display.gl_window().window().set_cursor_visible(false);
 
     // create thyme backend
     let mut renderer = thyme::GliumRenderer::new(&display)?;
@@ -58,11 +55,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             target.clear_color(0.21404, 0.21404, 0.21404, 1.0); // manual sRGB conversion for 0.5
 
             bench::run("thyme", || {
+                display.gl_window().window().set_cursor_visible(!party.theme_has_mouse_cursor());
+
                 let mut ui = context.create_frame();
 
                 bench::run("frame", || {
-                    // show a custom cursor.  it automatically inherits mouse presses in its state
-                    ui.set_mouse_cursor("gui/cursor", Align::TopLeft);
                     demo::build_ui(&mut ui, &mut party);
                 });
 

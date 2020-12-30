@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use winit::{event::{Event, WindowEvent}, event_loop::{EventLoop, ControlFlow}};
-use thyme::{Align, bench};
+use thyme::{bench};
 
 mod demo;
 
@@ -24,9 +24,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_inner_size(winit::dpi::LogicalSize::new(window_size[0], window_size[1]))
         .build(&events_loop)
         .unwrap();
-
-    // hide the default cursor
-    window.set_cursor_visible(false);
 
     // setup WGPU
     let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
@@ -66,11 +63,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
             bench::run("thyme", || {
+                window.set_cursor_visible(!party.theme_has_mouse_cursor());
+
                 let mut ui = context.create_frame();
 
                 bench::run("frame", || {
-                    // show a custom cursor.  it automatically inherits mouse presses in its state
-                    ui.set_mouse_cursor("gui/cursor", Align::TopLeft);
                     demo::build_ui(&mut ui, &mut party);
                 });
 

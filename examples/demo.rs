@@ -77,6 +77,13 @@ pub struct Party {
 }
 
 impl Party {
+    pub fn theme_has_mouse_cursor(&self) -> bool {
+        match self.theme_choice {
+            ThemeChoice::Pixels | ThemeChoice::Fantasy | ThemeChoice::Transparent | ThemeChoice::Golden => true,
+            ThemeChoice::NoImage => false,
+        }
+    }
+
     pub fn check_context_changes<R: Renderer>(&mut self, context: &mut Context, renderer: &mut R) {
         if let Some(old_choice) = self.old_theme_choice.take() {
             context.remove_theme_file(old_choice.path());
@@ -187,6 +194,16 @@ const ITEMS: [Item; 3] = [
 /// example demonstrates a combination of Rust layout and styling as well as use
 /// of the theme definition file, loaded above
 pub fn build_ui(ui: &mut Frame, party: &mut Party) {
+    match party.theme_choice {
+        ThemeChoice::Pixels | ThemeChoice::Fantasy | ThemeChoice::Transparent | ThemeChoice::Golden => {
+            // show a custom cursor.  it automatically inherits mouse presses in its state
+            ui.set_mouse_cursor("gui/cursor", thyme::Align::TopLeft);
+        },
+        ThemeChoice::NoImage => {
+            // don't show a custom cursor
+        }
+    }
+
     ui.label("bench", format!(
         "{}\n{}\n{}",
         bench::report("thyme"),

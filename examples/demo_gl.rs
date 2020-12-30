@@ -1,7 +1,7 @@
 use glutin::event::{Event, WindowEvent};
 use glutin::event_loop::ControlFlow;
 use std::os::raw::c_char;
-use thyme::{bench, Align};
+use thyme::{bench};
 
 mod demo;
 
@@ -32,8 +32,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let windowed_context = unsafe { windowed_context.make_current().unwrap() };
 
-    // hide the default cursor
-    windowed_context.window().set_cursor_visible(false);
     let _gl = {
         let gl_context = windowed_context.context();
         gl::load_with(|ptr| gl_context.get_proc_address(ptr) as *const _)
@@ -76,11 +74,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             renderer.clear_color(0.21404, 0.21404, 0.21404, 1.0); // manual sRGB conversion for 0.5
 
             bench::run("thyme", || {
+                windowed_context.window().set_cursor_visible(!party.theme_has_mouse_cursor());
+
                 let mut ui = context.create_frame();
 
                 bench::run("frame", || {
-                    // show a custom cursor.  it automatically inherits mouse presses in its state
-                    ui.set_mouse_cursor("gui/cursor", Align::TopLeft);
                     demo::build_ui(&mut ui, &mut party);
                 });
 
