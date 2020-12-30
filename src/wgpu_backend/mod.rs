@@ -166,7 +166,7 @@ impl WgpuRenderer {
                 vertex_buffers: &[VertexBufferDescriptor {
                     stride: std::mem::size_of::<Vertex>() as BufferAddress,
                     step_mode: InputStepMode::Vertex,
-                    attributes: &vertex_attr_array![0 => Float2, 1 => Float2, 2 => Float3, 3 => Float2, 4 => Float2],
+                    attributes: &vertex_attr_array![0 => Float2, 1 => Float2, 2 => Float4, 3 => Float2, 4 => Float2],
                 }],
             },
             sample_count: 1,
@@ -547,7 +547,7 @@ struct Texture {
 struct Vertex {
     position: [f32; 2],
     tex: [f32; 2],
-    color: [f32; 3],
+    color: [f32; 4],
     clip_pos: [f32; 2],
     clip_size: [f32; 2],
 }

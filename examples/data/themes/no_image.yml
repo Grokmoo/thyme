@@ -177,4 +177,4 @@ image_sets:
         grid_size_vert: [8, 10]
       greyed_out:
         solid: true
-        color: "#888888"
+        color: "#8888"

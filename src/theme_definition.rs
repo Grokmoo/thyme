@@ -533,16 +533,19 @@ impl Default for HeightRelative {
     fn default() -> Self { HeightRelative::Normal }
 }
 
-/// A Color with red, green, and blue components, with each component stored as a `u8`.
+/// A Color with red, green, blue, and alpha components, with each component stored as a `u8`.
 ///
 /// Colors can be deserialized from strings consisting of either
 /// one of the predefined names: `white`, `black`, `red`, `green`,
 /// `blue`, `cyan`, `yellow`, or `magenta`.
 /// Or, the `#` character followed by a hex color code.  The hex code can either
-/// be 6 digits or 3 digits long.  In the 6 digit code, the first 2 digits specify
-/// the red component (from 0 to FF), the 2nd two the green component, and the 3rd two
-/// the blue component.  In the 3 digit code, the 1st digit specifies the red component,
-/// 2nd digit specifies green component, 3rd digit specifies blue component.
+/// be 8, 6, 4 or 3 digits long.
+/// * 8 digits - each set of 2 digits specifies one color component - red, green, blue, then alpha
+/// * 6 digits - each set of 2 digits specifies one color component - red, green, and blue.  Alpha is assumed to be the maximum value of FF.
+/// * 4 digits - each single digit specifies one color component - red, green, blue, then alpha, with half precision.
+/// * 3 digits - each single digit specifies one color component - red, green, then blue.  Alpha ia assumed to be the maximum value of F.
+/// For the 4 and 3 digit variants - each component has one of 16 possible values.  The value is multiplied by 17 to determine the
+/// corresponding full precision value.  For example, `0` maps to `00`, `F` maps to `FF`, and `8` maps to `88`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Color {
     /// The red component
@@ -553,41 +556,44 @@ pub struct Color {
 
     /// The blue component
     pub b: u8,
+
+    /// The alpha or transparency component
+    pub a: u8,
 }
 
 impl Color {
     /// The color white.  `#FFFFFF` or `#FFF` in the theme
-    pub fn white() -> Self { Color { r: 255, g: 255, b: 255 }}
+    pub fn white() -> Self { Color { r: 255, g: 255, b: 255, a: 255 }}
 
     /// The color black.  `#000000` or `#000` in the theme
-    pub fn black() -> Self { Color { r: 0, g: 0, b: 0 }}
+    pub fn black() -> Self { Color { r: 0, g: 0, b: 0, a: 255 }}
 
     /// The color red.  `#FF0000` or `#F00` in the theme
-    pub fn red() -> Self { Color { r: 255, g: 0, b: 0 }}
+    pub fn red() -> Self { Color { r: 255, g: 0, b: 0, a: 255 }}
 
     /// The color green.  `#00FF00` or `#0F0` in the theme
-    pub fn green() -> Self { Color { r: 0, g: 255, b: 255 }}
+    pub fn green() -> Self { Color { r: 0, g: 255, b: 255, a: 255 }}
 
     /// The color blue.  `#0000FF` or `#00F` in the theme
-    pub fn blue() -> Self { Color { r: 0, g: 0, b: 255 }}
+    pub fn blue() -> Self { Color { r: 0, g: 0, b: 255, a: 255 }}
 
     /// The color cyan.  `#00FFFF` or `#0FF` in the theme
-    pub fn cyan() -> Self { Color { r: 0, g: 255, b: 255 }}
+    pub fn cyan() -> Self { Color { r: 0, g: 255, b: 255, a: 255 }}
 
     /// The color yellow.  `#FFFF00` or `#FF0` in the theme
-    pub fn yellow() -> Self { Color { r: 255, g: 255, b: 0 }}
+    pub fn yellow() -> Self { Color { r: 255, g: 255, b: 0, a: 255 }}
 
     /// The color magenta or purple.  `#FF00FF` or `#F0F` in the theme
-    pub fn magenta() -> Self { Color { r: 255, g: 0, b: 255 }}
+    pub fn magenta() -> Self { Color { r: 255, g: 0, b: 255, a: 255 }}
 }
 
 impl Default for Color {
     fn default() -> Self { Color::white() }
 }
 
-impl Into<[f32; 3]> for Color {
-    fn into(self) -> [f32; 3] {
-        [self.r as f32 / 255.0, self.g as f32 / 255.0, self.b as f32 / 255.0]
+impl Into<[f32; 4]> for Color {
+    fn into(self) -> [f32; 4] {
+        [self.r as f32 / 255.0, self.g as f32 / 255.0, self.b as f32 / 255.0, self.a as f32 / 255.0]
     }
 }
 
@@ -597,8 +603,8 @@ impl<'de> Visitor<'de> for ColorVisitor {
     type Value = Color;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("A valid color name or # followed by a 6 character \
-            (2 digits per color) or 3 character (1 digit per color) hex string")
+        formatter.write_str("A valid color name or # followed by a 6 or 8 character \
+            (2 digits per color) or 3 or 4 character (1 digit per color) hex string")
     }
 
     fn visit_str<E: de::Error>(self, value: &str) -> Result<Self::Value, E> {
@@ -606,22 +612,36 @@ impl<'de> Visitor<'de> for ColorVisitor {
             let count = value.chars().count();
             if value.len() != count {
                 // non single byte characters which cannot be parsed
-                return Err(E::custom(format!("{} is not a valid 3 or 6 character hex code", value)));
+                return Err(E::custom(format!("{} is not a valid 3, 4, 6, or 8 character hex code", value)));
             }
             match count {
                 4 => {
                     let r = hex_str_to_color_component(&value[1..2])? * 17;
                     let g = hex_str_to_color_component(&value[2..3])? * 17;
                     let b = hex_str_to_color_component(&value[3..4])? * 17;
-                    Ok(Color { r, g, b })
+                    Ok(Color { r, g, b, a: 255 })
+                },
+                5 => {
+                    let r = hex_str_to_color_component(&value[1..2])? * 17;
+                    let g = hex_str_to_color_component(&value[2..3])? * 17;
+                    let b = hex_str_to_color_component(&value[3..4])? * 17;
+                    let a = hex_str_to_color_component(&value[4..5])? * 17;
+                    Ok(Color { r, g, b, a })
                 },
                 7 => {
                     let r = hex_str_to_color_component(&value[1..3])?;
                     let g = hex_str_to_color_component(&value[3..5])?;
                     let b = hex_str_to_color_component(&value[5..7])?;
-                    Ok(Color { r, g, b })
+                    Ok(Color { r, g, b, a: 255 })
                 },
-                _ => Err(E::custom(format!("{} is not a valid 3 or 6 character hex code", value)))
+                9 => {
+                    let r = hex_str_to_color_component(&value[1..3])?;
+                    let g = hex_str_to_color_component(&value[3..5])?;
+                    let b = hex_str_to_color_component(&value[5..7])?;
+                    let a = hex_str_to_color_component(&value[7..9])?;
+                    Ok(Color { r, g, b, a })
+                },
+                _ => Err(E::custom(format!("{} is not a valid 3, 4, 6, or 8 character hex code", value)))
             }
         } else {
             Ok(match value {
@@ -656,7 +676,7 @@ impl<'de> Deserialize<'de> for Color {
 }
 
 impl Serialize for Color {
-        fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-            serializer.serialize_str(&format!("#{:x?}{:x?}{:x?}", self.r, self.g, self.b))
-        }
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(&format!("#{:x?}{:x?}{:x?}", self.r, self.g, self.b))
+    }
 }

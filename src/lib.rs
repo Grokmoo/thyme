@@ -136,7 +136,7 @@ maintain the same color as the nearby sub-image.  Otherwise you may not always g
 ### Images
 Each image set can contain many `images`, which are defined as subsets of the overall image file in various ways.  The type of
 image for each image within the set is determined based on the parameters specified.  Each image may optionally have a `color`
-attribute
+attribute.  Color is specified via a `#` character followed by a hex code - See [`Color`](struct.Color.html).
 
 #### Solid Images
 Solid images are a single solid color, normally specified with the `color` field.  You will need to specify `solid: true`

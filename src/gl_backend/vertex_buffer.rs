@@ -67,7 +67,7 @@ impl VAO {
 
             gl::VertexAttribPointer(
                 4,
-                3,
+                4,
                 gl::FLOAT,
                 gl::FALSE,
                 std::mem::size_of::<GLVertex>() as _,

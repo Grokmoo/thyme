@@ -456,14 +456,14 @@ const VERT_SHADER_SRC: &str = r#"
   in vec2 size;
   in vec2 tex0;
   in vec2 tex1;
-  in vec3 color;
+  in vec4 color;
   in vec2 clip_pos;
   in vec2 clip_size;
 
   out vec2 g_size;
   out vec2 g_tex0;
   out vec2 g_tex1;
-  out vec3 g_color;
+  out vec4 g_color;
   out vec2 g_clip_pos;
   out vec2 g_clip_size;
 
@@ -488,12 +488,12 @@ const GEOM_SHADER_SRC: &str = r#"
   in vec2 g_size[];
   in vec2 g_tex0[];
   in vec2 g_tex1[];
-  in vec3 g_color[];
+  in vec4 g_color[];
   in vec2 g_clip_pos[];
   in vec2 g_clip_size[];
 
   out vec2 v_tex_coords;
-  out vec3 v_color;
+  out vec4 v_color;
 
   uniform mat4 matrix;
 
@@ -557,14 +557,14 @@ const FRAGMENT_SHADER_SRC: &str = r#"
   #version 140
 
   in vec2 v_tex_coords;
-  in vec3 v_color;
+  in vec4 v_color;
 
   out vec4 color;
 
   uniform sampler2D tex;
 
   void main() {
-    color = vec4(v_color, 1.0) * texture(tex, v_tex_coords);
+    color = v_color * texture(tex, v_tex_coords);
   }
 "#;
 
@@ -572,14 +572,14 @@ const FONT_FRAGMENT_SHADER_SRC: &str = r#"
     #version 140
 
     in vec2 v_tex_coords;
-    in vec3 v_color;
+    in vec4 v_color;
 
     out vec4 color;
 
     uniform sampler2D tex;
     
     void main() {
-        color = vec4(v_color, texture(tex, v_tex_coords).r);
+        color = vec4(v_color.rgb, texture(tex, v_tex_coords).r);
     }
 "#;
 
@@ -637,7 +637,7 @@ struct GliumVertex {
     pub size: [f32; 2],
     pub tex0: [f32; 2],
     pub tex1: [f32; 2],
-    pub color: [f32; 3],
+    pub color: [f32; 4],
     pub clip_pos: [f32; 2],
     pub clip_size: [f32; 2],
 }

@@ -4,7 +4,7 @@ layout(set = 1, binding = 0) uniform texture2D tex;
 layout(set = 1, binding = 1) uniform sampler samp;
 
 layout(location = 0) in vec2 v_tex_coords;
-layout(location = 1) in vec3 v_color;
+layout(location = 1) in vec4 v_color;
 layout(location = 2) in vec4 v_clip;
 
 layout(location = 0) out vec4 color;
@@ -14,5 +14,5 @@ void main() {
     discard;
   }
 
-  color = vec4(v_color, texture(sampler2D(tex, samp), v_tex_coords).r);
+  color = vec4(v_color.rgb, texture(sampler2D(tex, samp), v_tex_coords).r);
 }
