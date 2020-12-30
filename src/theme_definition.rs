@@ -135,6 +135,9 @@ pub struct CollectedSubImage {
 #[serde(untagged)]
 #[serde(deny_unknown_fields)]
 pub enum ImageDefinitionKind {
+    Solid {
+        solid: bool,
+    },
     Group {
         group_scale: [u32; 2],
         fill: ImageFill,

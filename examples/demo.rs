@@ -30,10 +30,15 @@ enum ThemeChoice {
     Fantasy,
     Transparent,
     Golden,
+    NoImage,
 }
 
-const THEME_CHOICES: [ThemeChoice; 4] = [
-    ThemeChoice::Pixels, ThemeChoice::Fantasy, ThemeChoice::Transparent, ThemeChoice::Golden,
+const THEME_CHOICES: [ThemeChoice; 5] = [
+    ThemeChoice::Pixels,
+    ThemeChoice::Fantasy,
+    ThemeChoice::Transparent,
+    ThemeChoice::Golden,
+    ThemeChoice::NoImage
 ];
 
 impl ThemeChoice {
@@ -43,6 +48,7 @@ impl ThemeChoice {
             ThemeChoice::Pixels => "examples/data/theme/pixel.yml",
             ThemeChoice::Transparent => "examples/data/themes/transparent.yml",
             ThemeChoice::Golden => "examples/data/themes/golden.yml",
+            ThemeChoice::NoImage => "examples/data/themes/no_image.yml",
         }
     }
 }

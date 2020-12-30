@@ -35,6 +35,7 @@ enum ImageKind {
         tex_coords: [[TexCoord; 2]; 4],
         grid_size: [f32; 2],
     },
+    Solid,
     Simple {
         tex_coords: [TexCoord; 2],
         base_size: [f32; 2],
@@ -159,6 +160,15 @@ impl Image {
                     params.clip * params.scale
                 )
             },
+            ImageKind::Solid => {
+                let clip = params.clip * params.scale;
+                self.draw_solid(
+                    draw_list,
+                    [params.pos[0] * params.scale, params.pos[1] * params.scale],
+                    [params.size[0] * params.scale, params.size[1] * params.scale],
+                    clip,
+                );
+            }
             ImageKind::Simple { tex_coords, base_size, fill } => {
                 let clip = params.clip * params.scale;
                 match fill {
@@ -271,6 +281,10 @@ impl Image {
                 base_size = Point::new(grid_size[0] * 3.0, grid_size[1]);
                 ImageKind::ComposedVertical { tex_coords, grid_size }
             },
+            ImageDefinitionKind::Solid { .. } => {
+                base_size = Point::new(1.0, 1.0);
+                ImageKind::Solid
+            },
             ImageDefinitionKind::Simple { size, position, fill } => {
                 let tex1 = texture.tex_coord(position[0], position[1]);
                 let tex2 = texture.tex_coord(position[0] + size[0], position[1] + size[1]);
@@ -346,6 +360,22 @@ impl Image {
                 break;
             }
         }
+    }
+
+    fn draw_solid<D: DrawList>(
+        &self,
+        draw_list: &mut D,
+        pos: [f32; 2],
+        size: [f32; 2],
+        clip: Rect,
+    ) {
+        draw_list.push_rect(
+            [pos[0], pos[1]],
+            [size[0], size[1]],
+            [TexCoord::default(), TexCoord::default()],
+            self.color,
+            clip,
+        )
     }
 
     fn draw_simple<D: DrawList>(

@@ -135,7 +135,17 @@ maintain the same color as the nearby sub-image.  Otherwise you may not always g
 
 ### Images
 Each image set can contain many `images`, which are defined as subsets of the overall image file in various ways.  The type of
-image for each image within the set is determined based on the parameters specified.
+image for each image within the set is determined based on the parameters specified.  Each image may optionally have a `color`
+attribute
+
+#### Solid Images
+Solid images are a single solid color, normally specified with the `color` field.  You will need to specify `solid: true`
+to help the Deserializer parse these definitions.  These are especially useful when defining a theme without an image file source.
+```yaml
+  bg_grey:
+    solid: true
+    color: "#888888"
+```
 
 #### Simple Images
 Simple images are defined by a position and size, in pixels, within the overall image.  The `fill` field is optional, with valid
@@ -236,7 +246,7 @@ The referenced images are specified by `id`, and can include Simple, Composed, o
 
 Images which contain references to other images are parsed in a particular order - `Collected`, then `Animated`, then
 `Timed`.  This means an `Animated` image may reference a `Collected` image, but not the other way around.  All of these
-image types may contain references to the basic image types - `Simple`, `Composed`, `ComposedHorizontal`, and
+image types may contain references to the basic image types - `Solid`, `Simple`, `Composed`, `ComposedHorizontal`, and
 `ComposedVertical`.
 
 ### Aliases
