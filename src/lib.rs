@@ -48,7 +48,7 @@ fn create_ui(ui: &mut Frame) {
     // can tweak these aspects live using Thyme's built in live-reload.
 
     // Here, we hardcode some layout
-    ui.child("custom_widget")
+    ui.start("custom_widget")
     .align(Align::BotRight)
     .layout(Layout::Vertical)
     .children(|ui| {
