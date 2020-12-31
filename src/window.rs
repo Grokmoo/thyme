@@ -153,7 +153,7 @@ impl<'a> WindowBuilder<'a> {
                     }
                     
                     if state.with_close_button {
-                        let clicked = ui.button("close", "").clicked;
+                        let clicked = ui.child("close").clicked;
 
                         if clicked {
                             ui.close(&id);

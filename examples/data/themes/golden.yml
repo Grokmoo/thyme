@@ -7,11 +7,11 @@ widgets:
     children:
       titlebar:
         pos: [-6, -38]
-        background: empty
+        background: gui/empty
         children:
           close:
             background: gui/window_close
-            foreground: empty
+            foreground: gui/empty
             size: [24, 32]
             pos: [-8, -4]
           title:

@@ -99,7 +99,7 @@ fonts:
     # only support ASCII printable characters for this font
     characters:
       - lower: 0x0020
-      - upper: 0x007e
+        upper: 0x007e
   small:
     source: roboto
     size: 16

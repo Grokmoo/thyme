@@ -45,7 +45,7 @@ impl ThemeChoice {
     fn path(self) -> &'static str {
         match self {
             ThemeChoice::Fantasy => "examples/data/themes/fantasy.yml",
-            ThemeChoice::Pixels => "examples/data/theme/pixel.yml",
+            ThemeChoice::Pixels => "examples/data/themes/pixel.yml",
             ThemeChoice::Transparent => "examples/data/themes/transparent.yml",
             ThemeChoice::Golden => "examples/data/themes/golden.yml",
             ThemeChoice::NoImage => "examples/data/themes/no_image.yml",

@@ -2,10 +2,48 @@
 # constructing images.
 
 widgets:
+  dropdown_expand:
+    size: [12, 12]
+    font: medium
+    align: Right
+    text_align: Center
+    text: "v"
+  scroll_left:
+    from: scroll_button
+    font: medium
+    text_align: Center
+    align: Left
+    text: "<"
+  scroll_right:
+    from: scroll_button
+    font: medium
+    text_align: Center
+    align: Right
+    text: ">"
+  scroll_up:
+    from: scroll_button
+    font: medium
+    text_align: Center
+    align: Top
+    text: "Λ"
+  scroll_down:
+    from: scroll_button
+    font: medium
+    text_align: Center
+    align: Bot
+    text: "V"
   check_button:
     from: button
     background: gui/small_button_no_active
     foreground: gui/check
+  window_close:
+    wants_mouse: true
+    background: gui/small_button
+    text: "X"
+    font: medium
+    text_align: Center
+    size: [20, 20]
+    align: TopRight
 image_sets:
   gui:
     scale: 0.5

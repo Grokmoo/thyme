@@ -8,9 +8,18 @@ fonts:
   medium:
     source: Roboto-Medium
     size: 20
+    # add Greek and Coptic characters to defaults
+    characters:
+      - lower: 0x0020
+        upper: 0x007e
+      - lower: 0x00A1
+        upper: 0x00FF
+      - lower: 0x0370
+        upper: 0x03FF
   small:
     source: Roboto-Medium
     size: 16
+    # use default characters: 0x0020 to 0x007e and 0x00A1 to 0x00FF
 widgets:
   tooltip:
     background: gui/small_button_normal
@@ -38,9 +47,7 @@ widgets:
     from: button
     children:
       expand:
-        size: [12, 12]
-        align: Right
-        foreground: gui/arrow_down
+        from: dropdown_expand
       combo_box_popup:
         from: scrollpane_vertical
         width_from: Parent
@@ -82,6 +89,26 @@ widgets:
         from: scrollbar_horizontal
       scrollbar_vertical:
         from: scrollbar_vertical
+  dropdown_expand:
+    size: [12, 12]
+    align: Right
+    foreground: gui/arrow_down
+  scroll_left:
+    from: scroll_button
+    align: Left
+    foreground: gui/arrow_left
+  scroll_right:
+    from: scroll_button
+    align: Right
+    foreground: gui/arrow_right
+  scroll_up:
+    from: scroll_button
+    align: Top
+    foreground: gui/arrow_up
+  scroll_down:
+    from: scroll_button
+    align: Bot
+    foreground: gui/arrow_down
   scroll_button:
     wants_mouse: true
     background: gui/scroll_button
@@ -95,14 +122,9 @@ widgets:
     background: gui/scrollbar_horizontal
     children:
       left:
-        from: scroll_button
-        align: Left
-        foreground: gui/arrow_left
+        from: scroll_left
       right:
-        from: scroll_button
-        align: Right
-        pos: [0, 0]
-        foreground: gui/arrow_right
+        from: scroll_right
       scroll:
         wants_mouse: true
         background: gui/small_button
@@ -116,14 +138,9 @@ widgets:
     background: gui/scrollbar_vertical
     children:
       up:
-        from: scroll_button
-        align: Top
-        foreground: gui/arrow_up
+        from: scroll_up
       down:
-        from: scroll_button
-        align: Bot
-        foreground: gui/arrow_down
-        pos: [0, 0]
+        from: scroll_down
       scroll:
         wants_mouse: true
         background: gui/small_button
@@ -222,12 +239,7 @@ widgets:
             font: medium
             width_from: Parent
           close:
-            wants_mouse: true
-            background: gui/small_button
-            foreground: gui/close_icon
-            size: [20, 20]
-            border: { all: 4 }
-            align: TopRight
+            from: window_close
       handle:
         wants_mouse: true
         background: gui/window_handle
@@ -236,6 +248,13 @@ widgets:
         pos: [-2, 0]
   window:
     from: window_base
+  window_close:
+    wants_mouse: true
+    background: gui/small_button
+    foreground: gui/close_icon
+    size: [20, 20]
+    border: { all: 4 }
+    align: TopRight
   tree:
     size_from: [Parent, Children]
     border: { all: 5 }
