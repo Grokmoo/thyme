@@ -52,7 +52,7 @@ widgets:
         from: scrollpane_vertical
         width_from: Parent
         height_from: Normal
-        size: [10, 75]
+        size: [10, 120]
         pos: [-5, 18]
         background: gui/small_button_normal
         children:

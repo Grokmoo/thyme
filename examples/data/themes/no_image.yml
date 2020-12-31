@@ -4,6 +4,7 @@
 widgets:
   dropdown_expand:
     size: [12, 12]
+    pos: [0, -2]
     font: medium
     align: Right
     text_align: Center
