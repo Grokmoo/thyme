@@ -1,16 +1,42 @@
 # Thyme image definitions for a theme that doesn't rely on an actual source image, instead
 # constructing images.
 
+widgets:
+  check_button:
+    from: button
+    background: gui/small_button_no_active
+    foreground: gui/check
 image_sets:
   gui:
     scale: 0.5
     images:
+      bg_red:
+        solid: true
+        color: "#800"
+      bg_dark_red:
+        solid: true
+        color: "#400"
+      bg_white:
+        solid: true
+        color: "#FFF"
+      bg_green:
+        solid: true
+        color: "#0F0"
       bg_black:
         solid: true
         color: "#000"
+      bg_light_grey:
+        solid: true
+        color: "#999"
       bg_grey:
         solid: true
-        color: "#FFF4"
+        color: "#666"
+      bg_dark_grey:
+        solid: true
+        color: "#333"
+      bg_active:
+        solid: true
+        color: "#A88"
       outline_bot:
         from: bg_black
       outline_top:
@@ -19,7 +45,7 @@ image_sets:
         from: bg_black
       outline_right:
         from: bg_black
-      window_bg:
+      outline:
         sub_images:
           outline_bot:
             position: [0, -1]
@@ -33,33 +59,48 @@ image_sets:
           outline_right:
             position: [-1, 0]
             size: [1, 0]
-          bg_grey:
+      window_bg:
+        sub_images:
+          outline:
+            position: [0, 0]
+            size: [0, 0]
+          bg_dark_grey:
             position: [1, 1]
             size: [-2, -2]
       small_button_normal:
-        solid: true
-        color: "#888888"
+        sub_images:
+          outline:
+            position: [0, 0]
+            size: [0, 0]
+          bg_grey:
+            position: [1, 1]
+            size: [-2, -2]
       small_button_hover:
         solid: true
-        color: "#AAAAAA"
+        color: "#AAA"
       small_button_pressed:
         solid: true
-        color: "#444444"
+        color: "#888"
       small_button_disabled:
         solid: true
-        color: "#444444"
+        color: "#444"
       small_button_active:
-        solid: true
-        color: "#FF8888"
+        sub_images:
+          outline:
+            position: [0, 0]
+            size: [0, 0]
+          bg_active:
+            position: [1, 1]
+            size: [-2, -2]
       small_button_black:
         solid: true
         color: "#000000"
       small_button_flash1:
         solid: true
-        color: "#999999"
+        color: "#777"
       small_button_flash2:
         solid: true
-        color: "#AAAAAA"
+        color: "#888"
       small_button_normal_flash:
         frame_time_millis: 200
         frames:
@@ -111,14 +152,11 @@ image_sets:
       frame:
         from: small_button_normal
       close_icon_normal:
-        solid: true
-        color: "#FFF"
+        from: bg_red
       close_icon_pressed:
-        solid: true
-        color: "#FAA"
+        from: bg_dark_red
       close_icon_disabled:
-        solid: true
-        color: "#AAA"
+        from: empty
       close_icon:
         states:
           Normal: close_icon_normal
@@ -126,34 +164,13 @@ image_sets:
           Pressed: close_icon_pressed
           Disabled: close_icon_disabled
       progress_bar:
-        position: [100, 200]
-        grid_size: [10, 18]
-      window_handle_normal:
-        position: [194, 0]
-        size: [24, 24]
-      window_handle_hover:
-        position: [194, 24]
-        size: [24, 24]
-      window_handle_pressed:
-        position: [194, 48]
-        size: [24, 24]
-      window_handle_disabled:
-        position: [194, 72]
-        size: [24, 24]
+        from: bg_green
       window_handle:
-        states:
-          Normal: window_handle_normal
-          Hover: window_handle_hover
-          Pressed: window_handle_pressed
-          Disabled: window_handle_disabled
+        from: small_button
       caret_on:
-        position: [194, 98]
-        size: [4, 32]
-        fill: Stretch
+        from: bg_white
       caret_off:
-        position: [200, 98]
-        size: [4, 32]
-        fill: Stretch
+        from: empty
       caret:
         frame_time_millis: 500
         frames:
@@ -172,11 +189,18 @@ image_sets:
         position: [72, 218]
         size: [24, 24]
       check_normal:
-        position: [24, 208]
-        size: [24, 24]
+        sub_images:
+          outline:
+            position: [0, 0]
+            size: [24, 24]
       check_active:
-        position: [24, 232]
-        size: [24, 24]
+        sub_images:
+          outline:
+            position: [0, 0]
+            size: [24, 24]
+          bg_white:
+            position: [1, 1]
+            size: [22, 22]
       check:
         states:
           Normal: check_normal
@@ -187,11 +211,15 @@ image_sets:
           Active + Hover: check_active
           Active + Pressed: check_active
       slider_horizontal:
-        position: [0, 196]
-        grid_size_horiz: [10, 8]
+        sub_images:
+          outline:
+            position: [0, 0]
+            size: [0, 0]
+          bg_light_grey:
+            position: [1, 1]
+            size: [-2, -2]
       slider_vertical:
-        position: [0, 204]
-        grid_size_vert: [8, 10]
+        from: slider_horizontal
       greyed_out:
         solid: true
         color: "#8888"

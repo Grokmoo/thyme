@@ -247,7 +247,7 @@ The referenced images are specified by `id`, and can include Simple, Composed, o
 Images which contain references to other images are parsed in a particular order - `Collected`, then `Animated`, then
 `Timed`.  This means an `Animated` image may reference a `Collected` image, but not the other way around.  All of these
 image types may contain references to the basic image types - `Solid`, `Simple`, `Composed`, `ComposedHorizontal`, and
-`ComposedVertical`.
+`ComposedVertical`.  In addition, `Collected` images may refer to other `Collected` images.
 
 ### Aliases
 For convenience, you can create an image ID which is an alias to another image.  For example, you may want a particular

@@ -1,4 +1,4 @@
-use std::collections::{HashMap};
+use std::collections::{HashMap, VecDeque};
 
 use crate::theme_definition::{
     ThemeDefinition, ImageDefinition, ImageDefinitionKind, WidgetThemeDefinition,
@@ -82,7 +82,7 @@ impl ThemeSet {
                 &textures[crate::resource::INTERNAL_SINGLE_PIX_IMAGE_ID]
             };
 
-            let mut collected_images: Vec<(&str, &ImageDefinition)> = Vec::new();
+            let mut collected_images: VecDeque<(&str, &ImageDefinition)> = VecDeque::new();
             let mut timed_images: Vec<(&str, &ImageDefinition)> = Vec::new();
             let mut animated_images: Vec<(&str, &ImageDefinition)> = Vec::new();
 
@@ -108,7 +108,7 @@ impl ThemeSet {
                 match &image_def.kind {
                     ImageDefinitionKind::Animated { .. } => animated_images.push((image_id, image_def)),
                     ImageDefinitionKind::Timed { .. } => timed_images.push((image_id, image_def)),
-                    ImageDefinitionKind::Collected { .. } => collected_images.push((image_id, image_def)),
+                    ImageDefinitionKind::Collected { .. } => collected_images.push_back((image_id, image_def)),
                     ImageDefinitionKind::Alias { .. } => {
                         unreachable!("Alias should have already been removed from image set");
                     },
@@ -133,10 +133,32 @@ impl ThemeSet {
                 }
             }
 
-            // now parse collected images
-            for (id, image_def) in collected_images {
-                let image = Image::new(id, image_def, texture, &images_in_set, set.scale)?;
-                images_in_set.insert(id.to_string(), image);
+            // now parse collected images - allow collected images to reference other collected
+            let mut collected_failure_count = 0;
+            while !collected_images.is_empty() {
+
+                if collected_failure_count > collected_images.len() {
+                    for (id, def) in collected_images.iter() {
+                        if let Err(e) = Image::new(id, def, texture, &images_in_set, set.scale) {
+                            log::error!("{}", e);
+                        } else {
+                            unreachable!("All remaining images must be errors");
+                        }
+                    }
+                    return Err(Error::Theme("Unable to resolve all collected images due to cyclic or invalid references".to_string()));
+                }
+
+                let (id, image_def) = collected_images.pop_front().unwrap();
+
+                match Image::new(id, image_def, texture, &images_in_set, set.scale) {
+                    Err(_) => {
+                        collected_images.push_back((id, image_def));
+                        collected_failure_count += 1;
+                    }, Ok(image) => {
+                        images_in_set.insert(id.to_string(), image);
+                        collected_failure_count = 0;
+                    }
+                }
             }
 
             // now parse timed images
