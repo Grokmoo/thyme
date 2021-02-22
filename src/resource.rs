@@ -170,8 +170,9 @@ impl ResourceSet {
     /// and reloading all data.  Will return Ok(None) if there was no change, or Err if there was
     /// a problem rebuilding the theme.
     pub(crate) fn check_live_reload<R: Renderer>(&mut self, renderer: &mut R, scale_factor: f32) -> Result<Option<ThemeSet>, Error> {
-        if !RELOAD_THEME.compare_and_swap(true, false, Ordering::AcqRel) {
-            return Ok(None);
+        match RELOAD_THEME.compare_exchange(true, false, Ordering::AcqRel, Ordering::Acquire) {
+            Ok(true) => (),
+            _ => return Ok(None),
         }
 
         self.clear_data_cache();
@@ -188,7 +189,7 @@ impl ResourceSet {
         RELOAD_THEME.store(false, Ordering::Release);
 
         let textures = self.build_images(renderer)?;
-        let fonts = self.build_fonts()?;
+        let fonts = self.build_fonts();
 
         let theme_def = match self.theme.data.as_mut() {
             None => {
@@ -324,7 +325,7 @@ impl ResourceSet {
         Ok(())
     }
 
-    fn build_fonts(&mut self) -> Result<HashMap<String, crate::font::FontSource>, Error> {
+    fn build_fonts(&mut self) -> HashMap<String, crate::font::FontSource> {
         let mut output = HashMap::new();
 
         for (id, source) in self.fonts.iter_mut() {
@@ -332,7 +333,7 @@ impl ResourceSet {
             output.insert(id.to_string(), crate::font::FontSource { font });
         }
 
-        Ok(output)
+        output
     }
 
     fn build_images<R: Renderer>(&self, renderer: &mut R) -> Result<HashMap<String, TextureData>, Error> {
