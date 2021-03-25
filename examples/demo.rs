@@ -252,6 +252,8 @@ pub fn build_ui(ui: &mut Frame, party: &mut Party) {
                     character.age = age;
                 }
 
+                ui.text_area("description_box");
+
                 ui.gap(10.0);
 
                 if let Some(race) = ui.combo_box("race_selector", "race_selector", &character.race, Race::all()) {

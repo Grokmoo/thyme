@@ -47,6 +47,7 @@ parking_lot = { version = "0.11" }
 notify = { version = "4" }
 rustc-hash = "1"
 serde_yaml = "0.8"
+pulldown-cmark = { version = "0.8", default-features = false }
 
 image = { version = "0.23", optional = true, default_features = false, features = [ "png", "jpeg" ] }
 glium = { version = "0.29", optional = true }

@@ -28,13 +28,13 @@ image_sets:
           window_bg_top:
             position: [0, 0]
             size: [-32, 68]
-          window_bg_main:
+          window_bg_base:
             position: [0, 68]
             size: [0, -68]
       window_bg_top:
         position: [0, 0]
         grid_size_horiz: [32, 68]
-      window_bg_main:
+      window_bg_base:
         position: [0, 72]
         grid_size: [32, 32]
       window_close_normal:
@@ -156,7 +156,7 @@ image_sets:
       slider_button:
         from: circle_button
       frame:
-        from: window_bg_main
+        from: window_bg_base
       close_icon:
         position: [0, 0]
         size: [0, 0]

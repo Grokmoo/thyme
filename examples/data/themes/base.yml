@@ -168,12 +168,17 @@ widgets:
         size: [2, -2]
         height_from: Parent
         background: gui/caret
-  textbox:
-    font: small
-    border: { width: 5 }
-    text_align: Left
+  text_area:
+    background: gui/window_bg_base
+    border: { all: 5 }
     size: [0, 150]
     width_from: Parent
+    custom_floats:
+      line_height: 14.0
+    children:
+      item:
+        from: label
+        text_align: TopLeft
   bg_label:
     from: label
     background: gui/small_button_normal

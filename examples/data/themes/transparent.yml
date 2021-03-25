@@ -16,9 +16,11 @@ image_sets:
           Normal: cursor_normal
           Hover: cursor_normal
           Pressed: cursor_pressed
-      window_bg:
+      window_bg_base:
         position: [0, 0]
         grid_size: [24, 24]
+      window_bg:
+        from: window_bg_base
       small_button_normal:
         position: [0, 84]
         grid_size: [12, 12]

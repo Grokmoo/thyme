@@ -521,6 +521,13 @@ impl Frame {
         }
     }
 
+    /// Logs a message using the Thyme internal logger.  Prevents a flood of the same message
+    /// from appearing on each frame - the message will only appear once in the log output.
+    pub fn log<T: Into<String>>(&self, level: log::Level, message: T) {
+        let mut context = self.context_internal().borrow_mut();
+        context.log(level, message.into());
+    }
+
     pub(crate) fn push_widget(&mut self, mut widget: Widget) {
         widget.set_rend_group(self.cur_rend_group);
         self.render_groups[self.cur_rend_group.index as usize].num += 1;

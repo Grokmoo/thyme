@@ -98,7 +98,7 @@ image_sets:
           outline_right:
             position: [-1, 0]
             size: [1, 0]
-      window_bg:
+      window_bg_base:
         sub_images:
           outline:
             position: [0, 0]
@@ -106,6 +106,8 @@ image_sets:
           bg_dark_grey:
             position: [1, 1]
             size: [-2, -2]
+      window_bg:
+        from: window_bg_base
       small_button_normal:
         sub_images:
           outline:

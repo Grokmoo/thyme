@@ -133,34 +133,61 @@ impl Widget {
         (data, widget)
     }
 
+    /// The current clip rectangle for this widget
     pub fn clip(&self) -> Rect { self.clip }
+
+    /// Whether this widget is visible
     pub fn visible(&self) -> bool { self.visible }
+
+    /// The text color for this widget
     pub fn text_color(&self) -> Color { self.text_color }
+
+    /// The text alignment for this widget
     pub fn text_align(&self) -> Align { self.text_align }
+
+    /// The text for this widget, if any
     pub fn text(&self) -> Option<&str> { self.text.as_deref() }
+
+    /// The font to render text for this widget, if any
     pub fn font(&self) -> Option<FontSummary> { self.font }
+
+    /// The current foreground image for this widget.
     pub fn foreground(&self) -> Option<ImageHandle> { self.foreground }
+
+    /// The current background image for this widget.
     pub fn background(&self) -> Option<ImageHandle> { self.background }
+
+    /// The border area for this widget
     pub fn border(&self) -> Border { self.border }
+
+    /// The unique ID for this widget
     pub fn id(&self) -> &str { &self.id }
+
+    /// The ID of the theme being used by this widget
     pub fn theme_id(&self) -> &str { &self.theme_id }
+
+    /// The current animation state of this widget
     pub fn anim_state(&self) -> AnimState { self.anim_state }
+
+    /// The size of this widget in logical pixels
     pub fn size(&self) -> Point { self.size }
+
+    /// The position of this widget in logical pixels
     pub fn pos(&self) -> Point { self.pos }
 
+    /// The inner size of thiw widget, or size subtracting the border, in logical pixels
     pub fn inner_size(&self) -> Point {
         Point { x: self.size.x - self.border.horizontal(), y: self.size.y - self.border.vertical() }
     }
 
-    pub fn set_cursor(&mut self, x: f32, y: f32) {
+    /// The current cursor position of this widget
+    pub fn cursor(&self) -> Point { self.cursor }
+
+    pub(crate) fn set_cursor(&mut self, x: f32, y: f32) {
         self.cursor = Point { x, y };
     }
 
-    pub fn cursor(&self) -> Point {
-        self.cursor
-    }
-
-    pub fn gap(&mut self, gap: f32) {
+    pub(crate) fn gap(&mut self, gap: f32) {
         match self.layout {
             Layout::Horizontal => self.cursor.x += gap,
             Layout::Vertical => self.cursor.y += gap,
@@ -427,8 +454,17 @@ impl<'a> WidgetBuilder<'a> {
         self.data.recalc_pos_size = false;
     }
 
-    fn parent(&self) -> &Widget {
+    /// Returns the parent widget for this WidgetBuilder, which can be used to directly
+    /// query the attributes of the parent
+    pub fn parent(&self) -> &Widget {
         self.frame.widget(self.parent)
+    }
+
+    /// Returns the current Widget for this WidgetBuilder.  This can be used to query
+    /// directly the various attributes of the widget.  Further methods on this
+    /// WidgetBuilder will modify the widget.
+    pub fn widget(&self) -> &Widget {
+        &self.widget
     }
 
     pub(crate) fn set_next_render_group(&mut self, val: NextRenderGroup) {

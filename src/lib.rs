@@ -384,6 +384,7 @@ mod resource;
 mod theme_definition;
 mod point;
 mod scrollpane;
+mod text_area;
 mod widget;
 mod window;
 mod winit_io;
