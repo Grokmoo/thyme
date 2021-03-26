@@ -48,8 +48,8 @@ impl Frame {
             let parser = Parser::new(&text);
             for event in parser {
                 match event {
-                    Event::Start(tag) => {}
-                    Event::End(tag) => {}
+                    Event::Start(_tag) => {}
+                    Event::End(_tag) => {}
                     Event::Text(text) => {
                         item(ui, &mut cursor, text.to_string());
                         ui.set_cursor(cursor.x, cursor.y);

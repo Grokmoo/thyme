@@ -592,9 +592,9 @@ impl Default for Color {
     fn default() -> Self { Color::white() }
 }
 
-impl Into<[f32; 4]> for Color {
-    fn into(self) -> [f32; 4] {
-        [self.r as f32 / 255.0, self.g as f32 / 255.0, self.b as f32 / 255.0, self.a as f32 / 255.0]
+impl From<Color> for [f32; 4] {
+    fn from(c: Color) -> [f32; 4] {
+        [c.r as f32 / 255.0, c.g as f32 / 255.0, c.b as f32 / 255.0, c.a as f32 / 255.0]
     }
 }
 

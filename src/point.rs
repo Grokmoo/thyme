@@ -76,7 +76,7 @@ impl<'de> Visitor<'de> for BorderVisitor {
             One,
             Two,
             Four,
-        };
+        }
         let mut mode: Option<Mode> = None;
         fn check_mode<E: de::Error>(mode: &mut Option<Mode>, must_eq: Mode) -> Result<(), E> {
             match mode {

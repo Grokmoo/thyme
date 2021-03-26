@@ -226,7 +226,7 @@ impl AppBuilder {
         let window = WindowBuilder::new()
             .with_title(&self.title)
             .with_inner_size(LogicalSize::new(self.window_size.x, self.window_size.y))
-            .build(&event_loop).map_err(crate::winit_io::WinitError::OS).map_err(Error::Winit)?;
+            .build(&event_loop).map_err(crate::winit_io::WinitError::Os).map_err(Error::Winit)?;
 
         // setup WGPU
         let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
