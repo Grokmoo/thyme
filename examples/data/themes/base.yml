@@ -173,8 +173,10 @@ widgets:
     border: { all: 5 }
     size: [0, 150]
     width_from: Parent
-    custom_floats:
+    custom:
       line_height: 14.0
+      normal_font: "small"
+      bold_font: "medium"
     children:
       item:
         from: label

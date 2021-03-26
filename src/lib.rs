@@ -356,14 +356,16 @@ the widget will layout its children.
 ```
 
 ### Custom fields
-You may optionally specify custom values in the `custom_floats` mapping of the theme.  This allows more specialized widgets to
-obtain neccessary parameters from the theme itself, rather than relying on another external source.
+You may optionally specify custom values in the `custom` mapping of the theme.  This allows more specialized widgets to
+obtain neccessary parameters from the theme itself, rather than relying on another external source.  Allowed data types
+include floats, integers, and strings.
 
 ```yaml
   my_custom_widget:
-    custom_floats:
+    custom:
       min_width: 0.0
       min_height: 25.0
+      secondary_font: "Bold"
 ```
 !*/
 

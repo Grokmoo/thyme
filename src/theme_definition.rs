@@ -83,10 +83,18 @@ pub struct WidgetThemeDefinition {
     pub layout_spacing: Option<Point>,
 
     #[serde(default)]
-    pub custom_floats: HashMap<String, f32>,
+    pub custom: HashMap<String, CustomData>,
 
     #[serde(default)]
     pub children: HashMap<String, WidgetThemeDefinition>,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(deny_unknown_fields, untagged)]
+pub enum CustomData {
+    Float(f32),
+    Int(i32),
+    String(String),
 }
 
 #[derive(Serialize, Deserialize)]

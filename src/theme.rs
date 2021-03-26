@@ -2,6 +2,7 @@ use std::collections::{HashMap, VecDeque};
 
 use crate::theme_definition::{
     ThemeDefinition, ImageDefinition, ImageDefinitionKind, WidgetThemeDefinition,
+    CustomData,
 };
 use crate::font::{Font, FontSummary, FontSource};
 use crate::image::{Image, ImageHandle};
@@ -381,7 +382,7 @@ pub struct WidgetTheme {
     pub layout_spacing: Option<Point>,
     pub children: Vec<WidgetThemeHandle>,
 
-    pub custom_floats: HashMap<String, f32>,
+    pub custom: HashMap<String, CustomData>,
 }
 
 impl WidgetTheme {
@@ -412,7 +413,7 @@ impl WidgetTheme {
             layout: None,
             layout_spacing: None,
             children: Vec::new(),
-            custom_floats: HashMap::new(),
+            custom: HashMap::new(),
         }
     }
 
@@ -500,7 +501,7 @@ impl WidgetTheme {
             layout: def.layout,
             layout_spacing: def.layout_spacing,
             children: Vec::new(),
-            custom_floats: def.custom_floats.clone(),
+            custom: def.custom.clone(),
         };
 
         themes.push(theme);
@@ -564,11 +565,11 @@ fn merge_from(
     if to.text.is_none() { to.text = from.text.clone(); }
     if to.tooltip.is_none() { to.tooltip = from.tooltip.clone(); }
 
-    for (id, value) in from.custom_floats.iter() {
-        match to.custom_floats.entry(id.to_string()) {
+    for (id, value) in from.custom.iter() {
+        match to.custom.entry(id.to_string()) {
             std::collections::hash_map::Entry::Occupied(_) => (),
             std::collections::hash_map::Entry::Vacant(entry) => {
-                entry.insert(*value);
+                entry.insert(value.clone());
             }
         }
     }
