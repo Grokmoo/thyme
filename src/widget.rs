@@ -27,6 +27,7 @@ pub struct Widget {
     text: Option<String>,
     text_color: Color,
     text_align: Align,
+    text_indent: f32,
     font: Option<FontSummary>,
     background: Option<ImageHandle>,
     foreground: Option<ImageHandle>,
@@ -43,6 +44,7 @@ impl Widget {
             theme_id: String::new(),
             text: None,
             text_align: Align::default(),
+            text_indent: 0.0,
             text_color: Color::default(),
             font: None,
             background: None,
@@ -115,6 +117,7 @@ impl Widget {
             text: theme.text.clone(),
             text_color: theme.text_color.unwrap_or_default(),
             text_align: theme.text_align.unwrap_or_default(),
+            text_indent: 0.0,
             font,
             background: theme.background,
             foreground: theme.foreground,
@@ -144,6 +147,9 @@ impl Widget {
 
     /// The text alignment for this widget
     pub fn text_align(&self) -> Align { self.text_align }
+
+    /// The indent of the first line of text, in logical pixels
+    pub fn text_indent(&self) -> f32 { self.text_indent }
 
     /// The text for this widget, if any
     pub fn text(&self) -> Option<&str> { self.text.as_deref() }
@@ -547,6 +553,15 @@ impl<'a> WidgetBuilder<'a> {
         self
     }
 
+    /// Specify the indent of the first line of text rendered by this widget, in logical pixels.
+    /// Useful for multi-line (or potentially multi-line) text where the starting position
+    /// is indented.
+    #[must_use]
+    pub fn text_indent(mut self, indent: f32) -> WidgetBuilder<'a> {
+        self.widget.text_indent = indent;
+        self
+    }
+
     /// Specify `text` to display for this widget.  The widget must have a [`font`](#method.font)
     /// specified to render text.
     /// This may also be specified in the widget's [`theme`](index.html).
@@ -886,10 +901,11 @@ impl<'a> WidgetBuilder<'a> {
             let internal = self.frame.context_internal().borrow();
             let scale = internal.scale_factor();
             let font = internal.themes().font(font_def.handle);
+            let indent = widget.text_indent();
 
             let mut scaled_cursor = *cursor * scale;
 
-            font.layout(fg_size * scale, fg_pos * scale, text, align, &mut scaled_cursor);
+            font.layout(fg_size * scale, fg_pos * scale, indent, text, align, &mut scaled_cursor);
 
             *cursor = scaled_cursor / scale;
         }

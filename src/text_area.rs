@@ -44,6 +44,7 @@ impl Frame {
             strong_font,
             emphasis_font,
             cur_font: FontMode::Normal,
+            indent: 0.0,
             cursor: Point::default(),
         };
 
@@ -91,12 +92,22 @@ fn item(
     state: &mut MarkdownState,
     text: String
 ) {
-    ui.start("item").text(text).font(state.cur_font()).trigger_text_layout(&mut state.cursor).finish();
+    let original_y = state.cursor.y;
+
+    ui.start("item")
+        .text(text)
+        .text_indent(state.indent)
+        .font(state.cur_font())
+        .trigger_text_layout(&mut state.cursor)
+        .finish();
+    
+    state.cursor.y += original_y;
 }
 
 struct MarkdownState {
     line_height: f32,
     cursor: Point,
+    indent: f32,
     normal_font: String,
     strong_font: String,
     emphasis_font: String,
@@ -152,8 +163,9 @@ impl MarkdownState {
         self.cursor.y += lines * self.line_height;
     }
 
-    fn update_cursor(&self, ui: &mut Frame) {
-        ui.set_cursor(self.cursor.x, self.cursor.y);
+    fn update_cursor(&mut self, ui: &mut Frame) {
+        self.indent = self.cursor.x;
+        ui.set_cursor(0.0, self.cursor.y);
     }
 
     fn cur_font(&self) -> &str {

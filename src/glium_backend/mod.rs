@@ -185,6 +185,7 @@ impl GliumRenderer {
                             &mut self.draw_list,
                             fg_size * scale,
                             (fg_pos * scale).into(),
+                            widget.text_indent(),
                             text,
                             widget.text_align(),
                             widget.text_color(),

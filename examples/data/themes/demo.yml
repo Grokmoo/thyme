@@ -85,8 +85,8 @@ widgets:
   description_box:
     from: text_area
     text: |
-      This is your character's *description*.
-      The text area widget will eventually support a variety of formatting.
+      This is your character's *very detailed* description. **this is bold**.
+      This is another line of text.
   age_slider:
     from: horizontal_slider
   age_label:

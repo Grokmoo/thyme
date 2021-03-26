@@ -63,6 +63,7 @@ impl Font {
         &self,
         area_size: Point,
         pos: Point,
+        indent: f32,
         text: &str,
         align: Align,
         cursor: &mut Point,
@@ -73,6 +74,7 @@ impl Font {
             &mut draw_list,
             area_size,
             pos,
+            indent,
             align,
             Color::white(),
             Rect::default(),
@@ -95,6 +97,7 @@ impl Font {
         draw_list: &mut D,
         area_size: Point,
         pos: [f32; 2],
+        indent: f32,
         text: &str,
         align: Align,
         color: Color,
@@ -105,6 +108,7 @@ impl Font {
             draw_list,
             area_size,
             pos.into(),
+            indent,
             align,
             color,
             clip
@@ -131,14 +135,18 @@ struct FontRenderer<'a, D> {
 
     cur_word: Vec<&'a FontChar>,
     cur_word_width: f32,
+
+    is_first_line_with_indent: bool,
 }
 
 impl<'a, D: DrawList> FontRenderer<'a, D> {
+    #[allow(clippy::too_many_arguments)]
     fn new(
         font: &'a Font,
         draw_list: &'a mut D,
         area_size: Point,
         pos: Point,
+        indent: f32,
         align: Align,
         color: Color,
         clip: Rect,
@@ -154,11 +162,12 @@ impl<'a, D: DrawList> FontRenderer<'a, D> {
             clip,
             area_size,
             initial_pos: pos,
-            pos,
-            size: Point::default(),
+            pos: Point::new(pos.x + indent, pos.y),
+            size: Point::new(indent, 0.0),
             cur_line_index: initial_index,
             cur_word: Vec::new(),
             cur_word_width: 0.0,
+            is_first_line_with_indent: indent > 0.0,
         }
     }
 
@@ -176,7 +185,7 @@ impl<'a, D: DrawList> FontRenderer<'a, D> {
                 self.draw_cur_word();
 
                 // don't draw whitespace at the start of a line
-                if self.cur_line_index != self.draw_list.len() {
+                if self.cur_line_index != self.draw_list.len() || self.is_first_line_with_indent {
                     self.pos.x += font_char.x_advance;
                     self.size.x += font_char.x_advance;
                 }
@@ -188,8 +197,8 @@ impl<'a, D: DrawList> FontRenderer<'a, D> {
             self.cur_word.push(font_char);
 
             if self.size.x + self.cur_word_width > self.area_size.x {
-                // if the word was so long that we drew nothing at all
-                if self.cur_line_index == self.draw_list.len() {
+                //if the word was so long that we drew nothing at all
+                if self.cur_line_index == self.draw_list.len() && !self.is_first_line_with_indent {
                     self.draw_cur_word();
                     self.next_line();
                 } else {
@@ -226,6 +235,7 @@ impl<'a, D: DrawList> FontRenderer<'a, D> {
     }
 
     fn next_line(&mut self) {
+        self.is_first_line_with_indent = false;
         self.pos.y += self.font.line_height;
         self.size.y += self.font.line_height;
 
