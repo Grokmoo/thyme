@@ -22,6 +22,9 @@ pub fn register_assets(context_builder: &mut ContextBuilder) {
     context_builder.register_texture_from_file("transparent", Path::new("examples/data/images/transparent.png"));
     context_builder.register_texture_from_file("golden", Path::new("examples/data/images/golden.png"));
     context_builder.register_font_from_file("Roboto-Medium", Path::new("examples/data/fonts/Roboto-Medium.ttf"));
+    context_builder.register_font_from_file("Roboto-Italic", Path::new("examples/data/fonts/Roboto-Italic.ttf"));
+    context_builder.register_font_from_file("Roboto-Bold", Path::new("examples/data/fonts/Roboto-Bold.ttf"));
+    context_builder.register_font_from_file("Roboto-BoldItalic", Path::new("examples/data/fonts/Roboto-BoldItalic.ttf"));
 }
 
 #[derive(Debug, Copy, Clone)]

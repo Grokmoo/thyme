@@ -20,6 +20,16 @@ fonts:
     source: Roboto-Medium
     size: 16
     # use default characters: 0x0020 to 0x007e and 0x00A1 to 0x00FF
+  small_italic:
+    source: Roboto-Italic
+    size: 16
+  small_bold:
+    source: Roboto-Bold
+    size: 16
+  small_bold_italic:
+    source: Roboto-BoldItalic
+    size: 16
+  
 widgets:
   tooltip:
     background: gui/small_button_normal
@@ -176,7 +186,8 @@ widgets:
     custom:
       line_height: 14.0
       normal_font: "small"
-      bold_font: "medium"
+      strong_font: "small_bold"
+      emphasis_font: "small_italic"
     children:
       item:
         from: label
