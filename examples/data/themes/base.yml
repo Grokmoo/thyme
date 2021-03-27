@@ -29,7 +29,12 @@ fonts:
   small_bold_italic:
     source: Roboto-BoldItalic
     size: 16
-  
+  heading1:
+    source: Roboto-Medium
+    size: 24
+  heading2:
+    source: Roboto-Medium
+    size: 22
 widgets:
   tooltip:
     background: gui/small_button_normal
@@ -178,6 +183,9 @@ widgets:
         size: [2, -2]
         height_from: Parent
         background: gui/caret
+  text_area_item:
+    from: label
+    text_align: TopLeft
   text_area:
     background: gui/window_bg_base
     border: { all: 5 }
@@ -185,13 +193,25 @@ widgets:
     width_from: Parent
     custom:
       line_height: 14.0
-      normal_font: "small"
-      strong_font: "small_bold"
-      emphasis_font: "small_italic"
     children:
-      item:
-        from: label
-        text_align: TopLeft
+      paragraph_normal:
+        from: text_area_item
+        font: small
+      paragraph_strong:
+        from: text_area_item
+        font: small_bold
+      paragraph_emphasis:
+        from: text_area_item
+        font: small_italic
+      paragraph_strong_emphasis:
+        from: text_area_item
+        font: small_bold_italic
+      heading1_normal:
+        from: text_area_item
+        font: heading1
+      heading2_normal:
+        from: text_area_item
+        font: heading2
   bg_label:
     from: label
     background: gui/small_button_normal

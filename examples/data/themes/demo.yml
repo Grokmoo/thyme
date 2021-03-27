@@ -85,7 +85,10 @@ widgets:
   description_box:
     from: text_area
     text: |
-      This is your character's *very detailed* description. **this is bold**.
+      # Overview
+      This is your character's ***very detailed*** description that spans a few lines.
+      
+      ## Background
       This is another line of text.
   age_slider:
     from: horizontal_slider
