@@ -187,12 +187,13 @@ widgets:
     from: label
     text_align: TopLeft
   text_area:
-    background: gui/window_bg_base
     border: { all: 5 }
-    size: [0, 150]
     width_from: Parent
+    height_from: Children
     custom:
       line_height: 14.0
+      tab_width: 6.0
+      list_bullet: "* "
     children:
       paragraph_normal:
         from: text_area_item

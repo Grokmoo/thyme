@@ -50,11 +50,16 @@ impl Frame {
     pub fn text_area(&mut self, theme: &str) {
         let mut state = MarkdownState {
             line_height: self.custom_float(theme, "line_height", 10.0),
-            indent: 0.0,
+            tab_width: self.custom_float(theme, "tab_width", 4.0),
+            list_bullet: self.custom_string(theme, "list_bullet", "*".to_string()),
+            text_indent: 0.0,
+            indent_level: 0.0,
+            list_stack: Vec::new(),
             cursor: Point::default(),
             font: FontMode::Normal,
             size: SizeMode::Paragraph,
             cur_theme: "paragraph_normal".to_string(),
+            currently_at_new_line: true,
         };
 
         let builder = self.start(theme);
@@ -70,7 +75,7 @@ impl Frame {
             for event in parser {
                 match event {
                     Event::Start(tag) => {
-                        state.start_tag(tag);
+                        state.start_tag(ui, tag);
                     },
                     Event::End(tag) => {
                         state.end_tag(ui, tag);
@@ -102,19 +107,37 @@ fn item(
 
     ui.start(state.cur_theme())
         .text(text)
-        .text_indent(state.indent)
+        .text_indent(state.text_indent)
         .trigger_text_layout(&mut state.cursor)
         .finish();
     
     state.cursor.y += original_y;
     state.update_cursor(ui);
+    state.currently_at_new_line = false;
 }
 
 struct MarkdownState {
+    // params read in at start
     line_height: f32,
+    tab_width: f32,
+    list_bullet: String,
+
+    // current state
+
+    // cursor position where child widgets will be placed
+    currently_at_new_line: bool,
     cursor: Point,
-    indent: f32,
+
+    // text indent - additional x indent within a child widget
+    // beyond what is specified by the cursor position
+    text_indent: f32,
     
+    // number of tabs we are currently indented
+    indent_level: f32,
+
+
+    list_stack: Vec<ListMode>,
+
     size: SizeMode,
     font: FontMode,
 
@@ -122,7 +145,7 @@ struct MarkdownState {
 }
 
 impl MarkdownState {
-    fn start_tag(&mut self, tag: Tag) {
+    fn start_tag(&mut self, ui: &mut Frame, tag: Tag) {
         match tag {
             Tag::Paragraph => self.size = SizeMode::Paragraph,
             Tag::Heading(level) => {
@@ -135,8 +158,31 @@ impl MarkdownState {
             },
             Tag::BlockQuote => {}
             Tag::CodeBlock(_) => {}
-            Tag::List(_) => {}
-            Tag::Item => {}
+            Tag::List(kind) => {
+                self.indent_level += 1.0;
+                self.list_stack.push(match kind {
+                    None => ListMode::Unordered,
+                    Some(num) => ListMode::Ordered(num as u16),
+                });
+                if !self.currently_at_new_line {
+                    self.new_line(ui, 1.0);
+                } else {
+                    self.update_cursor(ui);
+                }
+            },
+            Tag::Item => {
+                match self.list_stack.last_mut() {
+                    Some(ListMode::Unordered) => {
+                        item(ui, self, self.list_bullet.to_string());
+                    },
+                    Some(ListMode::Ordered(num)) => {
+                        let cur_num = *num;
+                        *num += 1;
+                        item(ui, self, format!("{}. ", cur_num));
+                    },
+                    None => panic!("List item but not currently in a list!"),
+                };
+            },
             Tag::FootnoteDefinition(_) => {}
             Tag::Table(_) => {}
             Tag::TableHead => {}
@@ -161,8 +207,17 @@ impl MarkdownState {
             },
             Tag::BlockQuote => {}
             Tag::CodeBlock(_) => {}
-            Tag::List(_) => {}
-            Tag::Item => {}
+            Tag::List(_) => {
+                self.indent_level -= 1.0;
+                self.list_stack.pop();
+            },
+            Tag::Item => {
+                if !self.currently_at_new_line {
+                    self.new_line(ui, 1.0);
+                } else {
+                    self.update_cursor(ui);
+                }
+            },
             Tag::FootnoteDefinition(_) => {}
             Tag::Table(_) => {}
             Tag::TableHead => {}
@@ -191,20 +246,27 @@ impl MarkdownState {
     }
 
     fn new_line(&mut self, ui: &mut Frame, lines: f32) {
+        self.currently_at_new_line = true;
         self.cursor.x = 0.0;
-        self.indent = 0.0;
+        self.text_indent = 0.0;
         self.cursor.y += lines * self.line_height;
         self.update_cursor(ui);
     }
 
     fn update_cursor(&mut self, ui: &mut Frame) {
-        self.indent = self.cursor.x;
-        ui.set_cursor(0.0, self.cursor.y);
+        self.text_indent = self.cursor.x;
+        ui.set_cursor(self.indent_level * self.tab_width, self.cursor.y);
     }
 
     fn cur_theme(&self) -> &str {
         &self.cur_theme
     }
+}
+
+#[derive(Copy, Clone)]
+enum ListMode {
+    Unordered,
+    Ordered(u16),
 }
 
 #[derive(Copy, Clone)]

@@ -255,7 +255,9 @@ pub fn build_ui(ui: &mut Frame, party: &mut Party) {
                     character.age = age;
                 }
 
-                ui.text_area("description_box");
+                ui.scrollpane("description_panel", "description_pane", |ui| {
+                    ui.text_area("description_box");
+                });
 
                 ui.gap(10.0);
 
