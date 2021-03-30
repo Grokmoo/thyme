@@ -188,10 +188,8 @@ widgets:
     text_align: TopLeft
   text_area:
     border: { all: 5 }
-    width_from: Parent
-    height_from: Children
+    size_from: [Parent, Children]
     custom:
-      line_height: 14.0
       tab_width: 6.0
       column_width: 70.0
       list_bullet: "* "

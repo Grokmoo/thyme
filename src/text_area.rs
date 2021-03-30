@@ -5,17 +5,31 @@ use crate::{Frame, Rect, Point, Align, WidthRelative};
 impl Frame {
     /**
     A text area widget that parses markdown text.  Child themes need to be defined for each font / size
-    combination that you want to be able to render.
+    combination that you want to be able to render.  This normally includes at least normal text, strong text,
+    emphasis text, strong emphasis text, and a few heading levels.  If, in your markdown, you make use of a
+    combination that is not defined, the widget will log an error.
+
+    The widget can currently handle a subset of common Markdown, including headings, strong / emphasis text, unordered
+    and ordered lists, and tables with column alignments.
+
+    Several parameters need to be specified for the widget to function properly, including `tab_width`, `column_width`, and
+    a `list_bullet` character.  See the example below.  Note that the widget does not perform look-ahead to determine
+    appropriate column widths - these are specified with the `column_width` parameter instead.
 
     An example theme definition:
     ```yaml
+    text_area_item:
+      font: small
+      border: { width: 5 }
+      text_align: TopLeft
+      size_from: [Parent, FontLine]
     text_area:
-      background: gui/window_bg_base
       border: { all: 5 }
-      size: [0, 150]
-      width_from: Parent
+      size_from: [Parent, Children]
       custom:
-        line_height: 14.0
+        tab_width: 6.0
+        column_width: 70.0
+        list_bullet: "* "
       children:
         paragraph_normal:
           from: text_area_item
@@ -49,7 +63,7 @@ impl Frame {
     **/
     pub fn text_area(&mut self, theme: &str) {
         let mut state = MarkdownState {
-            line_height: self.custom_float(theme, "line_height", 10.0),
+            line_height: 0.0,
             tab_width: self.custom_float(theme, "tab_width", 4.0),
             list_bullet: self.custom_string(theme, "list_bullet", "*".to_string()),
             column_width: self.custom_float(theme, "column_width", 25.0),
@@ -94,7 +108,7 @@ impl Frame {
                         state.new_line(ui, 1.0);
                     },
                     Event::HardBreak => {
-                        state.new_line(ui, 2.0);
+                        state.new_line(ui, 1.5);
                     },
                     Event::Rule | Event::Code(_) | Event::Html(_) | Event::FootnoteReference(_) | Event::TaskListMarker(_) => {
                         ui.log(log::Level::Warn, format!("Tag {:?} event is unsupported", event));
@@ -133,11 +147,21 @@ fn item(
             .text_align(align);
     }
 
+    let mut size = Rect::default();
+
     builder
         .text(text)
         .text_indent(state.text_indent)
+        .trigger_layout(&mut size)
         .trigger_text_layout(&mut state.cursor)
         .finish();
+    
+    if state.currently_at_new_line {
+        // if this is the first element in a new line, reset the line height
+        state.line_height = size.size.y;
+    } else {
+        state.line_height = state.line_height.max(size.size.y);
+    }
     
     state.cursor.y += original_y;
     state.update_cursor(ui);
@@ -239,17 +263,20 @@ impl MarkdownState {
     fn end_tag(&mut self, ui: &mut Frame, tag: Tag) {
         match tag {
             Tag::Paragraph => {
-                self.new_line(ui, 2.0);
+                self.new_line(ui, 1.5);
             },
             Tag::Heading(_) => {
                 self.set_size(SizeMode::Paragraph);
-                self.new_line(ui, 2.0);
+                self.new_line(ui, 1.5);
             },
             
             Tag::List(_) => {
                 self.indent_level -= 1.0;
                 self.list_stack.pop();
-                self.new_line(ui, 1.0);
+                if self.list_stack.is_empty() {
+                    // if we just did the end of the top level list
+                    self.new_line(ui, 1.0);
+                }
             },
             Tag::Item => {
                 if !self.currently_at_new_line {
