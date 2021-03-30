@@ -193,6 +193,7 @@ widgets:
     custom:
       line_height: 14.0
       tab_width: 6.0
+      column_width: 70.0
       list_bullet: "* "
     children:
       paragraph_normal:

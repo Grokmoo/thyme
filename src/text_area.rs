@@ -1,6 +1,6 @@
-use pulldown_cmark::{Event, Parser, Tag};
+use pulldown_cmark::{Alignment, Event, Options, Parser, Tag};
 
-use crate::{Frame, Rect, Point};
+use crate::{Frame, Rect, Point, Align, WidthRelative};
 
 impl Frame {
     /**
@@ -52,10 +52,14 @@ impl Frame {
             line_height: self.custom_float(theme, "line_height", 10.0),
             tab_width: self.custom_float(theme, "tab_width", 4.0),
             list_bullet: self.custom_string(theme, "list_bullet", "*".to_string()),
+            column_width: self.custom_float(theme, "column_width", 25.0),
             text_indent: 0.0,
             indent_level: 0.0,
             list_stack: Vec::new(),
             cursor: Point::default(),
+            table_column: None,
+            table_header: false,
+            table: Vec::new(),
             font: FontMode::Normal,
             size: SizeMode::Paragraph,
             cur_theme: "paragraph_normal".to_string(),
@@ -71,7 +75,10 @@ impl Frame {
         let mut bounds = Rect::default();
 
         builder.trigger_layout_inner(&mut bounds).children(|ui| {
-            let parser = Parser::new(&text);
+            let mut options = Options::empty();
+            options.insert(Options::ENABLE_TABLES);
+            let parser = Parser::new_ext(&text, options);
+
             for event in parser {
                 match event {
                     Event::Start(tag) => {
@@ -105,7 +112,28 @@ fn item(
 ) {
     let original_y = state.cursor.y;
 
-    ui.start(state.cur_theme())
+    let mut builder = ui.start(state.cur_theme());
+
+    if let Some(col) = state.table_column {
+        let align = if state.table_header {
+            Align::Top
+        } else {
+                match state.table.get(col as usize) {
+                Some(Alignment::None) => Align::TopLeft,
+                Some(Alignment::Left) => Align::TopLeft,
+                Some(Alignment::Center) => Align::Top,
+                Some(Alignment::Right) => Align::TopRight,
+                None => Align::TopLeft,
+            }
+        };
+
+        builder = builder
+            .width_from(WidthRelative::Normal)
+            .size(state.column_width, 0.0)
+            .text_align(align);
+    }
+
+    builder
         .text(text)
         .text_indent(state.text_indent)
         .trigger_text_layout(&mut state.cursor)
@@ -121,12 +149,16 @@ struct MarkdownState {
     line_height: f32,
     tab_width: f32,
     list_bullet: String,
+    column_width: f32,
 
     // current state
 
     // cursor position where child widgets will be placed
     currently_at_new_line: bool,
     cursor: Point,
+    table: Vec<Alignment>,
+    table_header: bool,
+    table_column: Option<u16>,
 
     // text indent - additional x indent within a child widget
     // beyond what is specified by the cursor position
@@ -156,8 +188,7 @@ impl MarkdownState {
                     _ => SizeMode::Paragraph,
                 });
             },
-            Tag::BlockQuote => {}
-            Tag::CodeBlock(_) => {}
+            
             Tag::List(kind) => {
                 self.indent_level += 1.0;
                 self.list_stack.push(match kind {
@@ -183,16 +214,25 @@ impl MarkdownState {
                     None => panic!("List item but not currently in a list!"),
                 };
             },
-            Tag::FootnoteDefinition(_) => {}
-            Tag::Table(_) => {}
-            Tag::TableHead => {}
-            Tag::TableRow => {}
-            Tag::TableCell => {}
             Tag::Emphasis => self.set_font(self.font.push(FontMode::Emphasis)),
             Tag::Strong => self.set_font(self.font.push(FontMode::Strong)),
-            Tag::Strikethrough => {}
-            Tag::Link(_, _, _) => {}
-            Tag::Image(_, _, _) => {}
+            Tag::Table(table) => {
+                self.table = table;
+            }
+            Tag::TableHead => {
+                self.table_column = Some(0);
+                self.table_header = true;
+                self.set_font(self.font.push(FontMode::Strong));
+            }
+            Tag::TableRow => {
+                self.table_column = Some(0);
+            },
+            Tag::TableCell => {
+                self.update_cursor(ui);
+            },
+            Tag::BlockQuote | Tag::CodeBlock(_) | Tag::FootnoteDefinition(_) | Tag::Strikethrough | Tag::Link(_, _, _) | Tag::Image(_, _, _) => {
+                ui.log(log::Level::Warn, format!("Tag {:?} is unsupported", tag));
+            }
         }
     }
 
@@ -205,11 +245,11 @@ impl MarkdownState {
                 self.set_size(SizeMode::Paragraph);
                 self.new_line(ui, 2.0);
             },
-            Tag::BlockQuote => {}
-            Tag::CodeBlock(_) => {}
+            
             Tag::List(_) => {
                 self.indent_level -= 1.0;
                 self.list_stack.pop();
+                self.new_line(ui, 1.0);
             },
             Tag::Item => {
                 if !self.currently_at_new_line {
@@ -218,16 +258,28 @@ impl MarkdownState {
                     self.update_cursor(ui);
                 }
             },
-            Tag::FootnoteDefinition(_) => {}
-            Tag::Table(_) => {}
-            Tag::TableHead => {}
-            Tag::TableRow => {}
-            Tag::TableCell => {}
             Tag::Emphasis => self.set_font(self.font.remove(FontMode::Emphasis)),
             Tag::Strong => self.set_font(self.font.remove(FontMode::Strong)),
-            Tag::Strikethrough => {}
-            Tag::Link(_, _, _) => {}
-            Tag::Image(_, _, _) => {}
+            Tag::Table(_) => {
+                self.table.clear();
+            }
+            Tag::TableHead => {
+                self.table_column = None;
+                self.table_header = false;
+                self.new_line(ui, 1.0);
+                self.set_font(self.font.remove(FontMode::Strong));
+            }
+            Tag::TableRow => {
+                self.table_column = None;
+                self.new_line(ui, 1.0);
+            }
+            Tag::TableCell => {
+                let col = self.table_column.get_or_insert(0);
+                *col += 1;
+            }
+            Tag::BlockQuote | Tag::CodeBlock(_) | Tag::FootnoteDefinition(_) | Tag::Strikethrough | Tag::Link(_, _, _) | Tag::Image(_, _, _) => {
+                ui.log(log::Level::Warn, format!("Tag {:?} is unsupported", tag));
+            }
         }
     }
 
@@ -254,8 +306,13 @@ impl MarkdownState {
     }
 
     fn update_cursor(&mut self, ui: &mut Frame) {
-        self.text_indent = self.cursor.x;
-        ui.set_cursor(self.indent_level * self.tab_width, self.cursor.y);
+        if let Some(col) = self.table_column {
+            self.text_indent = 0.0;
+            ui.set_cursor(col as f32 * self.column_width, self.cursor.y);
+        } else {
+            self.text_indent = self.cursor.x;
+            ui.set_cursor(self.indent_level * self.tab_width, self.cursor.y);
+        }
     }
 
     fn cur_theme(&self) -> &str {

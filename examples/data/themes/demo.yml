@@ -101,6 +101,13 @@ widgets:
          * An unordered list item
          * A second item
       1. The final list item
+
+      ## Stats
+      | Stat    | Value |
+      | ------- | -----:|
+      | Attack  | 50    |
+      | Defense | 100   |
+      | Magic   | 30    |
   age_slider:
     from: horizontal_slider
   age_label:
