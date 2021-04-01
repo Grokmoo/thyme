@@ -42,6 +42,8 @@ pub struct Frame {
 
     mouse_cursor: Option<(ImageHandle, Align)>,
     mouse_anim_state: AnimState,
+
+    variables: HashMap<String, String>,
 }
 
 pub(crate) struct MouseState {
@@ -73,6 +75,7 @@ impl Frame {
             generated_ids: HashMap::default(),
             mouse_cursor: None,
             mouse_anim_state,
+            variables: HashMap::new(),
         }
     }
 
@@ -571,6 +574,20 @@ impl Frame {
         context.log(level, message.into());
     }
 
+    /// Sets the associated key and value for a variable that can be substituted in any output
+    /// text.  By placing the specified `key` inside curly braces `{key}`, `value` will be
+    /// substituted in the output text that is written.  The variable is set for the entire frame,
+    /// so the substition will work in any rendered text.  Variables are not persisted between
+    /// frames, so this will need to be called on each frame before adding the widget(s) where
+    /// the variable is used.
+    pub fn set_variable<T: Into<String>, U: Into<String>>(&mut self, key: T, value: U) {
+        self.variables.insert(key.into(), value.into());
+    }
+
+    pub(crate) fn variables(&self) -> &HashMap<String, String> {
+        &self.variables
+    }
+
     pub(crate) fn push_widget(&mut self, mut widget: Widget) {
         widget.set_rend_group(self.cur_rend_group);
         self.render_groups[self.cur_rend_group.index as usize].num += 1;
@@ -603,7 +620,7 @@ impl Frame {
         self.render_groups[self.cur_rend_group.index as usize].rect = bounds;
     }
 
-    pub(crate) fn finish_frame(self) -> (Context, Vec<Widget>, Vec<RendGroupDef>) {
+    pub(crate) fn finish_frame(self) -> (Context, Vec<Widget>, Vec<RendGroupDef>, HashMap<String, String>) {
         let (top_rend_group, mouse_pos) = {
             let mut context = self.context.internal().borrow_mut();
 
@@ -633,7 +650,7 @@ impl Frame {
 
         self.context.internal().borrow_mut().next_frame(self.mouse_taken, mouse_in_rend_group);
 
-        (self.context, self.widgets, render_groups)
+        (self.context, self.widgets, render_groups, self.variables)
     }
 }
 

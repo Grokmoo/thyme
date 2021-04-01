@@ -103,11 +103,16 @@ widgets:
       1. The final list item
 
       ## Stats
-      | Stat    | Value |
-      | ------- | -----:|
-      | Attack  | 50    |
-      | Defense | 100   |
-      | Magic   | 30    |
+      This is a stats table with substituted dynamic values.
+      
+      | Stat         | Value |
+      | -------      | -----:|
+      | Strength     | {Strength}     |
+      | Dexterity    | {Dexterity}    |
+      | Constitution | {Constitution} |
+      | Intelligence | {Intelligence} |
+      | Wisdom       | {Wisdom}       |
+      | Charisma     | {Charisma}     |
   age_slider:
     from: horizontal_slider
   age_label:

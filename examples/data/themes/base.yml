@@ -191,7 +191,7 @@ widgets:
     size_from: [Parent, Children]
     custom:
       tab_width: 6.0
-      column_width: 70.0
+      column_width: 90.0
       list_bullet: "* "
     children:
       paragraph_normal:

@@ -13,7 +13,7 @@ use wgpu::{
 };
 
 use crate::render::{DrawMode, view_matrix, TextureData, TexCoord, DrawList};
-use crate::font::FontTextureWriter;
+use crate::font::{FontDrawParams, FontTextureWriter};
 use crate::image::ImageDrawParams;
 use crate::theme_definition::CharacterRange;
 use crate::{Renderer, Frame, Point, Color, Rect};
@@ -202,7 +202,7 @@ impl WgpuRenderer {
     /// Draws the current [`Frame`](struct.Frame.html) to the screen
     pub fn draw_frame<'a>(&'a mut self, frame: Frame, render_pass: &mut RenderPass<'a>) {
         let mouse_cursor = frame.mouse_cursor();
-        let (context, widgets, render_groups) = frame.finish_frame();
+        let (context, widgets, render_groups, variables) = frame.finish_frame();
         let context = context.internal().borrow();
 
         let time_millis = context.time_millis();
@@ -274,13 +274,18 @@ impl WgpuRenderer {
                         self.buffer_if_changed(&mut draw_mode, DrawMode::Font(font_sum.handle));
                         let font = context.themes().font(font_sum.handle);
     
+                        let params = FontDrawParams {
+                            area_size: fg_size * scale,
+                            pos: fg_pos * scale,
+                            indent: widget.text_indent(),
+                            align: widget.text_align(),
+                        };
+
                         font.draw(
                             &mut self.draw_list,
-                            fg_size * scale,
-                            (fg_pos * scale).into(),
-                            widget.text_indent(),
+                            &variables,
+                            params,
                             text,
-                            widget.text_align(),
                             widget.text_color(),
                             widget.clip() * scale,
                         )

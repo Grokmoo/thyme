@@ -2,6 +2,7 @@ use crate::{
     AnimState, AnimStateKey, Color, Frame, Point, Border, Align, 
     Layout, WidthRelative, HeightRelative, Rect,
 };
+use crate::font::FontDrawParams;
 use crate::{frame::{RendGroup}, font::FontSummary, image::ImageHandle};
 use crate::theme::{WidgetTheme};
 use crate::window::WindowBuilder;
@@ -905,7 +906,14 @@ impl<'a> WidgetBuilder<'a> {
 
             let mut scaled_cursor = *cursor * scale;
 
-            font.layout(fg_size * scale, fg_pos * scale, indent, text, align, &mut scaled_cursor);
+            let params = FontDrawParams {
+                area_size: fg_size * scale,
+                pos: fg_pos * scale,
+                indent,
+                align,
+            };
+
+            font.layout(params, &self.frame.variables(), text, &mut scaled_cursor);
 
             *cursor = scaled_cursor / scale;
         }

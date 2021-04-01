@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use rustc_hash::FxHashMap;
 
 use crate::theme_definition::CharacterRange;
@@ -61,21 +62,17 @@ impl Font {
 
     pub(crate) fn layout(
         &self,
-        area_size: Point,
-        pos: Point,
-        indent: f32,
+        params: FontDrawParams,
+        variables: &HashMap<String, String>,
         text: &str,
-        align: Align,
         cursor: &mut Point,
     ) {
         let mut draw_list = DummyDrawList::new();
         let mut renderer = FontRenderer::new(
             &self,
             &mut draw_list,
-            area_size,
-            pos,
-            indent,
-            align,
+            variables,
+            params,
             Color::white(),
             Rect::default(),
         );
@@ -91,25 +88,20 @@ impl Font {
         *cursor = renderer.pos;
     }
 
-    #[allow(clippy::too_many_arguments)]
     pub(crate) fn draw<D: DrawList>(
         &self,
         draw_list: &mut D,
-        area_size: Point,
-        pos: [f32; 2],
-        indent: f32,
+        variables: &HashMap<String, String>,
+        params: FontDrawParams,
         text: &str,
-        align: Align,
         color: Color,
         clip: Rect,
     ) {
         let mut renderer = FontRenderer::new(
             &self,
             draw_list,
-            area_size,
-            pos.into(),
-            indent,
-            align,
+            variables,
+            params,
             color,
             clip
         );
@@ -117,7 +109,7 @@ impl Font {
     }
 }
 
-struct FontRenderer<'a, D> {
+struct FontRenderer<'a, 'b,  D> {
     font: &'a Font,
     draw_list: &'a mut D,
     initial_index: usize,
@@ -137,64 +129,83 @@ struct FontRenderer<'a, D> {
     cur_word_width: f32,
 
     is_first_line_with_indent: bool,
+
+    variables: &'b HashMap<String, String>,
+    cur_var: String, // current variable to be replaced
+    in_var: bool,
 }
 
-impl<'a, D: DrawList> FontRenderer<'a, D> {
-    #[allow(clippy::too_many_arguments)]
+impl<'a, 'b, D: DrawList> FontRenderer<'a, 'b, D> {
     fn new(
         font: &'a Font,
         draw_list: &'a mut D,
-        area_size: Point,
-        pos: Point,
-        indent: f32,
-        align: Align,
+        variables: &'b HashMap<String, String>,
+        params: FontDrawParams,
         color: Color,
         clip: Rect,
-    ) -> FontRenderer<'a, D> {
+    ) -> FontRenderer<'a, 'b, D> {
         let initial_index = draw_list.len();
 
         FontRenderer {
             font,
             draw_list,
             initial_index,
-            align,
+            align: params.align,
             color,
             clip,
-            area_size,
-            initial_pos: pos,
-            pos: Point::new(pos.x + indent, pos.y),
-            size: Point::new(indent, 0.0),
+            area_size: params.area_size,
+            initial_pos: params.pos,
+            pos: Point::new(params.pos.x + params.indent, params.pos.y),
+            size: Point::new(params.indent, 0.0),
             cur_line_index: initial_index,
             cur_word: Vec::new(),
             cur_word_width: 0.0,
-            is_first_line_with_indent: indent > 0.0,
+            is_first_line_with_indent: params.indent > 0.0,
+            cur_var: String::new(),
+            in_var: false,
+            variables,
         }
     }
 
     fn render(&mut self, text: &str) {
         for c in text.chars() {
-            let font_char = match self.font.char(c) {
-                None => continue, // TODO draw a special character here?
-                Some(char) => char,
-            };
-
-            if c == '\n' {
-                self.draw_cur_word();
-                self.next_line();
-            } else if c.is_whitespace() {
-                self.draw_cur_word();
-
-                // don't draw whitespace at the start of a line
-                if self.cur_line_index != self.draw_list.len() || self.is_first_line_with_indent {
-                    self.pos.x += font_char.x_advance;
-                    self.size.x += font_char.x_advance;
-                }
-
+            if c == '{' {
+                self.in_var = true;
                 continue;
             }
 
-            self.cur_word_width += font_char.x_advance;
-            self.cur_word.push(font_char);
+            if self.in_var {
+                if c == '}' {
+                    self.in_var = false;
+                    self.push_var_to_cur_word();
+                } else {
+                    self.cur_var.push(c);
+                    continue;
+                }
+            } else {
+                let font_char = match self.font.char(c) {
+                    None => continue, // TODO draw a special character here?
+                    Some(char) => char,
+                };
+    
+                if c == '\n' {
+                    self.draw_cur_word();
+                    self.next_line();
+                } else if c.is_whitespace() {
+                    self.draw_cur_word();
+    
+                    // don't draw whitespace at the start of a line
+                    if self.cur_line_index != self.draw_list.len() || self.is_first_line_with_indent {
+                        self.pos.x += font_char.x_advance;
+                        self.size.x += font_char.x_advance;
+                    }
+    
+                    continue;
+                }
+
+                self.cur_word_width += font_char.x_advance;
+                self.cur_word.push(font_char);
+            }
 
             if self.size.x + self.cur_word_width > self.area_size.x {
                 //if the word was so long that we drew nothing at all
@@ -217,6 +228,20 @@ impl<'a, D: DrawList> FontRenderer<'a, D> {
         }
 
         self.adjust_all_y();
+    }
+
+    fn push_var_to_cur_word(&mut self) {
+        let value = self.variables.get(&self.cur_var).map_or("", String::as_str);
+        self.cur_var.clear();
+        for c in value.chars() {
+            let font_char = match self.font.char(c) {
+                None => continue, // TODO draw a special character here?
+                Some(char) => char,
+            };
+
+            self.cur_word_width += font_char.x_advance;
+            self.cur_word.push(font_char);
+        }
     }
 
     fn draw_cur_word(&mut self) {
@@ -428,4 +453,11 @@ impl<'a> FontTextureWriter<'a> {
             y_offset,
         }
     }
+}
+
+pub struct FontDrawParams {
+    pub area_size: Point,
+    pub pos: Point,
+    pub indent: f32,
+    pub align: Align,
 }

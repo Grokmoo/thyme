@@ -255,6 +255,12 @@ pub fn build_ui(ui: &mut Frame, party: &mut Party) {
                     character.age = age;
                 }
 
+                for stat in Stat::iter() {
+                    let value = format!("{}", character.stats.get(&stat).unwrap_or(&10));
+                    let key = format!("{:?}", stat);
+                    ui.set_variable(key, value);
+                }
+
                 ui.scrollpane("description_panel", "description_pane", |ui| {
                     ui.text_area("description_box");
                 });

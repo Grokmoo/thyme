@@ -1,4 +1,4 @@
-use crate::font::{Font, FontSource, FontTextureWriter};
+use crate::font::{Font, FontSource, FontTextureWriter, FontDrawParams};
 use crate::image::ImageDrawParams;
 use crate::render::{
     view_matrix, DrawList, DrawMode, FontHandle, Renderer, TexCoord, TextureData, TextureHandle,
@@ -90,7 +90,7 @@ impl GLRenderer {
     /// Draws the specified [`Frame`](struct.Frame.html) to the Glium surface, usually the Glium Frame.
     pub fn draw_frame(&mut self, frame: Frame) {
         let mouse_cursor = frame.mouse_cursor();
-        let (context, widgets, render_groups) = frame.finish_frame();
+        let (context, widgets, render_groups, variables) = frame.finish_frame();
         let context = context.internal().borrow();
 
         let time_millis = context.time_millis();
@@ -177,13 +177,18 @@ impl GLRenderer {
                         );
                         let font = context.themes().font(font_sum.handle);
 
+                        let params = FontDrawParams {
+                            area_size: fg_size * scale,
+                            pos: fg_pos * scale,
+                            indent: widget.text_indent(),
+                            align: widget.text_align(),
+                        };
+
                         font.draw(
                             &mut self.draw_list,
-                            fg_size * scale,
-                            (fg_pos * scale).into(),
-                            widget.text_indent(),
+                            &variables,
+                            params,
                             text,
-                            widget.text_align(),
                             widget.text_color(),
                             widget.clip() * scale,
                         )

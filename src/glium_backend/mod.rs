@@ -11,7 +11,7 @@ use glium::index::PrimitiveType;
 
 use crate::{image::ImageDrawParams};
 use crate::render::{view_matrix, TexCoord, DrawList, DrawMode, Renderer, TextureHandle, TextureData, FontHandle};
-use crate::font::{Font, FontSource, FontTextureWriter};
+use crate::font::{Font, FontSource, FontTextureWriter, FontDrawParams};
 use crate::theme_definition::CharacterRange;
 use crate::{Frame, Point, Color, Rect};
 
@@ -110,7 +110,7 @@ impl GliumRenderer {
     /// Draws the specified [`Frame`](struct.Frame.html) to the Glium surface, usually the Glium Frame.
     pub fn draw_frame<T: Surface>(&mut self, target: &mut T, frame: Frame) -> Result<(), GliumError> {
         let mouse_cursor = frame.mouse_cursor();
-        let (context, widgets, render_groups) = frame.finish_frame();
+        let (context, widgets, render_groups, variables) = frame.finish_frame();
         let context = context.internal().borrow();
 
         let time_millis = context.time_millis();
@@ -181,13 +181,18 @@ impl GliumRenderer {
                         self.write_group_if_changed(&mut draw_mode, DrawMode::Font(font_sum.handle));
                         let font = context.themes().font(font_sum.handle);
     
+                        let params = FontDrawParams {
+                            area_size: fg_size * scale,
+                            pos: fg_pos * scale,
+                            indent: widget.text_indent(),
+                            align: widget.text_align(),
+                        };
+
                         font.draw(
                             &mut self.draw_list,
-                            fg_size * scale,
-                            (fg_pos * scale).into(),
-                            widget.text_indent(),
+                            &variables,
+                            params,
                             text,
-                            widget.text_align(),
                             widget.text_color(),
                             widget.clip() * scale,
                         )
