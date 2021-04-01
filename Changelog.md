@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2021-03-31
+### Changed
+- Improved the theme definitions for the demo example
+
+### Added
+- A third renderer backend, using straight OpenGL, is now available
+- Support for dynamic variable substitution in text fields
+- A textbox widget that parses a subset of Markdown, including strong / emphasis, headers, and tables
+- Added ability to define a theme without any actual image sources, and a demo example
+- Image aliases now can be used in the theme definition to avoid repitition
+- Multiple simple images can now be quickly defined using image groups
+- Method to query the current parent Widget bounds
+- Image colors now support transparency / alpha
+
+### Fixed
+- The first example in the docs actually compiles now
+
 ## [0.5.0] - 2020-12-01
 ### Changed
 - Font character cache texture is more appropriately sized
