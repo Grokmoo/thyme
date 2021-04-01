@@ -344,6 +344,7 @@ impl WgpuApp {
     
                     {
                         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                            label: None,
                             color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
                                 attachment: &frame.view,
                                 resolve_target: None,
@@ -496,7 +497,7 @@ async fn setup_wgpu(
     surface: &wgpu::Surface
 ) -> (wgpu::Adapter, Arc<wgpu::Device>, Arc<wgpu::Queue>) {
     let adapter = instance.request_adapter(&wgpu::RequestAdapterOptions {
-        power_preference: wgpu::PowerPreference::Default,
+        power_preference: wgpu::PowerPreference::LowPower,
         // Request an adapter which can render to our surface
         compatible_surface: Some(&surface),
     }).await.unwrap();
@@ -504,9 +505,9 @@ async fn setup_wgpu(
     // Create the logical device and command queue
     let (device, queue) = adapter.request_device(
         &wgpu::DeviceDescriptor {
+            label: None,
             features: wgpu::Features::empty(),
             limits: wgpu::Limits::default(),
-            shader_validation: true,
         },
         None,
     ).await.expect("Failed to create WGPU device");
@@ -517,7 +518,7 @@ async fn setup_wgpu(
 #[cfg(feature="wgpu_backend")]
 fn swapchain_desc(width: u32, height: u32) -> wgpu::SwapChainDescriptor {
     wgpu::SwapChainDescriptor {
-        usage: wgpu::TextureUsage::OUTPUT_ATTACHMENT,
+        usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
         format: wgpu::TextureFormat::Bgra8Unorm,
         width,
         height,

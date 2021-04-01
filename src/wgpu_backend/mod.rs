@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
 use wgpu::{
-    Buffer, BufferDescriptor, BufferUsage, BufferAddress,
-    ColorStateDescriptor, BlendDescriptor, BlendFactor, BlendOperation, ColorWrite,
+    Buffer, BufferDescriptor, BufferUsage, BufferAddress, BufferBindingType,
+    BlendFactor, BlendOperation, ColorWrite,
     BindingResource, BindGroupLayout, BindGroupEntry, BindingType, BindGroupDescriptor, BindGroup, BindGroupLayoutDescriptor, BindGroupLayoutEntry,
     Device, Queue, RenderPipeline, RenderPass,
-    TextureFormat, TextureComponentType, TextureViewDimension, TextureDataLayout, TextureCopyView, TextureViewDescriptor,
-    SamplerDescriptor, AddressMode, FilterMode,
-    VertexBufferDescriptor, InputStepMode, vertex_attr_array,
+    TextureFormat, TextureViewDimension, TextureDataLayout, TextureCopyView, TextureViewDescriptor, TextureSampleType,
+    SamplerDescriptor, AddressMode, FilterMode, PrimitiveState,
+    InputStepMode, vertex_attr_array,
     include_spirv,
     util::{BufferInitDescriptor, DeviceExt},
 };
@@ -69,9 +69,9 @@ impl WgpuRenderer {
         glslc -fshader-stage=fragment -fentry-point=main -o frag_font.spirv frag_font.glsl
         ```
         */
-        let vert_shader = device.create_shader_module(include_spirv!("shaders/vert.spirv"));
-        let frag_shader = device.create_shader_module(include_spirv!("shaders/frag.spirv"));
-        let frag_font_shader = device.create_shader_module(include_spirv!("shaders/frag_font.spirv"));
+        let vert_shader = device.create_shader_module(&include_spirv!("shaders/vert.spirv"));
+        let frag_shader = device.create_shader_module(&include_spirv!("shaders/frag.spirv"));
+        let frag_font_shader = device.create_shader_module(&include_spirv!("shaders/frag_font.spirv"));
 
         // setup the view matrix
         let view_matrix_buffer = device.create_buffer(&BufferDescriptor {
@@ -86,8 +86,9 @@ impl WgpuRenderer {
             entries: &[BindGroupLayoutEntry {
                 binding: 0,
                 visibility: wgpu::ShaderStage::VERTEX,
-                ty: BindingType::UniformBuffer {
-                    dynamic: false,
+                ty: BindingType::Buffer {
+                    ty: BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
                     min_binding_size: None,
                 },
                 count: None,
@@ -99,7 +100,11 @@ impl WgpuRenderer {
             layout: &view_matrix_layout,
             entries: &[BindGroupEntry {
                 binding: 0,
-                resource: BindingResource::Buffer(view_matrix_buffer.slice(..)),
+                resource: BindingResource::Buffer {
+                    buffer: &view_matrix_buffer,
+                    offset: 0,
+                    size: None,
+                },
             }],
         });
 
@@ -110,17 +115,20 @@ impl WgpuRenderer {
                 BindGroupLayoutEntry {
                     binding: 0,
                     visibility: wgpu::ShaderStage::FRAGMENT,
-                    ty: BindingType::SampledTexture {
+                    ty: BindingType::Texture {
                         multisampled: false,
-                        component_type: TextureComponentType::Float,
-                        dimension: TextureViewDimension::D2,
+                        sample_type: TextureSampleType::Float { filterable: false },
+                        view_dimension: TextureViewDimension::D2,
                     },
                     count: None,
                 },
                 BindGroupLayoutEntry {
                     binding: 1,
                     visibility: wgpu::ShaderStage::FRAGMENT,
-                    ty: BindingType::Sampler { comparison: false },
+                    ty: BindingType::Sampler {
+                        comparison: false,
+                        filtering: false,
+                    },
                     count: None,
                 },
             ],
@@ -135,50 +143,69 @@ impl WgpuRenderer {
         let mut pipe_desc = wgpu::RenderPipelineDescriptor {
             label: Some("thyme render pipeline"),
             layout: Some(&pipeline_layout),
-            vertex_stage: wgpu::ProgrammableStageDescriptor {
+            vertex: wgpu::VertexState {
                 module: &vert_shader,
                 entry_point: "main",
+                buffers: &[wgpu::VertexBufferLayout {
+                    array_stride: std::mem::size_of::<Vertex>() as BufferAddress,
+                    step_mode: InputStepMode::Vertex,
+                    attributes: &vertex_attr_array![0 => Float2, 1 => Float2, 2 => Float4, 3 => Float2, 4 => Float2],
+                }],
             },
-            fragment_stage: Some(wgpu::ProgrammableStageDescriptor {
+            fragment: Some(wgpu::FragmentState {
                 module: &frag_shader,
                 entry_point: "main",
+                targets: &[
+                wgpu::ColorTargetState {
+                    format: TextureFormat::Bgra8Unorm,
+                    color_blend: wgpu::BlendState {
+                        src_factor: BlendFactor::SrcAlpha,
+                        dst_factor: BlendFactor::OneMinusSrcAlpha,
+                        operation: BlendOperation::Add,
+                    },
+                    alpha_blend: wgpu::BlendState {
+                        src_factor: BlendFactor::OneMinusDstAlpha,
+                        dst_factor: BlendFactor::One,
+                        operation: BlendOperation::Add,
+                    },
+                    write_mask: ColorWrite::ALL,
+                }],
             }),
-            // Use the default rasterizer state: no culling, no depth bias
-            rasterization_state: None,
-            primitive_topology: wgpu::PrimitiveTopology::TriangleList,
-            color_states: &[ColorStateDescriptor {
+            primitive: PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                strip_index_format: None,
+                front_face: wgpu::FrontFace::Ccw,
+                cull_mode: wgpu::CullMode::None,
+                polygon_mode: wgpu::PolygonMode::Fill,
+            },
+            multisample: wgpu::MultisampleState {
+                count: 1,
+                mask: !0,
+                alpha_to_coverage_enabled: false,
+            },
+            depth_stencil: None,
+        };
+
+        let image_pipe = device.create_render_pipeline(&pipe_desc);
+
+        pipe_desc.fragment = Some(wgpu::FragmentState {
+            module: &frag_font_shader,
+            entry_point: "main",
+            targets: &[
+            wgpu::ColorTargetState {
                 format: TextureFormat::Bgra8Unorm,
-                color_blend: BlendDescriptor {
+                color_blend: wgpu::BlendState {
                     src_factor: BlendFactor::SrcAlpha,
                     dst_factor: BlendFactor::OneMinusSrcAlpha,
                     operation: BlendOperation::Add,
                 },
-                alpha_blend: BlendDescriptor {
+                alpha_blend: wgpu::BlendState {
                     src_factor: BlendFactor::OneMinusDstAlpha,
                     dst_factor: BlendFactor::One,
                     operation: BlendOperation::Add,
                 },
                 write_mask: ColorWrite::ALL,
             }],
-            depth_stencil_state: None,
-            vertex_state: wgpu::VertexStateDescriptor {
-                index_format: wgpu::IndexFormat::Uint16,
-                vertex_buffers: &[VertexBufferDescriptor {
-                    stride: std::mem::size_of::<Vertex>() as BufferAddress,
-                    step_mode: InputStepMode::Vertex,
-                    attributes: &vertex_attr_array![0 => Float2, 1 => Float2, 2 => Float4, 3 => Float2, 4 => Float2],
-                }],
-            },
-            sample_count: 1,
-            sample_mask: !0,
-            alpha_to_coverage_enabled: false,
-        };
-
-        let image_pipe = device.create_render_pipeline(&pipe_desc);
-
-        pipe_desc.fragment_stage = Some(wgpu::ProgrammableStageDescriptor {
-            module: &frag_font_shader,
-            entry_point: "main",
         });
 
         let font_pipe = device.create_render_pipeline(&pipe_desc);
@@ -333,7 +360,7 @@ impl WgpuRenderer {
 
         if let Some(data) = &self.buffered {
             render_pass.set_vertex_buffer(0, data.vertices.slice(..));
-            render_pass.set_index_buffer(data.indices.slice(..));
+            render_pass.set_index_buffer(data.indices.slice(..), wgpu::IndexFormat::Uint16);
     
             for group in &self.draw_groups {
                 let texture = match &group.mode {
@@ -444,6 +471,7 @@ impl WgpuRenderer {
 
         let sampler = self.device.create_sampler(&SamplerDescriptor {
             label: None,
+            border_color: None,
             address_mode_u: AddressMode::ClampToEdge,
             address_mode_v: AddressMode::ClampToEdge,
             address_mode_w: AddressMode::ClampToEdge,
