@@ -420,7 +420,7 @@ mod gl_backend;
 pub use gl_backend::GLRenderer;
 
 
-pub use frame::Frame;
+pub use frame::{Frame};
 pub use point::{Rect, Point, Border};
 pub use widget::{WidgetBuilder, WidgetState};
 pub use context_builder::{BuildOptions, ContextBuilder};

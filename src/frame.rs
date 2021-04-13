@@ -678,3 +678,15 @@ impl RendGroupDef {
     pub(crate) fn id(&self) -> &str { &self.id }
     pub(crate) fn group(&self) -> RendGroup { self.group }
 }
+
+#[macro_export]
+/// Pass in the `ui` frame, followed by a list of key value pairs, to easily set a large number
+/// of variables.  Each `key` must be Into<String> while each `val` must have a `to_string`
+/// method.
+macro_rules! set_variables {
+    ($ui:ident; $($key: expr, $val: expr),+ $(,)?) => {
+        $(
+            $ui.set_variable($key, $val.to_string());
+        )+
+    }
+}
