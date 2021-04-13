@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::theme_definition::CustomData;
 use crate::context::{Context, ContextInternal, InputModifiers};
 use crate::{
     AnimState, AnimStateKey, Rect, Point, WidgetBuilder, PersistentState, Align,
@@ -511,60 +510,6 @@ impl Frame {
     pub fn modify<T: Into<String>, Ret, F: FnOnce(&mut PersistentState) -> Ret>(&mut self, id: T, f: F) -> Ret{
         let mut context = self.context.internal().borrow_mut();
         (f)(context.state_mut(id))
-    }
-
-    /// Queries the theme for the specified custom int, in the `custom` field for the
-    /// theme with the specified `key`.  Returns the `default_value` if the theme or key cannot
-    /// be found, or if the key is specified but is not a float
-    pub fn custom_int(&self, theme_id: &str, key: &str, default_value: i32) -> i32 {
-        let context = self.context_internal().borrow();
-
-        let value = match context.themes().theme(theme_id) {
-            None => return default_value,
-            Some(theme) => theme.custom.get(key),
-        };
-
-        if let Some(CustomData::Int(value)) = value {
-            *value
-        } else {
-            default_value
-        }
-    }
-
-    /// Queries the theme for the specified custom float, in the `custom` field for the
-    /// theme with the specified `key`.  Returns the `default_value` if the theme or key cannot
-    /// be found, or if the key is specified but is not a float
-    pub fn custom_float(&self, theme_id: &str, key: &str, default_value: f32) -> f32 {
-        let context = self.context_internal().borrow();
-
-        let value = match context.themes().theme(theme_id) {
-            None => return default_value,
-            Some(theme) => theme.custom.get(key),
-        };
-
-        if let Some(CustomData::Float(value)) = value {
-            *value
-        } else {
-            default_value
-        }
-    }
-
-    /// Queries the theme for the specified custom String, in the `custom` field for the
-    /// theme with the specified `key`.  Returns the `default_value` if the theme or key
-    /// cannot be found, or if the key is specified but is not a String
-    pub fn custom_string(&self, theme_id: &str, key: &str, default_value: String) -> String {
-        let context = self.context_internal().borrow();
-
-        let value = match context.themes().theme(theme_id) {
-            None => return default_value,
-            Some(theme) => theme.custom.get(key),
-        };
-
-        if let Some(CustomData::String(value)) = value {
-            value.clone()
-        } else {
-            default_value
-        }
     }
 
     /// Logs a message using the Thyme internal logger.  Prevents a flood of the same message

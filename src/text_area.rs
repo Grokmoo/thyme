@@ -62,11 +62,13 @@ impl Frame {
     ```
     **/
     pub fn text_area(&mut self, theme: &str) {
+        let builder = self.start(theme);
+
         let mut state = MarkdownState {
             line_height: 0.0,
-            tab_width: self.custom_float(theme, "tab_width", 4.0),
-            list_bullet: self.custom_string(theme, "list_bullet", "*".to_string()),
-            column_width: self.custom_float(theme, "column_width", 25.0),
+            tab_width: builder.custom_float("tab_width", 4.0),
+            list_bullet: builder.custom_string("list_bullet", "*".to_string()),
+            column_width: builder.custom_float("column_width", 25.0),
             text_indent: 0.0,
             indent_level: 0.0,
             list_stack: Vec::new(),
@@ -79,8 +81,6 @@ impl Frame {
             cur_theme: "paragraph_normal".to_string(),
             currently_at_new_line: true,
         };
-
-        let builder = self.start(theme);
 
         // Need to clone the text here to avoid ownership issues.  It should be possible
         // to find a way around this as we don't actually modify the text later
