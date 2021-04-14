@@ -293,7 +293,9 @@ impl MarkdownState {
             Tag::TableHead => {
                 self.table_column = None;
                 self.table_header = false;
-                self.new_line(ui, 1.0);
+                if !self.currently_at_new_line {
+                    self.new_line(ui, 1.0);
+                }
                 self.set_font(self.font.remove(FontMode::Strong));
             }
             Tag::TableRow => {
