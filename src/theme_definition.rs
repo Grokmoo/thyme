@@ -594,6 +594,13 @@ impl Color {
 
     /// The color magenta or purple.  `#FF00FF` or `#F0F` in the theme
     pub fn magenta() -> Self { Color { r: 255, g: 0, b: 255, a: 255 }}
+
+    /// Attempts to parse a Color from the specified `value` string.  Returns None if
+    /// it cannot be parsed.  See the main [`Color`](struct.Color.html) serialization rules.
+    pub fn parse_str(value: &str) -> Option<Color> {
+        let visitor = ColorVisitor {};
+        visitor.visit_str::<serde::de::value::Error>(value).ok()
+    }
 }
 
 impl Default for Color {

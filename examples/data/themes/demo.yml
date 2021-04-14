@@ -94,7 +94,7 @@ widgets:
       This is your character's ***very detailed*** description that spans a few lines.
       
       ## Background
-      This is another line of text.
+      This is another line of text.  <e c=#800>With some color.</e>
       
       1. This is a list item.  The text is long enough to wrap around.
       1. This is another list item

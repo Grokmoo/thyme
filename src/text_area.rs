@@ -1,6 +1,6 @@
 use pulldown_cmark::{Alignment, Event, Options, Parser, Tag};
 
-use crate::{Frame, Rect, Point, Align, WidthRelative};
+use crate::{Frame, Rect, Point, Align, WidthRelative, Color};
 
 impl Frame {
     /**
@@ -19,6 +19,12 @@ impl Frame {
     ### Variable Substitution
     Using curly braces, i.e. `{my_variable_id}` you can substitute in values that are set dynamically in your code.  See
     [`set_variable`](struct.Frame.html#method.set_variable).
+
+    ### Color
+    Text color is not specifiable in Markdown.  For ease of use, the text area will parse a limited non-standard HTML tag,
+    `<e>`.  The tag accepts a `color` or `c` attribute.  The value of the attribute may be any string that can
+    be parsed by the [`Color`](struct.Color.html) struct.  Quotes are not used in specifying the value.  For
+    example, `<e c=#f00>Red text</e>`.  The extended tag may be nested.
 
     An example theme definition:
     ```yaml
@@ -76,6 +82,7 @@ impl Frame {
             text_indent: 0.0,
             indent_level: 0.0,
             list_stack: Vec::new(),
+            color_stack: Vec::new(),
             cursor: Point::default(),
             table_column: None,
             table_header: false,
@@ -132,7 +139,10 @@ impl Frame {
                     Event::HardBreak => {
                         state.new_line(ui, 1.5);
                     },
-                    Event::Rule | Event::Code(_) | Event::Html(_) | Event::FootnoteReference(_) | Event::TaskListMarker(_) => {
+                    Event::Html(data) => {
+                        state.parse_extended(ui, data.as_ref());
+                    },
+                    Event::Rule | Event::Code(_) | Event::FootnoteReference(_) | Event::TaskListMarker(_) => {
                         ui.log(log::Level::Warn, format!("Tag {:?} event is unsupported", event));
                     }
                 }
@@ -167,6 +177,10 @@ fn item(
             .width_from(WidthRelative::Normal)
             .size(state.column_width, 0.0)
             .text_align(align);
+    }
+
+    if let Some(color) = state.color_stack.last() {
+        builder = builder.text_color(*color);
     }
 
     let mut size = Rect::default();
@@ -213,7 +227,7 @@ struct MarkdownState {
     // number of tabs we are currently indented
     indent_level: f32,
 
-
+    color_stack: Vec<Color>,
     list_stack: Vec<ListMode>,
 
     size: SizeMode,
@@ -332,6 +346,82 @@ impl MarkdownState {
             }
             Tag::BlockQuote | Tag::CodeBlock(_) | Tag::FootnoteDefinition(_) | Tag::Strikethrough | Tag::Link(_, _, _) | Tag::Image(_, _, _) => {
                 ui.log(log::Level::Warn, format!("Tag {:?} is unsupported", tag));
+            }
+        }
+    }
+
+    fn push_extended_attr(&mut self, ui: &mut Frame, attr: &str, val: &str) {
+        if attr.is_empty() && val.is_empty() { return; }
+
+        match attr {
+            "c" | "color" => {
+                match Color::parse_str(val) {
+                    None => {
+                        ui.log(log::Level::Warn, format!("Unable to parse color from {}", val));
+                    }, Some(c) => {
+                        self.color_stack.push(c);
+                    }
+                }
+            },
+            _ => {
+                ui.log(log::Level::Warn, format!("Invalid extended attribute: {}={}", attr, val));
+            }
+        }
+    }
+
+    fn parse_extended(&mut self, ui: &mut Frame, data: &str) {
+        let mut in_tag = false;
+        let mut in_attrs = false;
+        let mut in_attr_val = false;
+        let mut end_tag = false;
+
+        let mut cur_attr = String::new();
+        let mut cur_val = String::new();
+
+        for c in data.chars() {
+            if c == '<' {
+                in_tag = true;
+            } else if c == '>' {
+                self.push_extended_attr(ui, &cur_attr, &cur_val);
+                in_tag = false;
+                in_attrs = false;
+                cur_attr.clear();
+                cur_val.clear();
+            } else {
+                if !in_tag {
+                    ui.log(log::Level::Warn, format!("Invalid extended tag: {}", data));
+                    return;
+                }
+
+                if c == '/' {
+                    end_tag = true;
+                } else if c == 'e' {
+                    in_attrs = true;
+                } else {
+                    if !in_attrs || end_tag {
+                        ui.log(log::Level::Warn, format!("Invalid extended tag: {}", data));
+                        return;
+                    }
+
+                    if c.is_whitespace() {
+                        self.push_extended_attr(ui, &cur_attr, &cur_val);
+                        cur_attr.clear();
+                        cur_val.clear();
+                    } else if c == '=' {
+                        in_attr_val = true;
+                    } else if in_attr_val {
+                        cur_val.push(c);
+                    } else if in_attrs {
+                        cur_attr.push(c);
+                    }
+                }
+            }
+        }
+
+        if end_tag {
+            let popped = self.color_stack.pop();
+            if popped.is_none() {
+                ui.log(log::Level::Warn, format!("Unexpected close tag: {}", data));
             }
         }
     }
