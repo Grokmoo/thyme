@@ -300,7 +300,9 @@ impl MarkdownState {
             }
             Tag::TableRow => {
                 self.table_column = None;
-                self.new_line(ui, 1.0);
+                if !self.currently_at_new_line {
+                    self.new_line(ui, 1.0);
+                }
             }
             Tag::TableCell => {
                 let col = self.table_column.get_or_insert(0);
