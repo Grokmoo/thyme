@@ -90,7 +90,7 @@ impl GLRenderer {
     /// Draws the specified [`Frame`](struct.Frame.html) to the Glium surface, usually the Glium Frame.
     pub fn draw_frame(&mut self, frame: Frame) {
         let mouse_cursor = frame.mouse_cursor();
-        let (context, widgets, render_groups, variables) = frame.finish_frame();
+        let (context, widgets, render_groups) = frame.finish_frame();
         let context = context.internal().borrow();
 
         let time_millis = context.time_millis();
@@ -186,7 +186,6 @@ impl GLRenderer {
 
                         font.draw(
                             &mut self.draw_list,
-                            &variables,
                             params,
                             text,
                             widget.text_color(),

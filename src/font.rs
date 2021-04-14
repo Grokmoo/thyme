@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use rustc_hash::FxHashMap;
 
 use crate::theme_definition::CharacterRange;
@@ -63,7 +62,6 @@ impl Font {
     pub(crate) fn layout(
         &self,
         params: FontDrawParams,
-        variables: &HashMap<String, String>,
         text: &str,
         cursor: &mut Point,
     ) {
@@ -71,7 +69,6 @@ impl Font {
         let mut renderer = FontRenderer::new(
             &self,
             &mut draw_list,
-            variables,
             params,
             Color::white(),
             Rect::default(),
@@ -91,7 +88,6 @@ impl Font {
     pub(crate) fn draw<D: DrawList>(
         &self,
         draw_list: &mut D,
-        variables: &HashMap<String, String>,
         params: FontDrawParams,
         text: &str,
         color: Color,
@@ -100,7 +96,6 @@ impl Font {
         let mut renderer = FontRenderer::new(
             &self,
             draw_list,
-            variables,
             params,
             color,
             clip
@@ -109,7 +104,7 @@ impl Font {
     }
 }
 
-struct FontRenderer<'a, 'b,  D> {
+struct FontRenderer<'a,  D> {
     font: &'a Font,
     draw_list: &'a mut D,
     initial_index: usize,
@@ -129,21 +124,16 @@ struct FontRenderer<'a, 'b,  D> {
     cur_word_width: f32,
 
     is_first_line_with_indent: bool,
-
-    variables: &'b HashMap<String, String>,
-    cur_var: String, // current variable to be replaced
-    in_var: bool,
 }
 
-impl<'a, 'b, D: DrawList> FontRenderer<'a, 'b, D> {
+impl<'a, D: DrawList> FontRenderer<'a, D> {
     fn new(
         font: &'a Font,
         draw_list: &'a mut D,
-        variables: &'b HashMap<String, String>,
         params: FontDrawParams,
         color: Color,
         clip: Rect,
-    ) -> FontRenderer<'a, 'b, D> {
+    ) -> FontRenderer<'a, D> {
         let initial_index = draw_list.len();
 
         FontRenderer {
@@ -161,51 +151,33 @@ impl<'a, 'b, D: DrawList> FontRenderer<'a, 'b, D> {
             cur_word: Vec::new(),
             cur_word_width: 0.0,
             is_first_line_with_indent: params.indent > 0.0,
-            cur_var: String::new(),
-            in_var: false,
-            variables,
         }
     }
 
     fn render(&mut self, text: &str) {
         for c in text.chars() {
-            if c == '{' {
-                self.in_var = true;
+            let font_char = match self.font.char(c) {
+                None => continue, // TODO draw a special character here?
+                Some(char) => char,
+            };
+
+            if c == '\n' {
+                self.draw_cur_word();
+                self.next_line();
+            } else if c.is_whitespace() {
+                self.draw_cur_word();
+
+                // don't draw whitespace at the start of a line
+                if self.cur_line_index != self.draw_list.len() || self.is_first_line_with_indent {
+                    self.pos.x += font_char.x_advance;
+                    self.size.x += font_char.x_advance;
+                }
+
                 continue;
             }
 
-            if self.in_var {
-                if c == '}' {
-                    self.in_var = false;
-                    self.push_var_to_cur_word();
-                } else {
-                    self.cur_var.push(c);
-                    continue;
-                }
-            } else {
-                let font_char = match self.font.char(c) {
-                    None => continue, // TODO draw a special character here?
-                    Some(char) => char,
-                };
-    
-                if c == '\n' {
-                    self.draw_cur_word();
-                    self.next_line();
-                } else if c.is_whitespace() {
-                    self.draw_cur_word();
-    
-                    // don't draw whitespace at the start of a line
-                    if self.cur_line_index != self.draw_list.len() || self.is_first_line_with_indent {
-                        self.pos.x += font_char.x_advance;
-                        self.size.x += font_char.x_advance;
-                    }
-    
-                    continue;
-                }
-
-                self.cur_word_width += font_char.x_advance;
-                self.cur_word.push(font_char);
-            }
+            self.cur_word_width += font_char.x_advance;
+            self.cur_word.push(font_char);
 
             if self.size.x + self.cur_word_width > self.area_size.x {
                 //if the word was so long that we drew nothing at all
@@ -228,20 +200,6 @@ impl<'a, 'b, D: DrawList> FontRenderer<'a, 'b, D> {
         }
 
         self.adjust_all_y();
-    }
-
-    fn push_var_to_cur_word(&mut self) {
-        let value = self.variables.get(&self.cur_var).map_or("", String::as_str);
-        self.cur_var.clear();
-        for c in value.chars() {
-            let font_char = match self.font.char(c) {
-                None => continue, // TODO draw a special character here?
-                Some(char) => char,
-            };
-
-            self.cur_word_width += font_char.x_advance;
-            self.cur_word.push(font_char);
-        }
     }
 
     fn draw_cur_word(&mut self) {

@@ -229,7 +229,7 @@ impl WgpuRenderer {
     /// Draws the current [`Frame`](struct.Frame.html) to the screen
     pub fn draw_frame<'a>(&'a mut self, frame: Frame, render_pass: &mut RenderPass<'a>) {
         let mouse_cursor = frame.mouse_cursor();
-        let (context, widgets, render_groups, variables) = frame.finish_frame();
+        let (context, widgets, render_groups) = frame.finish_frame();
         let context = context.internal().borrow();
 
         let time_millis = context.time_millis();
@@ -310,7 +310,6 @@ impl WgpuRenderer {
 
                         font.draw(
                             &mut self.draw_list,
-                            &variables,
                             params,
                             text,
                             widget.text_color(),

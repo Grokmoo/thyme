@@ -355,10 +355,6 @@ the widget will layout its children.
      layout_spacing: 5
 ```
 
-### Variable Substitution
-Using curly braces, i.e. `{my_variable_id}` you can substitute in values that are set dynamically in your code.  See
-[`set_variable`](struct.Frame.html#method.set_variable).
-
 ### Custom fields
 You may optionally specify custom values in the `custom` mapping of the theme.  This allows more specialized widgets to
 obtain neccessary parameters from the theme itself, rather than relying on another external source.  Allowed data types

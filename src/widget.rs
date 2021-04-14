@@ -475,6 +475,12 @@ impl<'a> WidgetBuilder<'a> {
         &self.widget
     }
 
+    /// Returns a reference to the current frame, (the `ui` object), which is currently
+    /// stored by this builder
+    pub fn frame(&self) -> &Frame {
+        &self.frame
+    }
+
     pub(crate) fn set_next_render_group(&mut self, val: NextRenderGroup) {
         self.data.next_render_group = val;
     }
@@ -914,7 +920,7 @@ impl<'a> WidgetBuilder<'a> {
                 align,
             };
 
-            font.layout(params, &self.frame.variables(), text, &mut scaled_cursor);
+            font.layout(params, text, &mut scaled_cursor);
 
             *cursor = scaled_cursor / scale;
         }

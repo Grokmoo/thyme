@@ -16,6 +16,10 @@ impl Frame {
     a `list_bullet` character.  See the example below.  Note that the widget does not perform look-ahead to determine
     appropriate column widths - these are specified with the `column_width` parameter instead.
 
+    ### Variable Substitution
+    Using curly braces, i.e. `{my_variable_id}` you can substitute in values that are set dynamically in your code.  See
+    [`set_variable`](struct.Frame.html#method.set_variable).
+
     An example theme definition:
     ```yaml
     text_area_item:
@@ -82,9 +86,27 @@ impl Frame {
             currently_at_new_line: true,
         };
 
-        // Need to clone the text here to avoid ownership issues.  It should be possible
-        // to find a way around this as we don't actually modify the text later
-        let text = builder.widget().text().unwrap_or_default().to_string();
+        // Copy the text over, expanding any variables
+        let src = builder.widget().text().unwrap_or_default();
+        let mut text = String::with_capacity(src.len());
+        let mut cur_var = String::new();
+        let mut in_var = false;
+        for c in src.chars() {
+            if c == '{' {
+                in_var = true;
+            } else if c == '}' {
+                let var_value = builder.frame().variables().get(&cur_var);
+                cur_var.clear();
+                in_var = false;
+                if let Some(value) = var_value {
+                    text.push_str(value);
+                }
+            } else if in_var {
+                cur_var.push(c);
+            } else {
+                text.push(c);
+            }
+        }
 
         let mut bounds = Rect::default();
 
