@@ -288,6 +288,7 @@ impl MarkdownState {
                 self.table_column = Some(0);
             },
             Tag::TableCell => {
+                self.cursor.x = 0.0;
                 self.update_cursor(ui);
             },
             Tag::BlockQuote | Tag::CodeBlock(_) | Tag::FootnoteDefinition(_) | Tag::Strikethrough | Tag::Link(_, _, _) | Tag::Image(_, _, _) => {
@@ -393,12 +394,16 @@ impl MarkdownState {
                     return;
                 }
 
-                if c == '/' {
-                    end_tag = true;
-                } else if c == 'e' {
-                    in_attrs = true;
+                if !in_attrs {
+                    if c == '/' {
+                        end_tag = true;
+                    } else if c == 'e' {
+                        in_attrs = true;
+                    } else {
+                        ui.log(log::Level::Warn, format!("Invalid extended tag: {}", data));
+                    }
                 } else {
-                    if !in_attrs || end_tag {
+                    if end_tag {
                         ui.log(log::Level::Warn, format!("Invalid extended tag: {}", data));
                         return;
                     }
@@ -450,7 +455,7 @@ impl MarkdownState {
 
     fn update_cursor(&mut self, ui: &mut Frame) {
         if let Some(col) = self.table_column {
-            self.text_indent = 0.0;
+            self.text_indent = self.cursor.x;
             ui.set_cursor(col as f32 * self.column_width, self.cursor.y);
         } else {
             self.text_indent = self.cursor.x;

@@ -106,7 +106,7 @@ widgets:
       This is a stats table with substituted dynamic values.
       
       | Stat         | Value |
-      | -------      | -----:|
+      | -------      | ----- |
       | Strength     | {Strength}     |
       | Dexterity    | {Dexterity}    |
       | Constitution | {Constitution} |
