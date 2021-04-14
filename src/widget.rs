@@ -966,6 +966,32 @@ impl<'a> WidgetBuilder<'a> {
         ScrollpaneBuilder::new(self.wants_scroll(true), content_id)
     }
 
+    /**
+    Executes the passed in closure on this `WidgetBuilder`, returning the resulting value.
+    This allows you to insert arbitrary control flow while continuing to chain the
+    WidgetBuilder methods.  Without this method, you might need to save the builder in a
+    variable, check some condition (possibly calling another `WidgetBuilder` method),
+    and then continue on with the usual method chaining.
+
+    # Example
+    ```
+    fn hover_button(ui: &mut Frame, force_hover: bool) -> WidgetState {
+        ui.start("hover_button")
+        .edit(|builder| {
+            if force_hover {
+                builder.force_hover(true)
+            } else {
+                builder
+            }
+        }).finish()
+    }
+    ```
+    */
+    #[must_use]
+    pub fn edit<F: FnOnce(WidgetBuilder) -> WidgetBuilder>(self, f: F) -> WidgetBuilder<'a> {
+        (f)(self)
+    }
+
     /// Consumes the builder and adds a widget to the current frame.  The
     /// returned data includes information about the animation state and
     /// mouse interactions of the created element.
