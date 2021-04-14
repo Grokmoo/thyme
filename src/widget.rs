@@ -105,6 +105,8 @@ impl Widget {
             align,
             enabled: true,
             active: false,
+            set_hover: None,
+            set_pressed: None,
             recalc_pos_size,
             next_render_group: NextRenderGroup::None,
             unparent: false,
@@ -367,6 +369,8 @@ pub(crate) struct WidgetData {
 
     enabled: bool,
     active: bool,
+    set_hover: Option<bool>,
+    set_pressed: Option<bool>,
     recalc_pos_size: bool,
     next_render_group: NextRenderGroup,
     unparent: bool,
@@ -794,6 +798,22 @@ impl<'a> WidgetBuilder<'a> {
         self
     }
 
+    /// Forces this widget's [`AnimState`](struct.AnimState.html) to
+    /// have the specified `value` for its `hover` [`AnimStateKey`](enum.AnimStateKey.html)
+    #[must_use]
+    pub fn force_hover(mut self, hover: bool) -> WidgetBuilder<'a> {
+        self.data.set_hover = Some(hover);
+        self
+    }
+
+    /// Forces this widget's [`AnimState`](struct.AnimState.html) to
+    /// have the specified `value` for its `pressed` [`AnimStateKey`](enum.AnimStateKey.html)
+    #[must_use]
+    pub fn force_pressed(mut self, pressed: bool) -> WidgetBuilder<'a> {
+        self.data.set_pressed = Some(pressed);
+        self
+    }
+
     /// Sets whether the widget's [`AnimState`](struct.AnimState.html) will
     /// include the `active` [`AnimStateKey`](enum.AnimStateKey.html).
     #[must_use]
@@ -1107,6 +1127,14 @@ impl<'a> WidgetBuilder<'a> {
 
         if self.data.active {
             anim_state.add(AnimStateKey::Active);
+        }
+
+        if let Some(hover) = self.data.set_hover {
+            anim_state.set(AnimStateKey::Hover, hover);
+        }
+
+        if let Some(pressed) = self.data.set_pressed {
+            anim_state.set(AnimStateKey::Pressed, pressed);
         }
 
         self.frame.widget_mut(widget_index).anim_state = anim_state;

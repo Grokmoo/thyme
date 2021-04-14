@@ -278,6 +278,30 @@ impl AnimState {
 
         self.keys.sort();
     }
+
+    /// Removes the given state key from this `AnimState`, if it
+    /// is present.  Otherwise does nothing.  Removing `Normal`
+    /// will have no effect
+    pub fn remove(&mut self, to_remove: AnimStateKey) {
+        for key in self.keys.iter_mut() {
+            if *key == to_remove {
+                *key = AnimStateKey::Normal;
+                break;
+            }
+        }
+        self.keys.sort();
+    }
+
+    /// Sets the specified `key` as either present in this `AnimState`,
+    /// or not, depending on `value`.
+    pub fn set(&mut self, key: AnimStateKey, value: bool) {
+        if value {
+            if self.contains(key) { return; }
+            self.add(key);
+        } else {
+            self.remove(key);
+        }
+    }
 }
 
 struct AnimStateVisitor;
