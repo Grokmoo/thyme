@@ -1,14 +1,14 @@
 use std::sync::Arc;
+use std::num::NonZeroU32;
 
 use wgpu::{
     Buffer, BufferDescriptor, BufferUsage, BufferAddress, BufferBindingType,
     BlendFactor, BlendOperation, ColorWrite,
     BindingResource, BindGroupLayout, BindGroupEntry, BindingType, BindGroupDescriptor, BindGroup, BindGroupLayoutDescriptor, BindGroupLayoutEntry,
     Device, Queue, RenderPipeline, RenderPass,
-    TextureFormat, TextureViewDimension, TextureDataLayout, TextureCopyView, TextureViewDescriptor, TextureSampleType,
+    TextureFormat, TextureViewDimension, TextureViewDescriptor, TextureSampleType,
     SamplerDescriptor, AddressMode, FilterMode, PrimitiveState,
     InputStepMode, vertex_attr_array,
-    include_spirv,
     util::{BufferInitDescriptor, DeviceExt},
 };
 
@@ -50,6 +50,16 @@ pub struct WgpuRenderer {
     buffered: Option<BufferedData>,
 }
 
+macro_rules! create_spirv {
+    ( $($name:tt)* ) => {
+        wgpu::ShaderModuleDescriptor {
+            label: Some( $($name)* ),
+            source: wgpu::util::make_spirv(include_bytes!( $($name)* )),
+            flags: wgpu::ShaderFlags::empty(),
+        }
+    };
+}
+
 impl WgpuRenderer {
     // TODO rework context builder so we don't need to hold on to device and queue reference
 
@@ -69,9 +79,9 @@ impl WgpuRenderer {
         glslc -fshader-stage=fragment -fentry-point=main -o frag_font.spirv frag_font.glsl
         ```
         */
-        let vert_shader = device.create_shader_module(&include_spirv!("shaders/vert.spirv"));
-        let frag_shader = device.create_shader_module(&include_spirv!("shaders/frag.spirv"));
-        let frag_font_shader = device.create_shader_module(&include_spirv!("shaders/frag_font.spirv"));
+        let vert_shader = device.create_shader_module(&create_spirv!("shaders/vert.spirv"));
+        let frag_shader = device.create_shader_module(&create_spirv!("shaders/frag.spirv"));
+        let frag_font_shader = device.create_shader_module(&create_spirv!("shaders/frag_font.spirv"));
 
         // setup the view matrix
         let view_matrix_buffer = device.create_buffer(&BufferDescriptor {
@@ -100,11 +110,11 @@ impl WgpuRenderer {
             layout: &view_matrix_layout,
             entries: &[BindGroupEntry {
                 binding: 0,
-                resource: BindingResource::Buffer {
+                resource: BindingResource::Buffer(wgpu::BufferBinding {
                     buffer: &view_matrix_buffer,
                     offset: 0,
                     size: None,
-                },
+                }),
             }],
         });
 
@@ -127,7 +137,7 @@ impl WgpuRenderer {
                     visibility: wgpu::ShaderStage::FRAGMENT,
                     ty: BindingType::Sampler {
                         comparison: false,
-                        filtering: false,
+                        filtering: true,
                     },
                     count: None,
                 },
@@ -149,7 +159,7 @@ impl WgpuRenderer {
                 buffers: &[wgpu::VertexBufferLayout {
                     array_stride: std::mem::size_of::<Vertex>() as BufferAddress,
                     step_mode: InputStepMode::Vertex,
-                    attributes: &vertex_attr_array![0 => Float2, 1 => Float2, 2 => Float4, 3 => Float2, 4 => Float2],
+                    attributes: &vertex_attr_array![0 => Float32x2, 1 => Float32x2, 2 => Float32x4, 3 => Float32x2, 4 => Float32x2],
                 }],
             },
             fragment: Some(wgpu::FragmentState {
@@ -158,16 +168,18 @@ impl WgpuRenderer {
                 targets: &[
                 wgpu::ColorTargetState {
                     format: TextureFormat::Bgra8Unorm,
-                    color_blend: wgpu::BlendState {
-                        src_factor: BlendFactor::SrcAlpha,
-                        dst_factor: BlendFactor::OneMinusSrcAlpha,
-                        operation: BlendOperation::Add,
-                    },
-                    alpha_blend: wgpu::BlendState {
-                        src_factor: BlendFactor::OneMinusDstAlpha,
-                        dst_factor: BlendFactor::One,
-                        operation: BlendOperation::Add,
-                    },
+                    blend: Some(wgpu::BlendState {
+                        color: wgpu::BlendComponent {
+                            src_factor: BlendFactor::SrcAlpha,
+                            dst_factor: BlendFactor::OneMinusSrcAlpha,
+                            operation: BlendOperation::Add,
+                        },
+                        alpha: wgpu::BlendComponent {
+                            src_factor: BlendFactor::OneMinusDstAlpha,
+                            dst_factor: BlendFactor::One,
+                            operation: BlendOperation::Add,
+                        }
+                    }),
                     write_mask: ColorWrite::ALL,
                 }],
             }),
@@ -175,8 +187,10 @@ impl WgpuRenderer {
                 topology: wgpu::PrimitiveTopology::TriangleList,
                 strip_index_format: None,
                 front_face: wgpu::FrontFace::Ccw,
-                cull_mode: wgpu::CullMode::None,
+                cull_mode: None,
+                clamp_depth: false,
                 polygon_mode: wgpu::PolygonMode::Fill,
+                conservative: false,
             },
             multisample: wgpu::MultisampleState {
                 count: 1,
@@ -194,16 +208,18 @@ impl WgpuRenderer {
             targets: &[
             wgpu::ColorTargetState {
                 format: TextureFormat::Bgra8Unorm,
-                color_blend: wgpu::BlendState {
-                    src_factor: BlendFactor::SrcAlpha,
-                    dst_factor: BlendFactor::OneMinusSrcAlpha,
-                    operation: BlendOperation::Add,
-                },
-                alpha_blend: wgpu::BlendState {
-                    src_factor: BlendFactor::OneMinusDstAlpha,
-                    dst_factor: BlendFactor::One,
-                    operation: BlendOperation::Add,
-                },
+                blend: Some(wgpu::BlendState {
+                    color: wgpu::BlendComponent {
+                        src_factor: BlendFactor::SrcAlpha,
+                        dst_factor: BlendFactor::OneMinusSrcAlpha,
+                        operation: BlendOperation::Add,
+                    },
+                    alpha: wgpu::BlendComponent {
+                        src_factor: BlendFactor::OneMinusDstAlpha,
+                        dst_factor: BlendFactor::One,
+                        operation: BlendOperation::Add,
+                    }
+                }),
                 write_mask: ColorWrite::ALL,
             }],
         });
@@ -441,7 +457,7 @@ impl WgpuRenderer {
         filter: FilterMode,
     ) -> BindGroup {
         let texture = self.device.create_texture(&wgpu::TextureDescriptor {
-            size: wgpu::Extent3d { width, height, depth: 1, },
+            size: wgpu::Extent3d { width, height, depth_or_array_layers: 1, },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
@@ -452,18 +468,18 @@ impl WgpuRenderer {
 
         let bytes = image_data.len();
         self.queue.write_texture(
-            TextureCopyView {
+            wgpu::ImageCopyTextureBase {
                 texture: &texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d { x: 0, y: 0, z: 0 },
             },
             image_data,
-            TextureDataLayout {
+            wgpu::ImageDataLayout {
                 offset: 0,
-                bytes_per_row: bytes as u32 / height,
-                rows_per_image: height,
+                bytes_per_row: NonZeroU32::new(bytes as u32 / height),
+                rows_per_image: NonZeroU32::new(height),
             },
-            wgpu::Extent3d { width, height, depth: 1, },
+            wgpu::Extent3d { width, height, depth_or_array_layers: 1, },
         );
 
         let view = texture.create_view(&TextureViewDescriptor::default());

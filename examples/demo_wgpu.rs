@@ -75,8 +75,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     {
                         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                             label: None,
-                            color_attachments: &[wgpu::RenderPassColorAttachmentDescriptor {
-                                attachment: &frame.view,
+                            color_attachments: &[wgpu::RenderPassColorAttachment {
+                                view: &frame.view,
                                 resolve_target: None,
                                 ops: wgpu::Operations {
                                     load: wgpu::LoadOp::Clear(wgpu::Color { r: 0.5, g: 0.5, b: 0.5, a: 1.0 }),
