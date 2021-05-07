@@ -288,15 +288,7 @@ impl ThemeSet {
     pub fn find_font(&self, id: Option<&str>) -> Option<FontSummary> {
         match id {
             None => None,
-            Some(id) => {
-                match self.font_handles.get(id) {
-                    None => {
-                        None
-                    }, Some(font_sum) => {
-                        Some(*font_sum)
-                    }
-                }
-            }
+            Some(id) => self.font_handles.get(id).copied(),
         }
     }
 
@@ -307,13 +299,7 @@ impl ThemeSet {
     pub fn find_image(&self, id: Option<&str>) -> Option<ImageHandle> {
         match id {
             None => None,
-            Some(id) => {
-                match self.image_handles.get(id) {
-                    None => {
-                        None
-                    }, Some(image) => Some(*image),
-                }
-            }
+            Some(id) => self.image_handles.get(id).copied(),
         }
     }
 

@@ -117,7 +117,7 @@ impl ResourceSet {
                 Ok(data) => Ok(data),
             }?;
 
-            Ok(Box::new(Deserializer::erase(result)))
+            Ok(Box::new(<dyn Deserializer>::erase(result)))
         });
 
         let mut paths_out: Vec<PathBuf> = Vec::new();

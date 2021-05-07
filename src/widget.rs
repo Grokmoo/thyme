@@ -1018,10 +1018,7 @@ impl<'a> WidgetBuilder<'a> {
             let internal = self.frame.context_internal().borrow();
             let state = internal.state(&self.widget.id);
 
-            let text = match &state.text {
-                None => None,
-                Some(text) => Some(text.to_string())
-            };
+            let text = state.text.as_ref().map(|t| t.to_string());
 
             let in_modal_tree = Some(self.widget.id()) == internal.modal_id();
 
