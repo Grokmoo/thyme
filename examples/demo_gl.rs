@@ -67,7 +67,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             party.check_context_changes(&mut context, &mut renderer);
 
-            renderer.clear_color(0.21404, 0.21404, 0.21404, 1.0); // manual sRGB conversion for 0.5
+            renderer.clear_color(0.5, 0.5, 0.5, 1.0);
 
             bench::run("thyme", || {
                 windowed_context.window().set_cursor_visible(!party.theme_has_mouse_cursor());

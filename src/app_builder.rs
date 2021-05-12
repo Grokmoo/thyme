@@ -468,7 +468,7 @@ impl GlApp {
 
         event_loop.run(move |event, _, control_flow| match event {
             Event::MainEventsCleared => {
-                renderer.clear_color(0.21404, 0.21404, 0.21404, 1.0); // manual sRGB conversion for 0.5
+                renderer.clear_color(0.0, 0.0, 0.0, 1.0);
     
                 let mut ui = context.create_frame();
     
