@@ -17,6 +17,9 @@ autoexamples = false
 all-features = true
 
 [[example]]
+name = "hello_gl"
+
+[[example]]
 name = "hello_glium"
 
 [[example]]

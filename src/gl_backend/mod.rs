@@ -1,3 +1,5 @@
+use std::error::Error;
+
 use crate::font::{Font, FontSource, FontTextureWriter, FontDrawParams};
 use crate::image::ImageDrawParams;
 use crate::render::{
@@ -555,4 +557,42 @@ pub(crate) struct GLVertex {
     pub color: [f32; 4],
     pub clip_pos: [f32; 2],
     pub clip_size: [f32; 2],
+}
+
+#[derive(Debug)]
+pub enum GlError {
+    GlutinCreation(glutin::CreationError),
+    GlutinContext(glutin::ContextError),
+}
+
+impl std::fmt::Display for GlError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use self::GlError::*;
+        match self {
+            GlutinCreation(e) => write!(f, "Error creating Glutin context: {}", e),
+            GlutinContext(e) => write!(f, "Error in OpenGL context: {}", e),
+        }
+    }
+}
+
+impl Error for GlError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        use self::GlError::*;
+        match self {
+            GlutinCreation(e) => Some(e),
+            GlutinContext(e) => Some(e),
+        }
+    }
+}
+
+impl From<glutin::CreationError> for GlError {
+    fn from(e: glutin::CreationError) -> GlError {
+        GlError::GlutinCreation(e)
+    }
+}
+
+impl From<glutin::ContextError> for GlError {
+    fn from(e: glutin::ContextError) -> GlError {
+        GlError::GlutinContext(e)
+    }
 }

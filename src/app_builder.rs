@@ -175,6 +175,58 @@ impl AppBuilder {
         self
     }
 
+    /// Creates a [`GlApp`](struct.GlApp.html) object, setting up Thyme as specified in this
+    /// builder and using the [`GlRenderer`](struct.GlRenderer.html).
+    #[cfg(feature="gl_backend")]
+    pub fn build_gl(self) -> Result<GlApp, Error> {
+        use glutin::event_loop::EventLoop;
+        use crate::gl_backend::GlError;
+
+        const OPENGL_MAJOR_VERSION: u8 = 3;
+        const OPENGL_MINOR_VERSION: u8 = 2;
+
+        if self.logger {
+            crate::log::init(log::Level::Warn).unwrap();
+        }
+
+        let event_loop = EventLoop::new();
+        let window_builder = glutin::window::WindowBuilder::new()
+            .with_title(&self.title)
+            .with_inner_size(glutin::dpi::LogicalSize::new(self.window_size.x, self.window_size.y));
+
+        let windowed_context = glutin::ContextBuilder::new()
+            .with_gl(glutin::GlRequest::Specific(
+                glutin::Api::OpenGl,
+                (OPENGL_MAJOR_VERSION, OPENGL_MINOR_VERSION),
+            ))
+            .build_windowed(window_builder, &event_loop)
+            .map_err(GlError::GlutinCreation)
+            .map_err(Error::Gl)?;
+
+        let windowed_context = unsafe {
+            windowed_context
+                .make_current()
+                .map_err(|(_context, e)| GlError::GlutinContext(e))
+                .map_err(Error::Gl)?
+        };
+
+        let _gl = {
+            let gl_context = windowed_context.context();
+            gl::load_with(|ptr| gl_context.get_proc_address(ptr) as *const _)
+        };
+
+        let mut io = crate::WinitIo::new(&event_loop, self.window_size)
+            .map_err(Error::Winit)?;
+        let mut renderer = crate::GLRenderer::new();
+        let mut context_builder = crate::ContextBuilder::with_defaults();
+
+        self.register_resources(&mut context_builder)?;
+
+        let context = context_builder.build(&mut renderer, &mut io)?;
+
+        Ok(GlApp { io, renderer, context, event_loop, windowed_context })
+    }
+    
     /// Creates a [`GliumApp`](struct.GliumApp.html) object, setting up Thyme as specified
     /// in this Builder and using the [`GliumRenderer`](struct.GliumRenderer.html).
     #[cfg(feature="glium_backend")]
@@ -373,6 +425,62 @@ impl WgpuApp {
     
                     io.handle_event(&mut context, &event);
                 }
+            }
+        })
+    }
+}
+
+/// The GlApp object, containing the Thyme [`Context`](struct.Context.html), [`Renderer`](struct.GlRenderer.html), and
+/// [`IO`](struct.WinitIo.html).  YOu can manually use the public members of this struct, or use [`main_loop`](#method.main_loop)
+/// for basic use cases.
+#[cfg(feature="gl_backend")]
+pub struct GlApp {
+    /// The Thyme IO
+    pub io: WinitIo,
+
+    /// The Thyme Renderer
+    pub renderer: crate::GLRenderer,
+
+    /// The Thyme Context
+    pub context: Context,
+
+    /// The OpenGL / Winit event loop
+    pub event_loop: winit::event_loop::EventLoop<()>,
+
+    /// The OpenGL / Glutin windowed context
+    pub windowed_context: glutin::ContextWrapper<glutin::PossiblyCurrent, glutin::window::Window>,
+}
+
+#[cfg(feature="gl_backend")]
+impl GlApp {
+    /// Runs the Winit main loop for this app
+    pub fn main_loop<F: Fn(&mut Frame) + 'static>(self, f: F) -> ! {
+        use glutin::{
+            event::{Event, WindowEvent},
+            event_loop::{ControlFlow},
+        };
+
+        let event_loop = self.event_loop;
+        let windowed_context = self.windowed_context;
+        let mut context = self.context;
+        let mut renderer = self.renderer;
+        let mut io = self.io;
+
+        event_loop.run(move |event, _, control_flow| match event {
+            Event::MainEventsCleared => {
+                renderer.clear_color(0.21404, 0.21404, 0.21404, 1.0); // manual sRGB conversion for 0.5
+    
+                let mut ui = context.create_frame();
+    
+                (f)(&mut ui);
+    
+                renderer.draw_frame(ui);
+    
+                windowed_context.swap_buffers().unwrap();
+            }
+            Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => *control_flow = ControlFlow::Exit,
+            event => {
+                io.handle_event(&mut context, &event);
             }
         })
     }

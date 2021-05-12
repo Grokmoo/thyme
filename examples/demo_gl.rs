@@ -37,13 +37,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         gl::load_with(|ptr| gl_context.get_proc_address(ptr) as *const _)
     };
 
-    if OPENGL_MAJOR_VERSION >= 4 && OPENGL_MINOR_VERSION >= 3 {
-        // Debug message callback is only available since 4.3
-        // Not critical since shader info (what we are most interested in)
-        // is supported in lower versions anyway.
-        unsafe { gl::DebugMessageCallback(Some(debug_callback), std::ptr::null()) };
-    }
-
     // create thyme backend
     let mut renderer = thyme::GLRenderer::new();
     let mut context_builder = thyme::ContextBuilder::with_defaults();

@@ -456,13 +456,17 @@ pub enum Error {
     /// An error originating from Glium
     #[cfg(feature="glium_backend")]
     Glium(crate::glium_backend::GliumError),
+
+    /// An error originating from OpenGl
+    #[cfg(feature="gl_backend")]
+    Gl(crate::gl_backend::GlError),
 }
 
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         use self::Error::*;
         match self {
-          Serde(e) => write!(f, "Error deserializing theme: {}", e),
+            Serde(e) => write!(f, "Error deserializing theme: {}", e),
             Theme(msg) => write!(f, "Error creating theme from theme definition: {}", msg),
             FontSource(msg) => write!(f, "Error reading font source: {}", msg),
             IO(error) => write!(f, "IO Error: {}", error),
@@ -474,6 +478,9 @@ impl std::fmt::Display for Error {
 
             #[cfg(feature="glium_backend")]
             Glium(error) => write!(f, "Glium Error: {}", error),
+
+            #[cfg(feature="gl_backend")]
+            Gl(error) => write!(f, "OpenGL Error: {}", error),
         }
     }
 }
@@ -494,6 +501,9 @@ impl std::error::Error for Error {
 
             #[cfg(feature="glium_backend")]
             Glium(error) => Some(error),
+
+            #[cfg(feature="gl_backend")]
+            Gl(error) => Some(error),
         }
     }
 }
