@@ -1,6 +1,7 @@
 use glutin::event::{Event, WindowEvent};
 use glutin::event_loop::ControlFlow;
 use std::os::raw::c_char;
+
 use thyme::{bench};
 
 mod demo;
@@ -27,10 +28,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             glutin::Api::OpenGl,
             (OPENGL_MAJOR_VERSION, OPENGL_MINOR_VERSION),
         ))
-        .build_windowed(window_builder, &event_loop)
-        .unwrap();
+        .build_windowed(window_builder, &event_loop)?;
 
-    let windowed_context = unsafe { windowed_context.make_current().unwrap() };
+    let windowed_context = unsafe {
+        windowed_context
+            .make_current().map_err(|(_context, e)| e)?
+    };
 
     let _gl = {
         let gl_context = windowed_context.context();

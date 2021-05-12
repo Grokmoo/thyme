@@ -396,13 +396,13 @@ mod winit_io;
 mod glium_backend;
 
 #[cfg(feature = "glium_backend")]
-pub use glium_backend::GliumRenderer;
+pub use glium_backend::{GliumRenderer, GliumError};
 
 #[cfg(feature = "wgpu_backend")]
 mod wgpu_backend;
 
 #[cfg(feature = "wgpu_backend")]
-pub use wgpu_backend::WgpuRenderer;
+pub use wgpu_backend::{WgpuRenderer};
 
 pub use app_builder::AppBuilder;
 
@@ -413,8 +413,7 @@ pub use app_builder::GliumApp;
 mod gl_backend;
 
 #[cfg(feature = "gl_backend")]
-pub use gl_backend::GLRenderer;
-
+pub use gl_backend::{GLRenderer, GlError};
 
 pub use frame::{Frame};
 pub use point::{Rect, Point, Border};

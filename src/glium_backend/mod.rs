@@ -385,15 +385,31 @@ struct GliumTexture {
     sampler: SamplerBehavior,
 }
 
+/// An Error originating from the [`GliumRenderer`](struct.GliumRenderer.html)
 #[derive(Debug)]
 pub enum GliumError {
+    /// Glium was unable to create the display
     DisplayCreation(glium::backend::glutin::DisplayCreationError),
+
+    /// An error occurred drawing to the screen or render target
     Draw(glium::DrawError),
+
+    /// An error occurred creating a Glium index buffer
     Index(glium::index::BufferCreationError),
+
+    /// An error occurred with the Font
     Font(String),
+
+    /// A texture handle was invalid
     InvalidTexture(TextureHandle),
+
+    /// A font handle was invalid
     InvalidFont(FontHandle),
+
+    /// The shader program failed to compile
     Program(ProgramCreationError),
+
+    /// An error occurred creating a Glium vertex buffer
     Vertex(glium::vertex::BufferCreationError),
 }
 

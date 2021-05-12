@@ -559,9 +559,13 @@ pub(crate) struct GLVertex {
     pub clip_size: [f32; 2],
 }
 
+/// An error originating from the [`GLRenderer`](struct.GLRenderer.html)
 #[derive(Debug)]
 pub enum GlError {
+    /// An error creating the glutin context
     GlutinCreation(glutin::CreationError),
+
+    /// An error using or creating the OpenGL context
     GlutinContext(glutin::ContextError),
 }
 

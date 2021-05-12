@@ -22,8 +22,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let window = WindowBuilder::new()
         .with_title("Thyme WGPU Demo")
         .with_inner_size(winit::dpi::LogicalSize::new(window_size[0], window_size[1]))
-        .build(&events_loop)
-        .unwrap();
+        .build(&events_loop)?;
 
     // setup WGPU
     let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
