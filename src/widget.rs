@@ -70,7 +70,7 @@ impl Widget {
     fn create(parent: &Widget, theme: &WidgetTheme, id: String) -> (WidgetData, Widget) {
         let font = theme.font;
         let border = theme.border.unwrap_or_default();
-        let raw_size = theme.size.unwrap_or_default();
+        let raw_size = Point::new(theme.width.unwrap_or_default(), theme.height.unwrap_or_default());
         let width_from = theme.width_from.unwrap_or_default();
         let height_from = theme.height_from.unwrap_or_default();
         let size = size(parent, raw_size, border, font, width_from, height_from);
@@ -729,6 +729,22 @@ impl<'a> WidgetBuilder<'a> {
         self
     }
 
+    /// Specify the widget's width in logical pixels.  See [`size`](#method.size).
+    /// This may also be specified in the widget's [`theme`](index.html).
+    #[must_use]
+    pub fn width(self, x: f32) -> WidgetBuilder<'a> {
+        let y = self.data.raw_size.y;
+        self.size(x, y)
+    }
+
+    /// Specify the widget's height in logical pixels.  See [`size`](#method.size).
+    /// This may also be specified in the widget's [`theme`](index.html).
+    #[must_use]
+    pub fn height(self, y: f32) -> WidgetBuilder<'a> {
+        let x = self.data.raw_size.x;
+        self.size(x, y)
+    }
+
     /// Specify how to compute the widget's width from its [`size`](#method.size).
     /// See [`WidthRelative`](enum.WidthRelative.html).
     /// This may also be specified in the widget's [`theme`](index.html).  You may also
@@ -887,8 +903,8 @@ impl<'a> WidgetBuilder<'a> {
     }
 
     /// Causes this widget to layout its current text.  The final position of the text
-    /// cursor is written into `pos`.  If this widget does not have a font or has no text,
-    /// nothing is written into `pos`.
+    /// cursor is written into `cursor`.  If this widget does not have a font or has no text,
+    /// nothing is written into `cursor`.
     #[must_use]
     pub fn trigger_text_layout(mut self, cursor: &mut Point) -> WidgetBuilder<'a> {
         // recalculate pos size and calculate text, if needed

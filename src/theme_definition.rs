@@ -73,6 +73,8 @@ pub struct WidgetThemeDefinition {
     pub pos: Option<Point>,
     pub screen_pos: Option<Point>,
     pub size: Option<Point>,
+    pub width: Option<f32>,
+    pub height: Option<f32>,
     pub size_from: Option<(WidthRelative, HeightRelative)>,
     pub width_from: Option<WidthRelative>,
     pub height_from: Option<HeightRelative>,

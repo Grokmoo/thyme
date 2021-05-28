@@ -64,7 +64,7 @@ widgets:
         from: scrollpane
   name_panel:
     width_from: Parent
-    size: [0, 25]
+    height: 25
     layout: Horizontal
     children:
       name_input:
@@ -86,7 +86,7 @@ widgets:
     from: scrollpane_vertical
     layout: Vertical
     height_from: Normal
-    size: [0, 150]
+    height: 150
   description_box:
     from: text_area
     text: |

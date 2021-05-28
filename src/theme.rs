@@ -358,7 +358,8 @@ pub struct WidgetTheme {
     pub text_align: Option<Align>,
     pub pos: Option<Point>,
     pub screen_pos: Option<Point>,
-    pub size: Option<Point>,
+    pub width: Option<f32>,
+    pub height: Option<f32>,
     pub width_from: Option<WidthRelative>,
     pub height_from: Option<HeightRelative>,
     pub border: Option<Border>,
@@ -390,7 +391,8 @@ impl WidgetTheme {
             text_align: None,
             pos: None,
             screen_pos: None,
-            size: None,
+            width: None,
+            height: None,
             width_from: None,
             height_from: None,
             border: None,
@@ -453,6 +455,14 @@ impl WidgetTheme {
             None
         };
 
+        let (width, height) = match (def.size, def.width, def.height) {
+            (None, None, None) => (None, None),
+            (None, None, Some(y)) => (None, Some(y)),
+            (None, Some(x), None) => (Some(x), None),
+            (None, Some(x), Some(y)) => (Some(x), Some(y)),
+            (Some(size), _, _) => (Some(size.x), Some(size.y)),
+        };
+
         let (width_from, height_from) = if let Some((width_from, height_from)) = def.size_from {
             (Some(width_from), Some(height_from))
         } else {
@@ -478,7 +488,8 @@ impl WidgetTheme {
             text_align: def.text_align,
             pos: def.pos,
             screen_pos: def.screen_pos,
-            size: def.size,
+            width,
+            height,
             width_from,
             height_from,
             align: def.align,
@@ -540,7 +551,8 @@ fn merge_from(
     if to.text_align.is_none() { to.text_align = from.text_align; }
     if to.pos.is_none() { to.pos = from.pos; }
     if to.screen_pos.is_none() { to.screen_pos = from.screen_pos; }
-    if to.size.is_none() { to.size = from.size; }
+    if to.width.is_none() { to.width = from.width; }
+    if to.height.is_none() { to.height = from.height; }
     if to.width_from.is_none() { to.width_from = from.width_from; }
     if to.height_from.is_none() { to.height_from = from.height_from; }
     if to.border.is_none() { to.border = from.border; }
