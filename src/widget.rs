@@ -926,42 +926,46 @@ impl<'a> WidgetBuilder<'a> {
             self.widget.text = Some(text);
         }
 
+        if let Some(result) = self.calculate_font_layout_cursor(*cursor) {
+            *cursor = result;
+        }
+
+        self
+    }
+
+    fn calculate_font_layout_cursor(&self, cursor: Point) -> Option<Point> {
         let text = match &self.widget.text {
-            None => return self,
+            None => return None,
             Some(text) => text,
         };
 
         let font_def = match self.widget.font {
-            None => return self,
+            None => return None,
             Some(def) => def,
         };
 
-        {
-            let widget = &self.widget;
-            let fg_pos = Point::default();
-            let fg_size = widget.inner_size();
-            let align = widget.text_align();
+        let widget = &self.widget;
+        let fg_pos = Point::default();
+        let fg_size = widget.inner_size();
+        let align = widget.text_align();
 
-            let internal = self.frame.context_internal().borrow();
-            let scale = internal.scale_factor();
-            let font = internal.themes().font(font_def.handle);
-            let indent = widget.text_indent();
+        let internal = self.frame.context_internal().borrow();
+        let scale = internal.scale_factor();
+        let font = internal.themes().font(font_def.handle);
+        let indent = widget.text_indent();
 
-            let mut scaled_cursor = *cursor * scale;
+        let mut scaled_cursor = cursor * scale;
 
-            let params = FontDrawParams {
-                area_size: fg_size * scale,
-                pos: fg_pos * scale,
-                indent,
-                align,
-            };
+        let params = FontDrawParams {
+            area_size: fg_size * scale,
+            pos: fg_pos * scale,
+            indent,
+            align,
+        };
 
-            font.layout(params, text, &mut scaled_cursor);
+        font.layout(params, text, &mut scaled_cursor);
 
-            *cursor = scaled_cursor / scale;
-        }
-
-        self
+        Some(scaled_cursor / scale)
     }
 
     /// Turns this builder into a WindowBuilder.  You should use all `WidgetBuilder` methods

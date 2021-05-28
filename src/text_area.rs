@@ -115,9 +115,7 @@ impl Frame {
             }
         }
 
-        let mut bounds = Rect::default();
-
-        builder.trigger_layout_inner(&mut bounds).children(|ui| {
+        builder.children(|ui| {
             let mut options = Options::empty();
             options.insert(Options::ENABLE_TABLES);
             let parser = Parser::new_ext(&text, options);
