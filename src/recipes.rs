@@ -38,6 +38,20 @@ impl Frame {
     }
 
     /**
+    A simple label, but specifically designed to extend over multiple lines.  Generally,
+    you should use `height_from: Normal`. Computes the widget height based on the theme width
+    and number of lines of text.
+    **/
+    pub fn multiline_label<T: Into<String>>(&mut self, theme: &str, text: T) {
+        let mut cursor = Point::default();
+        self.start(theme)
+            .text(text)
+            .trigger_text_layout(&mut cursor)
+            .height(cursor.y)
+            .finish();
+    }
+
+    /**
     A simple button with a text `label`.
 
     An example theme definition:
