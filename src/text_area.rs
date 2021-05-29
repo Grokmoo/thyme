@@ -18,7 +18,11 @@ impl Frame {
 
     ### Variable Substitution
     Using curly braces, i.e. `{my_variable_id}` you can substitute in values that are set dynamically in your code.  See
-    [`set_variable`](struct.Frame.html#method.set_variable).
+    [`set_variable`](struct.Frame.html#method.set_variable).  Also available is an `if` statement with optional `else`
+    that checks for the existance of a variable.  If the variable is not set, nothing inside the `if` will be appear in the final output.
+
+    Example:
+    {#if my_variable}My variable is set!{#else}My variable is not set.{/if}
 
     ### Color
     Text color is not specifiable in Markdown.  For ease of use, the text area will parse a limited non-standard HTML tag,
@@ -93,26 +97,91 @@ impl Frame {
             currently_at_new_line: true,
         };
 
-        // Copy the text over, expanding any variables
+        // copy the text over, expanding variables and evaluating ifs
+        enum Expr {
+            IfFalse,
+            IfTrue,
+        }
+
+        let mut expr_stack: Vec<Expr> = Vec::new();
+        let mut if_false_level = 0;
+
         let src = builder.widget().text().unwrap_or_default();
         let mut text = String::with_capacity(src.len());
+        let mut in_block = false;
+        let mut start_expr = true;
+        let mut end_expr = true;
         let mut cur_var = String::new();
-        let mut in_var = false;
+        let mut prev = char::default();
+
         for c in src.chars() {
-            if c == '{' {
-                in_var = true;
-            } else if c == '}' {
-                let var_value = builder.frame().variables().get(&cur_var);
-                cur_var.clear();
-                in_var = false;
-                if let Some(value) = var_value {
-                    text.push_str(value);
+            match c {
+                '{' => {
+                    in_block = true;
+                    start_expr = false;
+                    end_expr = false;
+                },
+                '#' if prev == '{' => {
+                    start_expr = true;
+                },
+                '/' if prev == '{' => {
+                    end_expr = true;
+                },
+                '}' if end_expr => {
+                    if cur_var.trim() == "if" {
+                        if let Some(Expr::IfFalse) = expr_stack.pop() {
+                            if_false_level -= 1;
+                        }
+                    }
+                    in_block = false;
+                    cur_var.clear();
                 }
-            } else if in_var {
-                cur_var.push(c);
-            } else {
-                text.push(c);
+                '}' if start_expr => {
+                    if let Some(var_id) = cur_var.strip_prefix("if") {
+                        let var_id = var_id.trim();
+                        
+                        if builder.frame().variables().get(var_id).is_none() {
+                            expr_stack.push(Expr::IfFalse);
+                            if_false_level += 1;
+                        } else {
+                            expr_stack.push(Expr::IfTrue);
+                        }
+                    } else if cur_var.trim() == "else" {
+                        match expr_stack.pop() {
+                            Some(Expr::IfFalse) => {
+                                if_false_level -= 1;
+                                expr_stack.push(Expr::IfTrue);
+                            },
+                            Some(Expr::IfTrue) => {
+                                if_false_level += 1;
+                                expr_stack.push(Expr::IfFalse);
+                            },
+                            _ => (),
+                        }
+                    }
+                    in_block = false;
+                    cur_var.clear();
+                },
+                '}' if in_block => {
+                    let var_value = builder.frame().variables().get(&cur_var);
+                    if if_false_level <= 0 {
+                        if let Some(value) = var_value {
+                            text.push_str(value);
+                        }
+                    }
+                    cur_var.clear();
+                    in_block = false;
+                },
+                _ if in_block => {
+                    cur_var.push(c);
+                },
+                _ if if_false_level <= 0 => {
+                    text.push(c);
+                },
+                _ => (),
             }
+
+            prev = c;
         }
 
         builder.children(|ui| {
