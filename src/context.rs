@@ -97,7 +97,7 @@ impl Default for PersistentState {
 
 /// The current state of the various keyboard modifier keys - Shift, Control, and Alt
 /// You can get this using [`Frame.input_modiifers`](struct.Frame.html#method.input_modifiers)
-#[derive(Default, Copy, Clone)]
+#[derive(Default, Copy, Clone, Debug)]
 pub struct InputModifiers {
     /// whether the Shift key is pressed
     pub shift: bool,
