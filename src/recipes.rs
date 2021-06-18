@@ -437,11 +437,10 @@ impl Frame {
             for c in state.characters.drain(..) {
                 if c as u32 == 8 { //backspace
                     state.text.as_mut().unwrap().pop();
-                    text_changed = true;
                 } else {
                     state.text.as_mut().unwrap().push(c);
-                    text_changed = true;
                 }
+                text_changed = true;
             }
 
             if text_changed {
