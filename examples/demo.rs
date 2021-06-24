@@ -209,9 +209,9 @@ pub fn build_ui(ui: &mut Frame, party: &mut Party) {
 
     ui.label("bench", format!(
         "{}\n{}\n{}",
-        bench::report("thyme"),
-        bench::report("frame"),
-        bench::report("draw"),
+        bench::short_report("thyme"),
+        bench::short_report("frame"),
+        bench::short_report("draw"),
     ));
 
     ui.start("theme_panel").children(|ui| {

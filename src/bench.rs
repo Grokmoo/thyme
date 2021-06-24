@@ -47,19 +47,42 @@ pub fn start(tag: &str) -> Handle {
 }
 
 /// Returns a `Stats` object for the benchmark timings
-/// associated with the given `tag`.
+/// associated with the given `tag`.  Limits to a number
+/// of recent samples if there are a large number of total samples.
 pub fn stats(tag: &str) -> Stats {
     let bench = BENCH.lock();
-    bench.stats(tag)
+    bench.stats(tag, Some(MOVING_AVG_LEN))
+}
+
+/// Like [`stats`](fn.stats.html), but there is no limit on the
+/// number of samples to be considered.
+pub fn stats_all(tag: &str) -> Stats {
+    let bench = BENCH.lock();
+    bench.stats(tag, None)
+}
+
+/// Like [`report`](fn.report.html), but produces a condensed version
+/// of the data.
+pub fn short_report(tag: &str) -> String {
+    let bench = BENCH.lock();
+    bench.short_report(tag, Some(MOVING_AVG_LEN))
 }
 
 /// A convenience method to automatically generate a report
 /// String for the given `tag`.  The report will include all of the
 /// data in the [`Stats`](struct.Stats.html) associated with this `tag`,
-/// and be formatted with appropriate units.
+/// and be formatted with appropriate units.  Limits to a number of
+/// recent samples if there are a large number of total samples.
 pub fn report(tag: &str) -> String {
     let bench = BENCH.lock();
-    bench.report(tag)
+    bench.report(tag, Some(MOVING_AVG_LEN))
+}
+
+/// Like [`report`](fn.report.html), but there is no limit on the
+/// number of samples to be considered.
+pub fn report_all(tag: &str) -> String {
+    let bench = BENCH.lock();
+    bench.report(tag, None)
 }
 
 fn end(handle: Handle) {
@@ -73,6 +96,8 @@ fn end(handle: Handle) {
 /// tag, where N is currently hardcoded to 30.
 #[derive(Debug, Copy, Clone)]
 pub struct Stats {
+    count: usize,
+    total_s: f32,
     average_s: f32,
     stdev_s: f32,
     max_s: f32,
@@ -82,6 +107,8 @@ pub struct Stats {
 impl Default for Stats {
     fn default() -> Self {
         Stats {
+            count: 0,
+            total_s: 0.0,
             average_s: 0.0,
             stdev_s: 0.0,
             max_s: 0.0,
@@ -91,6 +118,12 @@ impl Default for Stats {
 }
 
 impl Stats {
+    /// Returns the sum total of the timings, in the current unit
+    /// of this `Stats`.
+    pub fn total(&self) -> f32 {
+        self.total_s * self.unit.multiplier()
+    }
+
     /// Returns the average of the timings, in the current unit
     /// of this `Stats`.
     pub fn average(&self) -> f32 {
@@ -132,33 +165,21 @@ impl Stats {
     }
 
     /// Converts this `Stats` to use seconds as a unit
-    pub fn in_seconds(self) -> Stats {
-        Stats {
-            average_s: self.average_s,
-            stdev_s: self.stdev_s,
-            max_s: self.max_s,
-            unit: Unit::Seconds,
-        }
+    pub fn in_seconds(mut self) -> Stats {
+        self.unit = Unit::Seconds;
+        self
     }
 
     /// Converts this `Stats` to use milliseconds as a unit
-    pub fn in_millis(self) -> Stats {
-        Stats {
-            average_s: self.average_s,
-            stdev_s: self.stdev_s,
-            max_s: self.max_s,
-            unit: Unit::Millis,
-        }
+    pub fn in_millis(mut self) -> Stats {
+        self.unit = Unit::Millis;
+        self
     }
 
     /// Converts this `Stats` to use microseconds as a unit
-    pub fn in_micros(self) -> Stats {
-        Stats {
-            average_s: self.average_s,
-            stdev_s: self.stdev_s,
-            max_s: self.max_s,
-            unit: Unit::Micros,
-        }
+    pub fn in_micros(mut self) -> Stats {
+        self.unit = Unit::Micros;
+        self
     }
 }
 
@@ -200,20 +221,30 @@ impl BenchSet {
         bench.history.push(duration);
     }
 
-    fn stats(&self, tag: &str) -> Stats {
+    fn stats(&self, tag: &str, limit: Option<usize>) -> Stats {
         for bench in self.benches.iter() {
             if bench.tag == tag {
-                return bench.stats();
+                return bench.stats(limit);
             }
         }
 
         Stats::default()
     }
 
-    fn report(&self, tag: &str) -> String {
+    fn report(&self, tag: &str, limit: Option<usize>) -> String {
         for bench in self.benches.iter() {
             if bench.tag == tag {
-                return bench.report_str();
+                return bench.report_str(limit);
+            }
+        }
+
+        "Bench not found".to_string()
+    }
+
+    fn short_report(&self, tag: &str, limit: Option<usize>) -> String {
+        for bench in self.benches.iter() {
+            if bench.tag == tag {
+                return bench.short_report_str(limit);
             }
         }
 
@@ -264,10 +295,14 @@ impl Bench {
         }
     }
 
-    fn stats(&self) -> Stats {
-        let count = std::cmp::min(MOVING_AVG_LEN, self.history.len());
+    fn stats(&self, limit: Option<usize>) -> Stats {
+        let len = self.history.len();
+        let count = match limit {
+            None => len,
+            Some(limit) => std::cmp::min(len, limit),
+        };
 
-        let data = || { self.history.iter().rev().take(MOVING_AVG_LEN) };
+        let data = || { self.history.iter().rev().take(count) };
 
         let sum = (data)().sum::<Duration>().as_secs_f32();
         let max = match (data)().max() {
@@ -283,6 +318,8 @@ impl Bench {
         let stdev = stdev_sq.sqrt();
 
         Stats {
+            count,
+            total_s: sum,
             average_s: avg,
             stdev_s: stdev,
             max_s: max,
@@ -290,11 +327,27 @@ impl Bench {
         }
     }
 
-    fn report_str(&self) -> String {
-        let stats = self.stats().pick_unit();
-        format!(
-            "{}: {:.2} ± {:.2}; max {:.2} {}",
-            self.tag, stats.average(), stats.stdev(), stats.max(), stats.unit_postfix(),
-        )
+    fn short_report_str(&self, limit: Option<usize>) -> String {
+        let stats = self.stats(limit).pick_unit();
+        if self.history.len() == 1 {
+            format!("{}: {:.2} {}", self.tag, stats.average(), stats.unit_postfix())
+        } else {
+            format!(
+                "{}: {:.2} ± {:.2} {}",
+                self.tag, stats.average(), stats.stdev(), stats.unit_postfix(),
+            )
+        }
+    }
+
+    fn report_str(&self, limit: Option<usize>) -> String {
+        let stats = self.stats(limit).pick_unit();
+        if self.history.len() == 1 {
+            format!("{}: {:.2} {}", self.tag, stats.average(), stats.unit_postfix())
+        } else {
+            format!(
+                "{} ({} Samples): {:.2} ± {:.2}; max {:.2}, total {:.2} {}",
+                self.tag, stats.count, stats.average(), stats.stdev(), stats.max(), stats.total(), stats.unit_postfix(),
+            )
+        }
     }
 }
