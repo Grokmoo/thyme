@@ -474,6 +474,15 @@ impl Context {
         state.characters.push(c);
     }
 
+    /// Returns the current mouse position, based on mouse cursor movement.  The scale
+    /// factor must be taken into account to convert physical pixels to the logical pixels
+    /// used by this.  This may be useful is you want to get Thyme's last mouse position
+    /// outside of a Thyme frame for the rest of your application to use.
+    pub fn mouse_pos(&self) -> Point {
+        let internal = self.internal.borrow();
+        internal.mouse_pos
+    }
+
     /// Set mouse position, based on mouse cursor movement.  The scale factor must
     /// be taken into account to convert physical pixels to the logical pixels used by
     /// this.
