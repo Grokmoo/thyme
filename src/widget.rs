@@ -400,7 +400,7 @@ impl<'a> WidgetBuilder<'a> {
     #[must_use]
     pub(crate) fn new(frame: &'a mut Frame, parent: usize, theme_id: String, base_theme: &str) -> WidgetBuilder<'a> {
         let (data, widget) = {
-            let context = std::rc::Rc::clone(&frame.context_internal());
+            let context = std::rc::Rc::clone(frame.context_internal());
             let mut context = context.borrow_mut();
             let theme = match context.themes().theme(&theme_id) {
                 None => {
@@ -482,7 +482,7 @@ impl<'a> WidgetBuilder<'a> {
     /// Returns a reference to the current frame, (the `ui` object), which is currently
     /// stored by this builder
     pub fn frame(&self) -> &Frame {
-        &self.frame
+        self.frame
     }
 
     pub(crate) fn set_next_render_group(&mut self, val: NextRenderGroup) {

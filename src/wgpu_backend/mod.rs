@@ -425,7 +425,7 @@ impl WgpuRenderer {
     }
 
     fn create_vertex_buffer(&self, vertices: &[Vertex]) -> Buffer {
-        let data = bytemuck::cast_slice(&vertices);
+        let data = bytemuck::cast_slice(vertices);
         self.device.create_buffer_init(&BufferInitDescriptor {
             label: Some("vertex buffer"),
             contents: data,
@@ -434,7 +434,7 @@ impl WgpuRenderer {
     }
 
     fn create_index_buffer(&self, indices: &[u16]) -> Buffer {
-        let data = bytemuck::cast_slice(&indices);
+        let data = bytemuck::cast_slice(indices);
         self.device.create_buffer_init(&BufferInitDescriptor {
             label: Some("index buffer"),
             contents: data,

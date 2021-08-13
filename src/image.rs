@@ -290,7 +290,7 @@ impl Image {
                 let mut size = Point::default();
                 let mut images_out = Vec::new();
                 for (id, sub_image_def) in sub_images {
-                    let image = find_image_in_set(image_id, others, &id)?;
+                    let image = find_image_in_set(image_id, others, id)?;
                     size = size.max(image.base_size);
 
                     images_out.push(SubImage {
@@ -307,7 +307,7 @@ impl Image {
                 let mut size = Point::default();
                 let mut frames_out = Vec::new();
                 for id in frames {
-                    let image = find_image_in_set(image_id, others, &id)?;
+                    let image = find_image_in_set(image_id, others, id)?;
                     size = image.base_size;
                     frames_out.push(image);
                 }
@@ -325,7 +325,7 @@ impl Image {
                 let mut size = Point::default();
                 let mut states_out: Vec<(AnimState, Image)> = Vec::new();
                 for (state, id) in states {
-                    let image = find_image_in_set(image_id, others, &id)?;
+                    let image = find_image_in_set(image_id, others, id)?;
                     size = image.base_size;
                     states_out.push((*state, image));
                 }

@@ -12,7 +12,6 @@ use crate::render::Renderer;
 #[derive(Copy, Clone)]
 pub(crate) struct PersistentStateData {
     pub is_open: bool,
-    pub expanded: bool,
     pub resize: Point,
     pub moved: Point,
     pub scroll: Point,
@@ -72,7 +71,6 @@ impl PersistentState {
     pub(crate) fn copy_data(&self) -> PersistentStateData {
         PersistentStateData {
             is_open: self.is_open,
-            expanded: self.expanded,
             resize: self.resize,
             moved: self.moved,
             scroll: self.scroll,
@@ -398,6 +396,13 @@ impl Context {
         internal.scale_factor = scale;
     }
 
+    /// Returns the current scale factor being used internally by Thyme.  See
+    /// [`set_scale_factor`](#method.set_scale_factor)
+    pub fn scale_factor(&self) -> f32 {
+        let internal = self.internal.borrow();
+        internal.scale_factor
+    }
+
     /// Set the display size in logical pixels (physical pixels divided by the scale factor).
     /// This is normally handled by the [`IO`](trait.IO.html) backend, which will set
     /// this in response to a window resize event.  User code should
@@ -405,6 +410,13 @@ impl Context {
     pub fn set_display_size(&mut self, size: Point) {
         let mut internal = self.internal.borrow_mut();
         internal.display_size = size;
+    }
+
+    /// Returns the current display size being used internally by Thyme.  See
+    /// [`set_display_size`](#method.set_display_size)
+    pub fn display_size(&self) -> Point {
+        let internal = self.internal.borrow();
+        internal.display_size
     }
 
     /// Add mouse wheel event, with `delta` being the amount of device-dependant logical scrolling.

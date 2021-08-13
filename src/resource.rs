@@ -349,7 +349,7 @@ impl ResourceSet {
         for (id, source) in self.images.iter() {
             let (tex_data, width, height) = source.data.as_ref().unwrap();
             let dims = (*width, *height);
-            let tex_data = renderer.register_texture(handle, &tex_data, dims)?;
+            let tex_data = renderer.register_texture(handle, tex_data, dims)?;
             output.insert(id.to_string(), tex_data);
 
             handle = handle.next();

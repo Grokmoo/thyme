@@ -128,7 +128,7 @@ impl ThemeSet {
                         }
                     },
                     _ => {
-                        let image = Image::new(&image_id, image_def, texture, &images_in_set, set.scale)?;
+                        let image = Image::new(image_id, image_def, texture, &images_in_set, set.scale)?;
                         images_in_set.insert(image_id.to_string(), image);
                     }
                 }

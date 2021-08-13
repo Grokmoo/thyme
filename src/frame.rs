@@ -100,7 +100,7 @@ impl Frame {
     }
 
     pub(crate) fn context_internal(&self) -> &Rc<RefCell<ContextInternal>> {
-        &self.context.internal()
+        self.context.internal()
     }
 
     pub(crate) fn check_mouse_wheel(&mut self, index: usize) -> Option<Point> {
@@ -481,7 +481,7 @@ impl Frame {
     pub fn open_parent(&mut self) {
         let mut context = self.context.internal().borrow_mut();
         let id = self.widgets[self.parent_index].id();
-        context.set_top_rend_group_id(&id);
+        context.set_top_rend_group_id(id);
         context.state_mut(id).is_open = true;
     }
 

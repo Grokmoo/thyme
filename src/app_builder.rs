@@ -607,7 +607,7 @@ async fn setup_wgpu(
     let adapter = instance.request_adapter(&wgpu::RequestAdapterOptions {
         power_preference: wgpu::PowerPreference::LowPower,
         // Request an adapter which can render to our surface
-        compatible_surface: Some(&surface),
+        compatible_surface: Some(surface),
     }).await.unwrap();
     
     // Create the logical device and command queue

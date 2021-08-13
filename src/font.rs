@@ -67,7 +67,7 @@ impl Font {
     ) {
         let mut draw_list = DummyDrawList::new();
         let mut renderer = FontRenderer::new(
-            &self,
+            self,
             &mut draw_list,
             params,
             Color::white(),
@@ -94,7 +94,7 @@ impl Font {
         clip: Rect,
     ) {
         let mut renderer = FontRenderer::new(
-            &self,
+            self,
             draw_list,
             params,
             color,
