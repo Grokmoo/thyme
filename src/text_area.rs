@@ -521,11 +521,11 @@ impl MarkdownState {
     }
 
     fn update_cursor(&mut self, ui: &mut Frame) {
+        self.text_indent = self.cursor.x;
+
         if let Some(col) = self.table_column {
-            self.text_indent = self.cursor.x;
             ui.set_cursor(col as f32 * self.column_width, self.cursor.y);
         } else {
-            self.text_indent = self.cursor.x;
             ui.set_cursor(self.indent_level * self.tab_width, self.cursor.y);
         }
     }
