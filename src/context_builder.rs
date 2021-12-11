@@ -67,41 +67,29 @@ impl ContextBuilder {
         Ok(())
     }
 
-    /// Sets the theme for this context by reading from the file at the specified `path`.  The files are first
-    /// read to a string and then passed to the function `f`, which returns a serde Deserializable object.  That
-    /// object is then deserialized as the theme.  See [`register_theme`](#method.register_theme)
-    pub fn register_theme_from_file<T, E, F>(
+    /// Sets the theme for this context by reading from the file at the specified `path`.  The file is
+    /// deserialized as serde YAML files.  See [`register_theme`](#method.register_theme)
+    pub fn register_theme_from_file(
         &mut self,
         path: &Path,
-        f: F,
-    ) -> Result<(), Error> where
-        T: 'static + for<'de> serde::Deserializer<'de>,
-        E: 'static + std::error::Error,
-        F: 'static + Fn(&str) -> Result<T, E>
-    {
+    ) -> Result<(), Error> {
         log::debug!("Reading theme from file: '{:?}'", path);
 
-        self.resources.register_theme_from_files(&[path], f);
+        self.resources.register_theme_from_files(&[path]);
 
         Ok(())
     }
 
     /// Sets the theme for this context by reading from the specified list of files.  The files are each read into a
-    /// string and then concatenated together.  The string is passed to the function `f` which returns a serde
-    /// Deserializable object, which is finally deserialized into the theme.  See
+    /// string and then concatenated together.  The string is then deserialized as serde YAML.  See
     /// [`register_theme`](#method.register_theme)
-    pub fn register_theme_from_files<T, E, F>(
+    pub fn register_theme_from_files(
         &mut self,
         paths: &[&Path],
-        f: F,
-    ) -> Result<(), Error> where
-        T: 'static + for<'de> serde::Deserializer<'de>,
-        E: 'static + std::error::Error,
-        F: 'static + Fn(&str) -> Result<T, E>
-    {
+    ) -> Result<(), Error> {
         log::debug!("Reading theme from files: '{:?}'", paths);
 
-        self.resources.register_theme_from_files(paths, f);
+        self.resources.register_theme_from_files(paths);
         Ok(())
     }
 

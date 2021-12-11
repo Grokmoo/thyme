@@ -5,7 +5,6 @@ use std::path::{Path, PathBuf};
 use std::collections::HashMap;
 use std::sync::{atomic::{AtomicBool, Ordering}, mpsc::{Receiver, channel}};
 
-use erased_serde::Deserializer;
 use notify::{Watcher, RecommendedWatcher, RecursiveMode, watcher, DebouncedEvent};
 
 use crate::Error;
@@ -17,15 +16,8 @@ static RELOAD_THEME: AtomicBool = AtomicBool::new(false);
 
 struct ThemeSource {
     data: Option<ThemeDefinition>,
-    files: Option<ThemeSourceFiles>,
+    files: Option<Vec<PathBuf>>,
 }
-
-struct ThemeSourceFiles {
-    paths: Vec<PathBuf>,
-    de_func: Box<dyn Fn(&str) -> DeFuncResult>,
-}
-
-type DeFuncResult<'a> = Result<Box<dyn Deserializer<'a>>, Box<dyn std::error::Error>>;
 
 struct ImageSource {
     data: Option<(Vec<u8>, u32, u32)>,
@@ -102,34 +94,17 @@ impl ResourceSet {
         self.theme.files = None;
     }
 
-    pub(crate) fn register_theme_from_files<E, D, F>(
+    pub(crate) fn register_theme_from_files(
         &mut self,
         paths: &[&Path],
-        f: F
-    ) where 
-        E: 'static + std::error::Error,
-        D: 'static + for<'a> serde::Deserializer<'a>,
-        F: 'static + Fn(&str) -> Result<D, E>,
-    {
-        let boxed_fn: Box<dyn Fn(&str) -> DeFuncResult> = Box::new(move |input| {
-            let result = match (f)(input) {
-                Err(e) => Err(Box::new(e)),
-                Ok(data) => Ok(data),
-            }?;
-
-            Ok(Box::new(<dyn Deserializer>::erase(result)))
-        });
-
+    ) {
         let mut paths_out: Vec<PathBuf> = Vec::new();
         for path in paths {
             self.add_path_to_watcher(path);
             paths_out.push((*path).to_owned());
         }
 
-        self.theme.files = Some(ThemeSourceFiles {
-            paths: paths_out,
-            de_func: boxed_fn,
-        });
+        self.theme.files = Some(paths_out);
     }
 
     pub(crate) fn register_font_from_file(&mut self, id: String, path: &Path) {
@@ -152,16 +127,16 @@ impl ResourceSet {
 
     pub(crate) fn remove_theme_file(&mut self, path: &Path) {
         self.remove_path_from_watcher(path);
-        if let Some(theme) = self.theme.files.as_mut() {
-            theme.paths.retain(|p| p != path);
+        if let Some(paths) = self.theme.files.as_mut() {
+            paths.retain(|p| p != path);
             self.theme.data = None;
         }
     }
 
     pub(crate) fn add_theme_file(&mut self, path: PathBuf) {
         self.add_path_to_watcher(&path);
-        if let Some(theme) = self.theme.files.as_mut() {
-            theme.paths.push(path);
+        if let Some(paths) = self.theme.files.as_mut() {
+            paths.push(path);
             self.theme.data = None;
         }
     }
@@ -227,7 +202,7 @@ impl ResourceSet {
                 let mut theme_def: Option<ThemeDefinition> = None;
 
                 let mut theme_str = String::new();
-                for path in &theme_source.paths {
+                for path in theme_source.iter() {
                     let mut file = match File::open(path) {
                         Ok(file) => file,
                         Err(e) => return Err(Error::IO(e)),
@@ -241,19 +216,14 @@ impl ResourceSet {
                         }
                     }
 
-                    let theme_value = match (theme_source.de_func)(&theme_str) {
-                        Ok(value) => value,
-                        Err(e) => return Err(Error::Serde(e.to_string())),
-                    };
-                    
                     match theme_def.as_mut() {
                         None => {
-                            theme_def = Some(match serde::Deserialize::deserialize(theme_value) {
+                            theme_def = Some(match serde_yaml::from_str(&theme_str) {
                                 Ok(theme) => theme,
                                 Err(e) => return Err(Error::Serde(e.to_string())),
                             });
                         }, Some(theme) => {
-                            let new_theme_def: ThemeDefinition = match serde::Deserialize::deserialize(theme_value) {
+                            let new_theme_def: ThemeDefinition = match serde_yaml::from_str(&theme_str) {
                                 Ok(theme) => theme,
                                 Err(e) => return Err(Error::Serde(e.to_string())),
                             };

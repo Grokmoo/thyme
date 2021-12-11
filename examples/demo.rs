@@ -15,7 +15,6 @@ pub fn register_assets(context_builder: &mut ContextBuilder) {
             // note we dynamically add/remove from this list later if the user selects a new theme
             Path::new("examples/data/themes/pixel.yml"),
         ],
-        serde_yaml::from_str::<serde_yaml::Value>
     ).unwrap();
     context_builder.register_texture_from_file("pixel", Path::new("examples/data/images/pixel.png"));
     context_builder.register_texture_from_file("fantasy", Path::new("examples/data/images/fantasy.png"));

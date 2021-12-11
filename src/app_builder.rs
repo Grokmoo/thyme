@@ -308,7 +308,7 @@ impl AppBuilder {
         let theme_files = theme_src.get_files(self.base_dir.clone(), &["yml", "yaml"])?;
         let theme_paths: Vec<_> = theme_files.iter().map(|(_, path)| path.as_path()).collect();
 
-        context_builder.register_theme_from_files(&theme_paths, serde_yaml::from_str::<serde_yaml::Value>)?;
+        context_builder.register_theme_from_files(&theme_paths)?;
 
         let image_src = match self.images.as_ref() {
             None => return Err(Error::Theme("No image files specified".to_string())),
