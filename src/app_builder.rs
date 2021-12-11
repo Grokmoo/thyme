@@ -281,11 +281,11 @@ impl AppBuilder {
             .build(&event_loop).map_err(crate::winit_io::WinitError::Os).map_err(Error::Winit)?;
 
         // setup WGPU
-        let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
+        let instance = wgpu::Instance::new(wgpu::Backends::PRIMARY);
         let surface = unsafe { instance.create_surface(&window) };
         let (_adapter, device, queue) = futures::executor::block_on(setup_wgpu(&instance, &surface));
-        let sc_desc = swapchain_desc(self.window_size.x as u32, self.window_size.y as u32);
-        let swap_chain = device.create_swap_chain(&surface, &sc_desc);
+        let surface_config = surface_config(self.window_size.x as u32, self.window_size.y as u32);
+        surface.configure(&device, &surface_config);
 
         // create thyme backend
         let mut io = crate::WinitIo::new(&event_loop, self.window_size).map_err(Error::Winit)?;
@@ -296,7 +296,7 @@ impl AppBuilder {
 
         let context = context_builder.build(&mut renderer, &mut io)?;
 
-        Ok(WgpuApp { io, renderer, context, event_loop, window, surface, swap_chain, device, queue })
+        Ok(WgpuApp { io, renderer, context, event_loop, window, surface, device, queue })
     }
 
     fn register_resources(&self, context_builder: &mut ContextBuilder) -> Result<(), Error> {
@@ -355,9 +355,6 @@ pub struct WgpuApp {
     /// The Wgpu output surface
     pub surface: wgpu::Surface,
 
-    /// Wgpu Swapchain
-    pub swap_chain: wgpu::SwapChain,
-
     /// Wgpu output device
     pub device: Arc<wgpu::Device>,
 
@@ -379,7 +376,6 @@ impl WgpuApp {
         let mut io = self.io;
         let mut context = self.context;
         let window = self.window;
-        let mut swap_chain = self.swap_chain;
         let queue = self.queue;
         let device = self.device;
         let surface = self.surface;
@@ -387,7 +383,8 @@ impl WgpuApp {
         event_loop.run(move |event, _, control_flow| {
             match event {
                 Event::MainEventsCleared => {
-                    let frame = swap_chain.get_current_frame().unwrap().output;
+                    let frame = surface.get_current_texture().unwrap();
+                    let view = frame.texture.create_view(&wgpu::TextureViewDescriptor::default());
                     let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
     
                     let mut ui = context.create_frame();
@@ -398,7 +395,7 @@ impl WgpuApp {
                         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                             label: None,
                             color_attachments: &[wgpu::RenderPassColorAttachment {
-                                view: &frame.view,
+                                view: &view,
                                 resolve_target: None,
                                 ops: wgpu::Operations {
                                     load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
@@ -412,15 +409,16 @@ impl WgpuApp {
                     }
     
                     queue.submit(Some(encoder.finish()));
+                    frame.present();
                 },
                 Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => *control_flow = ControlFlow::Exit,
                 event => {
-                    // recreate swap chain on resize, but also still pass the event to thyme
+                    // reconfigure surface on resize, but also still pass the event to thyme
                     if let Event::WindowEvent { event: WindowEvent::Resized(_), ..} = event {
                         let size: (u32, u32) = window.inner_size().into();
     
-                        let sc_desc = swapchain_desc(size.0, size.1);
-                        swap_chain = device.create_swap_chain(&surface, &sc_desc);
+                        let surface_config = surface_config(size.0, size.1);
+                        surface.configure(&device, &surface_config);
                     }
     
                     io.handle_event(&mut context, &event);
@@ -608,6 +606,7 @@ async fn setup_wgpu(
         power_preference: wgpu::PowerPreference::LowPower,
         // Request an adapter which can render to our surface
         compatible_surface: Some(surface),
+        force_fallback_adapter: false,
     }).await.unwrap();
     
     // Create the logical device and command queue
@@ -624,9 +623,9 @@ async fn setup_wgpu(
 }
 
 #[cfg(feature="wgpu_backend")]
-fn swapchain_desc(width: u32, height: u32) -> wgpu::SwapChainDescriptor {
-    wgpu::SwapChainDescriptor {
-        usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
+fn surface_config(width: u32, height: u32) -> wgpu::SurfaceConfiguration {
+    wgpu::SurfaceConfiguration {
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
         format: wgpu::TextureFormat::Bgra8Unorm,
         width,
         height,

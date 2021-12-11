@@ -10,9 +10,11 @@ layout(location = 2) in vec4 v_clip;
 layout(location = 0) out vec4 color;
 
 void main() {
+  float a = texture(sampler2D(tex, samp), v_tex_coords).r;
+
   if (v_clip.x < 0.0 || v_clip.y < 0.0 || v_clip.z < 0.0 || v_clip.w < 0.0) {
     discard;
   }
 
-  color = vec4(v_color.rgb, texture(sampler2D(tex, samp), v_tex_coords).r);
+  color = vec4(v_color.rgb, a);
 }

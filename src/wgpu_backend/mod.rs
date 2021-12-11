@@ -2,13 +2,13 @@ use std::sync::Arc;
 use std::num::NonZeroU32;
 
 use wgpu::{
-    Buffer, BufferDescriptor, BufferUsage, BufferAddress, BufferBindingType,
-    BlendFactor, BlendOperation, ColorWrite,
+    Buffer, BufferDescriptor, BufferUsages, BufferAddress, BufferBindingType,
+    BlendFactor, BlendOperation, ColorWrites,
     BindingResource, BindGroupLayout, BindGroupEntry, BindingType, BindGroupDescriptor, BindGroup, BindGroupLayoutDescriptor, BindGroupLayoutEntry,
     Device, Queue, RenderPipeline, RenderPass,
     TextureFormat, TextureViewDimension, TextureViewDescriptor, TextureSampleType,
     SamplerDescriptor, AddressMode, FilterMode, PrimitiveState,
-    InputStepMode, vertex_attr_array,
+    VertexStepMode, vertex_attr_array,
     util::{BufferInitDescriptor, DeviceExt},
 };
 
@@ -55,7 +55,6 @@ macro_rules! create_spirv {
         wgpu::ShaderModuleDescriptor {
             label: Some( $($name)* ),
             source: wgpu::util::make_spirv(include_bytes!( $($name)* )),
-            flags: wgpu::ShaderFlags::empty(),
         }
     };
 }
@@ -87,7 +86,7 @@ impl WgpuRenderer {
         let view_matrix_buffer = device.create_buffer(&BufferDescriptor {
             label: Some("view matrix buffer"),
             size: 64, // 4 x 4 x 4 bytes
-            usage: BufferUsage::UNIFORM | BufferUsage::COPY_DST,
+            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
 
@@ -95,7 +94,7 @@ impl WgpuRenderer {
             label: None,
             entries: &[BindGroupLayoutEntry {
                 binding: 0,
-                visibility: wgpu::ShaderStage::VERTEX,
+                visibility: wgpu::ShaderStages::VERTEX,
                 ty: BindingType::Buffer {
                     ty: BufferBindingType::Uniform,
                     has_dynamic_offset: false,
@@ -124,17 +123,17 @@ impl WgpuRenderer {
             entries: &[
                 BindGroupLayoutEntry {
                     binding: 0,
-                    visibility: wgpu::ShaderStage::FRAGMENT,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: BindingType::Texture {
                         multisampled: false,
-                        sample_type: TextureSampleType::Float { filterable: false },
+                        sample_type: TextureSampleType::Float { filterable: true },
                         view_dimension: TextureViewDimension::D2,
                     },
                     count: None,
                 },
                 BindGroupLayoutEntry {
                     binding: 1,
-                    visibility: wgpu::ShaderStage::FRAGMENT,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: BindingType::Sampler {
                         comparison: false,
                         filtering: true,
@@ -158,7 +157,7 @@ impl WgpuRenderer {
                 entry_point: "main",
                 buffers: &[wgpu::VertexBufferLayout {
                     array_stride: std::mem::size_of::<Vertex>() as BufferAddress,
-                    step_mode: InputStepMode::Vertex,
+                    step_mode: VertexStepMode::Vertex,
                     attributes: &vertex_attr_array![0 => Float32x2, 1 => Float32x2, 2 => Float32x4, 3 => Float32x2, 4 => Float32x2],
                 }],
             },
@@ -180,7 +179,7 @@ impl WgpuRenderer {
                             operation: BlendOperation::Add,
                         }
                     }),
-                    write_mask: ColorWrite::ALL,
+                    write_mask: ColorWrites::ALL,
                 }],
             }),
             primitive: PrimitiveState {
@@ -220,7 +219,7 @@ impl WgpuRenderer {
                         operation: BlendOperation::Add,
                     }
                 }),
-                write_mask: ColorWrite::ALL,
+                write_mask: ColorWrites::ALL,
             }],
         });
 
@@ -429,7 +428,7 @@ impl WgpuRenderer {
         self.device.create_buffer_init(&BufferInitDescriptor {
             label: Some("vertex buffer"),
             contents: data,
-            usage: BufferUsage::VERTEX,
+            usage: BufferUsages::VERTEX,
         })
     }
 
@@ -438,7 +437,7 @@ impl WgpuRenderer {
         self.device.create_buffer_init(&BufferInitDescriptor {
             label: Some("index buffer"),
             contents: data,
-            usage: BufferUsage::INDEX,
+            usage: BufferUsages::INDEX,
         })
     }
 
@@ -462,7 +461,7 @@ impl WgpuRenderer {
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format,
-            usage: wgpu::TextureUsage::SAMPLED | wgpu::TextureUsage::COPY_DST,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             label: None,
         });
 
@@ -472,6 +471,7 @@ impl WgpuRenderer {
                 texture: &texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d { x: 0, y: 0, z: 0 },
+                aspect: wgpu::TextureAspect::All,
             },
             image_data,
             wgpu::ImageDataLayout {

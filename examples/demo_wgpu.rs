@@ -25,11 +25,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build(&events_loop)?;
 
     // setup WGPU
-    let instance = wgpu::Instance::new(wgpu::BackendBit::PRIMARY);
+    let instance = wgpu::Instance::new(wgpu::Backends::PRIMARY);
     let surface = unsafe { instance.create_surface(&window) };
     let (_adapter, device, queue) = futures::executor::block_on(setup_wgpu(&instance, &surface));
-    let sc_desc = swapchain_desc(window_size[0] as u32, window_size[1] as u32);
-    let mut swap_chain = device.create_swap_chain(&surface, &sc_desc);
+    let surface_config = get_surface_config(window_size[0] as u32, window_size[1] as u32);
+    surface.configure(&device, &surface_config);
 
     // create thyme backend
     let mut renderer = thyme::WgpuRenderer::new(Arc::clone(&device), Arc::clone(&queue));
@@ -58,7 +58,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             party.check_context_changes(&mut context, &mut renderer);
 
-            let frame = swap_chain.get_current_frame().unwrap().output;
+            let frame = surface.get_current_texture().unwrap();
+            let view = frame.texture.create_view(&wgpu::TextureViewDescriptor::default());
             let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
             bench::run("thyme", || {
@@ -75,7 +76,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                             label: None,
                             color_attachments: &[wgpu::RenderPassColorAttachment {
-                                view: &frame.view,
+                                view: &view,
                                 resolve_target: None,
                                 ops: wgpu::Operations {
                                     load: wgpu::LoadOp::Clear(wgpu::Color { r: 0.5, g: 0.5, b: 0.5, a: 1.0 }),
@@ -89,6 +90,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
 
                     queue.submit(Some(encoder.finish()));
+                    frame.present();
                 });
             });
         },
@@ -98,8 +100,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             if let Event::WindowEvent { event: WindowEvent::Resized(_), ..} = event {
                 let size: (u32, u32) = window.inner_size().into();
 
-                let sc_desc = swapchain_desc(size.0, size.1);
-                swap_chain = device.create_swap_chain(&surface, &sc_desc);
+                let surface_config = get_surface_config(size.0, size.1);
+                surface.configure(&device, &surface_config);
             }
 
             io.handle_event(&mut context, &event);
@@ -115,6 +117,7 @@ async fn setup_wgpu(
         power_preference: wgpu::PowerPreference::LowPower,
         // Request an adapter which can render to our surface
         compatible_surface: Some(surface),
+        force_fallback_adapter: false,
     }).await.unwrap();
 
     // Create the logical device and command queue
@@ -130,9 +133,9 @@ async fn setup_wgpu(
     (adapter, Arc::new(device), Arc::new(queue))
 }
 
-fn swapchain_desc(width: u32, height: u32) -> wgpu::SwapChainDescriptor {
-    wgpu::SwapChainDescriptor {
-        usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
+fn get_surface_config(width: u32, height: u32) -> wgpu::SurfaceConfiguration {
+    wgpu::SurfaceConfiguration {
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
         format: wgpu::TextureFormat::Bgra8Unorm,
         width,
         height,
