@@ -495,6 +495,24 @@ impl Frame {
         });
     }
 
+    /** 
+    Creates a simple vertical progress bar.  See [`progress_bar`](Frame::progress_bar)
+    **/
+    pub fn progress_bar_vert(&mut self, theme: &str, frac: f32) {
+        self.start(theme)
+        .children(|ui| {
+            let mut rect = Rect::default();
+
+            ui.start("bar")
+            .trigger_layout(&mut rect)
+            .clip(Rect::new(
+                Point::new(rect.pos.x, rect.pos.y + rect.size.y * (1.0 - frac)), 
+                Point::new(rect.size.x, rect.size.y * frac)
+            ))
+            .finish();
+        });
+    }
+
     /**
     Creates a simple tooltip with the specified text.  The tooltip is placed based on the
     position of the mouse.
