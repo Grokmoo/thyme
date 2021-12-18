@@ -4,7 +4,7 @@ use std::rc::Rc;
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
-use crate::{Error, Point, Frame, Rect, frame::{RendGroup, RendGroupDef}};
+use crate::{BuildOptions, Error, Point, Frame, Rect, frame::{RendGroup, RendGroupDef}};
 use crate::{font::FontSummary, widget::Widget, image::ImageHandle, theme::ThemeSet, resource::ResourceSet};
 use crate::theme_definition::{AnimState, AnimStateKey};
 use crate::render::Renderer;
@@ -65,6 +65,10 @@ pub struct PersistentState {
 
     /// The text for this widget, overriding default text.  Defaults to `None`.
     pub text: Option<String>,
+
+    /// A timer in milliseconds, allowing the widget to easily store a particular relevant
+    /// time - for delayed actions, for example
+    pub timer: u32,
 }
 
 impl PersistentState {
@@ -89,6 +93,7 @@ impl Default for PersistentState {
             base_time_millis: 0,
             characters: Vec::default(),
             text: None,
+            timer: 0,
         }
     }
 }
@@ -109,9 +114,11 @@ pub struct InputModifiers {
 
 pub struct ContextInternal {
     resources: ResourceSet,
+    options: BuildOptions,
     themes: ThemeSet,
     frame_active: bool,
 
+    mouse_taken_switch_time: u32,
     mouse_taken_last_frame: Option<(String, RendGroup)>,
     mouse_in_rend_group_last_frame: Option<RendGroup>,
     top_rend_group: RendGroup,
@@ -271,6 +278,12 @@ impl ContextInternal {
         self.input_modifiers
     }
 
+    pub(crate) fn update_mouse_taken_switch_time(&mut self, taken: &Option<(String, RendGroup)>) {
+        if taken != &self.mouse_taken_last_frame {
+            self.mouse_taken_switch_time = self.time_millis;
+        }
+    }
+
     pub(crate) fn next_frame(&mut self, mouse_taken: Option<(String, RendGroup)>, mouse_in_rend_group: Option<RendGroup>) {
         let mut clear_modal = false;
         if let Some(modal) = self.modal.as_mut() {
@@ -309,12 +322,14 @@ pub struct Context {
 impl Context {
     pub(crate) fn new(
         resources: ResourceSet,
+        options: BuildOptions,
         themes: ThemeSet,
         display_size: Point,
         scale_factor: f32
     ) -> Context {
         let internal = ContextInternal {
             resources,
+            options,
             display_size,
             scale_factor,
             themes,
@@ -326,6 +341,7 @@ impl Context {
             mouse_pressed: [false; 3],
             mouse_clicked: [false; 3],
             mouse_wheel: Point::default(),
+            mouse_taken_switch_time: 0,
             mouse_taken_last_frame: None,
             mouse_in_rend_group_last_frame: None,
             top_rend_group: RendGroup::default(),
@@ -381,6 +397,23 @@ impl Context {
     pub fn wants_keyboard(&self) -> bool {
         let internal = self.internal.borrow();
         internal.modal.is_some() || internal.keyboard_focus_widget.is_some()
+    }
+
+    /// Returns the amount of time, in milliseconds, that the mouse has been hovering
+    /// (inside) of the widget that it is currently inside.  If `hovered` is true
+    /// in a [`WidgetState`](struct.WidgetState.html), then the mouse has been hovering
+    /// that widget for this amount of time.
+    pub fn mouse_time_in_current_widget(&self) -> u32 {
+        let internal = self.internal.borrow();
+        internal.time_millis - internal.mouse_taken_switch_time
+    }
+
+    /// Returns true if the mouse has been hovering over a widget at least as long
+    /// as the tooltip time configured in the [`BuildOptions`](struct.BuildOptions.html).
+    /// See `mouse_time_in_current_widget`.
+    pub fn tooltip_ready(&self) -> bool {
+        let internal = self.internal.borrow();
+        internal.time_millis - internal.mouse_taken_switch_time > internal.options.tooltip_time
     }
 
     pub(crate) fn internal(&self) -> &Rc<RefCell<ContextInternal>> {

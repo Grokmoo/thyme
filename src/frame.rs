@@ -177,6 +177,8 @@ impl Frame {
         }
 
         self.mouse_taken = Some((widget.id().to_string(), widget.rend_group()));
+        context.update_mouse_taken_switch_time(&self.mouse_taken);
+
         MouseState {
             clicked: was_taken_last && context.mouse_clicked(0),
             anim: AnimState::new(AnimStateKey::Hover),
@@ -278,6 +280,21 @@ impl Frame {
         self.context.wants_keyboard()
     }
 
+    /// Returns the amount of time, in milliseconds, that the mouse has been hovering
+    /// (inside) of the widget that it is currently inside.  If `hovered` is true
+    /// in a [`WidgetState`](struct.WidgetState.html), then the mouse has been hovering
+    /// that widget for this amount of time.
+    pub fn mouse_time_in_current_widget(&self) -> u32 {
+        self.context.mouse_time_in_current_widget()
+    }
+
+    /// Returns true if the mouse has been hovering over a widget at least as long
+    /// as the tooltip time configured in the [`BuildOptions`](struct.BuildOptions.html).
+    /// See `mouse_time_in_current_widget`.
+    pub fn tooltip_ready(&self) -> bool {
+        self.context.tooltip_ready()
+    }
+
     /// Sets the mouse cursor to the specified image with alignment.  If you are hiding the default
     /// OS cursor, this should be called at least once every frame you want to show a cursor.  If it
     /// is called multiple times, the last call will take effect.  The image will automatically inherit
@@ -353,7 +370,7 @@ impl Frame {
 
     # Example
     ```
-    fn set_timer(ui: &mut Frame) {
+    fn set_animation_timer(ui: &mut Frame) {
         // widget will reach its zero animation time in 10 seconds
         let time = ui.cur_time_millis();
         ui.set_base_time_millis("my_timer_widget", time + 10_000);
@@ -395,6 +412,32 @@ impl Frame {
         context.state(id).base_time_millis
     }
     
+    /// Sets the internal timer value of the [`PersistentState`](struct.PersistentState.html) for the widget
+    /// with the specified `id` to the specified time in milliseconds.  This time should probably be based on something
+    /// obtained from [`cur_time_millis`](#method.cur_time_millis) or [`base_time_millis`](#method.base_time_millis).
+    pub fn set_timer<T: Into<String>>(&mut self, id: T, time: u32) {
+        let mut context = self.context.internal().borrow_mut();
+        let state = context.state_mut(id);
+        state.timer = time;
+    }
+
+    /// Sets the internal timer value of the [`PersistentState`](struct.PersistentState.html) for the widget
+    /// with the specified `id` to the current internal time.
+    /// See [`set_timer`](#method.set_timer).
+    pub fn set_timer_to_now<T: Into<String>>(&mut self, id: T) {
+        let mut context = self.context.internal().borrow_mut();
+        let cur_time = context.time_millis();
+        let state = context.state_mut(id);
+        state.timer = cur_time;
+    }
+
+    /// Returns the current timer in millis of the [`PersistentState`](struct.PersistentState.html) for the
+    /// widget with the current `id`.
+    pub fn timer(&self, id: &str) -> u32 {
+        let context = self.context.internal().borrow();
+        context.state(id).timer
+    }
+
     /// Sets the internal `scroll` of the [`PersistentState`](struct.PersistentState.html) for
     /// the widget with the specified `id`.  Useful for [`Scrollpanes`](struct.WidgetBuilder.html#method.scrollpane).
     pub fn scroll(&self, id: &str) -> Point {

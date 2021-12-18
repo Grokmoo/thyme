@@ -1152,7 +1152,7 @@ impl<'a> WidgetBuilder<'a> {
 
         let state = WidgetState::new(anim_state, clicked, dragged);
 
-        if state.hovered {
+        if state.hovered && self.frame.tooltip_ready() {
             if let Some(tooltip) = self.data.tooltip.take() {
                 self.frame.tooltip("tooltip", tooltip);
             }

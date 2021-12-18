@@ -14,12 +14,17 @@ pub struct BuildOptions {
     /// [`check_live_reload`](struct.Context.html#method.check_live_reload), typically
     /// once between each frame.  The default value is `true`.
     pub enable_live_reload: bool,
+
+    /// The amount of time in milliseconds that a widget must be hovered for a tooltip
+    /// to show up.
+    pub tooltip_time: u32,
 }
 
 impl Default for BuildOptions {
     fn default() -> Self {
         Self {
             enable_live_reload: true,
+            tooltip_time: 0,
         }
     }
 }
@@ -30,6 +35,7 @@ impl Default for BuildOptions {
 /// [`build`](struct.ContextBuilder.html#method.build) to create your [`Context`](struct.Context.html).
 pub struct ContextBuilder {
     resources: ResourceSet,
+    options: BuildOptions,
 }
 
 impl ContextBuilder {
@@ -51,6 +57,7 @@ impl ContextBuilder {
     pub fn new(options: BuildOptions) -> ContextBuilder {
         ContextBuilder {
             resources: ResourceSet::new(options.enable_live_reload),
+            options,
         }
     }
 
@@ -157,6 +164,6 @@ impl ContextBuilder {
 
         self.resources.cache_data()?;
         let themes = self.resources.build_assets(renderer, scale_factor)?;
-        Ok(Context::new(self.resources, themes, display_size, scale_factor))
+        Ok(Context::new(self.resources, self.options, themes, display_size, scale_factor))
     }
 }
