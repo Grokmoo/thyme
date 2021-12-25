@@ -18,6 +18,9 @@ pub struct BuildOptions {
     /// The amount of time in milliseconds that a widget must be hovered for a tooltip
     /// to show up.
     pub tooltip_time: u32,
+
+    /// The number of lines that scrollbars will scroll per mouse scroll.
+    pub line_scroll: f32,
 }
 
 impl Default for BuildOptions {
@@ -25,6 +28,7 @@ impl Default for BuildOptions {
         Self {
             enable_live_reload: true,
             tooltip_time: 0,
+            line_scroll: 10.0,
         }
     }
 }

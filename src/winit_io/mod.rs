@@ -103,7 +103,7 @@ impl WinitIo {
                 match delta {
                     MouseScrollDelta::LineDelta(x, y) => {
                         // TODO configure line delta
-                        context.add_mouse_wheel(Point::new(*x * 10.0, *y * 10.0));
+                        context.add_mouse_wheel(Point::new(*x, *y));
                     }, MouseScrollDelta::PixelDelta(pos) => {
                         let x = pos.x as f32;
                         let y = pos.y as f32;
