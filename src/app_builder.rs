@@ -3,7 +3,7 @@ use std::path::{PathBuf};
 #[cfg(feature="wgpu_backend")]
 use std::sync::Arc;
 
-use crate::{Error, Point, ContextBuilder, Context, WinitIo, Frame};
+use crate::{Error, Point, BuildOptions, ContextBuilder, Context, WinitIo, Frame};
 
 /// An easy to use but still fairly configurable builder, allowing you to get
 /// a Thyme app up in just a few lines of code.  It is designed to cover the
@@ -19,6 +19,7 @@ pub struct AppBuilder {
     images: Option<AssetSource>,
     base_dir: PathBuf,
     logger: bool,
+    options: BuildOptions,
 }
 
 impl Default for AppBuilder {
@@ -51,7 +52,22 @@ impl AppBuilder {
             fonts: None,
             images: None,
             logger: false,
+            options: BuildOptions::default(),
         }
+    }
+
+    /// Set the time in milliseconds for tooltips to show.
+    /// See [`BuildOptions`](struct.BuildOptions.html)
+    pub fn with_tooltip_time(mut self, time_millis: u32) -> AppBuilder {
+        self.options.tooltip_time = time_millis;
+        self
+    }
+
+    /// Set the number of lines that scrollbars will scroll per mouse scroll.
+    /// See [`BuildOptions`](struct.BuildOptions.html)
+    pub fn with_line_scroll(mut self, line_scroll: f32) -> AppBuilder {
+        self.options.line_scroll = line_scroll;
+        self
     }
 
     /// If called, this App Builder will setup a default Thyme logger
@@ -218,7 +234,7 @@ impl AppBuilder {
         let mut io = crate::WinitIo::new(&event_loop, self.window_size)
             .map_err(Error::Winit)?;
         let mut renderer = crate::GLRenderer::new();
-        let mut context_builder = crate::ContextBuilder::with_defaults();
+        let mut context_builder = crate::ContextBuilder::new(self.options);
 
         self.register_resources(&mut context_builder)?;
 
@@ -251,7 +267,7 @@ impl AppBuilder {
             .map_err(Error::Winit)?;
         let mut renderer = crate::GliumRenderer::new(&display)
             .map_err(Error::Glium)?;
-        let mut context_builder = crate::ContextBuilder::with_defaults();
+        let mut context_builder = crate::ContextBuilder::new(self.options);
 
         self.register_resources(&mut context_builder)?;
 
@@ -290,7 +306,7 @@ impl AppBuilder {
         // create thyme backend
         let mut io = crate::WinitIo::new(&event_loop, self.window_size).map_err(Error::Winit)?;
         let mut renderer = crate::WgpuRenderer::new(Arc::clone(&device), Arc::clone(&queue));
-        let mut context_builder = crate::ContextBuilder::with_defaults();
+        let mut context_builder = crate::ContextBuilder::new(self.options);
 
         self.register_resources(&mut context_builder)?;
 
