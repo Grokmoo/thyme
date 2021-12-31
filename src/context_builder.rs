@@ -8,6 +8,7 @@ use crate::render::{Renderer, IO};
 /// Global options that may be specified when building the Thyme context with
 /// [`ContextBuilder`](struct.ContextBuilder.html).  These options
 /// cannot be changed afterwards.
+#[derive(Clone)]
 pub struct BuildOptions {
     /// Whether to enable background file monitoring for live reload.  Note that
     /// to actually make use of this feature, you will need to call

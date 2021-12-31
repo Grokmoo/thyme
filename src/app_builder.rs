@@ -234,7 +234,7 @@ impl AppBuilder {
         let mut io = crate::WinitIo::new(&event_loop, self.window_size)
             .map_err(Error::Winit)?;
         let mut renderer = crate::GLRenderer::new();
-        let mut context_builder = crate::ContextBuilder::new(self.options);
+        let mut context_builder = crate::ContextBuilder::new(self.options.clone());
 
         self.register_resources(&mut context_builder)?;
 
@@ -267,7 +267,7 @@ impl AppBuilder {
             .map_err(Error::Winit)?;
         let mut renderer = crate::GliumRenderer::new(&display)
             .map_err(Error::Glium)?;
-        let mut context_builder = crate::ContextBuilder::new(self.options);
+        let mut context_builder = crate::ContextBuilder::new(self.options.clone());
 
         self.register_resources(&mut context_builder)?;
 
@@ -306,7 +306,7 @@ impl AppBuilder {
         // create thyme backend
         let mut io = crate::WinitIo::new(&event_loop, self.window_size).map_err(Error::Winit)?;
         let mut renderer = crate::WgpuRenderer::new(Arc::clone(&device), Arc::clone(&queue));
-        let mut context_builder = crate::ContextBuilder::new(self.options);
+        let mut context_builder = crate::ContextBuilder::new(self.options.clone());
 
         self.register_resources(&mut context_builder)?;
 
