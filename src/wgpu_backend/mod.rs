@@ -7,7 +7,7 @@ use wgpu::{
     BindingResource, BindGroupLayout, BindGroupEntry, BindingType, BindGroupDescriptor, BindGroup, BindGroupLayoutDescriptor, BindGroupLayoutEntry,
     Device, Queue, RenderPipeline, RenderPass,
     TextureFormat, TextureViewDimension, TextureViewDescriptor, TextureSampleType,
-    SamplerDescriptor, AddressMode, FilterMode, PrimitiveState,
+    SamplerDescriptor, AddressMode, FilterMode, PrimitiveState, SamplerBindingType,
     VertexStepMode, vertex_attr_array,
     util::{BufferInitDescriptor, DeviceExt},
 };
@@ -134,10 +134,7 @@ impl WgpuRenderer {
                 BindGroupLayoutEntry {
                     binding: 1,
                     visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: BindingType::Sampler {
-                        comparison: false,
-                        filtering: true,
-                    },
+                    ty: BindingType::Sampler(SamplerBindingType::Filtering),
                     count: None,
                 },
             ],
@@ -187,7 +184,7 @@ impl WgpuRenderer {
                 strip_index_format: None,
                 front_face: wgpu::FrontFace::Ccw,
                 cull_mode: None,
-                clamp_depth: false,
+                unclipped_depth: false,
                 polygon_mode: wgpu::PolygonMode::Fill,
                 conservative: false,
             },
@@ -197,6 +194,7 @@ impl WgpuRenderer {
                 alpha_to_coverage_enabled: false,
             },
             depth_stencil: None,
+            multiview: None,
         };
 
         let image_pipe = device.create_render_pipeline(&pipe_desc);
