@@ -94,8 +94,8 @@ pub struct WidgetThemeDefinition {
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields, untagged)]
 pub enum CustomData {
-    Float(f32),
     Int(i32),
+    Float(f32),
     String(String),
 }
 
