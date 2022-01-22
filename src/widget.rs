@@ -583,11 +583,11 @@ impl<'a> WidgetBuilder<'a> {
         self
     }
 
-    /// Specify `tooltip` to display as a tooltip if this widget is hovered with the mouse.
+    /// Specify `tooltip` to display as a simple tooltip if this widget is hovered with the mouse.
     /// The tooltip will use the "tooltip" theme which must be present in the theme.
     /// This may also be specified in the widget's [`theme`](index.html).
     #[must_use]
-    pub fn tooltip<T: Into<String>>(mut self, tooltip: T) -> WidgetBuilder<'a> {
+    pub fn tooltip_text<T: Into<String>>(mut self, tooltip: T) -> WidgetBuilder<'a> {
         self.data.tooltip = Some(tooltip.into());
         self
     }
@@ -680,6 +680,33 @@ impl<'a> WidgetBuilder<'a> {
         self.data.recalc_pos_size = false;
         self
     }
+	
+	/// Helper to treat this widget as a tooltip.  The widget will be placed on top
+	/// of other widgets in its own render group.  Positioning will be based on the mouse
+	/// cursor position.
+	#[must_use]
+	pub fn render_as_tooltip(mut self) -> WidgetBuilder<'a> {
+		// recalculate pos size
+		let (state_moved, state_resize, display_size) = {
+            let internal = self.frame.context_internal().borrow();
+            let state = internal.state(&self.widget.id);
+            (state.moved, state.resize, internal.display_size())
+        };
+        let mouse = self.frame.mouse_rect();
+
+        if self.data.recalc_pos_size {
+            self.recalculate_pos_size(state_moved, state_resize);
+        }
+
+        self.widget.clip = Rect::new(Point::default(), display_size); // unclip
+		self.data.unparent = true; // unparent
+        self.data.next_render_group = NextRenderGroup::AlwaysTop; // always_top
+        
+        let x = mouse.right().min(display_size.x - self.widget.size.x);
+        let y = mouse.bot().min(display_size.y - self.widget.size.y);
+
+        self.screen_pos(x, y)
+	}
 
     /// Specify the position of the widget, with respect to its alignment within the parent.
     /// The `x` and `` values are in logical pixels.
@@ -1154,7 +1181,7 @@ impl<'a> WidgetBuilder<'a> {
 
         if state.hovered && self.frame.tooltip_ready() {
             if let Some(tooltip) = self.data.tooltip.take() {
-                self.frame.tooltip("tooltip", tooltip);
+                self.frame.tooltip_label("tooltip", tooltip);
             }
         }
 

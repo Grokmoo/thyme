@@ -525,7 +525,7 @@ impl Frame {
       text_align: Center
     ```
     **/
-    pub fn tooltip<T: Into<String>>(&mut self, theme: &str, label: T) {
+    pub fn tooltip_label<T: Into<String>>(&mut self, theme: &str, label: T) {
         let mouse = self.mouse_rect();
         let display_size = self.display_size();
 
