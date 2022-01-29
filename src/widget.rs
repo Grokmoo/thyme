@@ -704,8 +704,15 @@ impl<'a> WidgetBuilder<'a> {
         
         let x = mouse.right().min(display_size.x - self.widget.size.x);
         let y = mouse.bot().min(display_size.y - self.widget.size.y);
+        let mut pos = Point::new(x, y);
 
-        self.screen_pos(x, y)
+        // shift widget above the cursor if it would overlap
+        let widget_rect = Rect::new(pos, self.widget.size);
+        if widget_rect.is_inside(mouse.pos) {
+            pos.y = (mouse.pos.y - mouse.size.y - self.widget.size.y).max(0.0);
+        }
+
+        self.screen_pos(pos.x, pos.y)
 	}
 
     /// Specify the position of the widget, with respect to its alignment within the parent.
