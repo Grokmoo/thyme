@@ -95,7 +95,8 @@ impl Frame {
         output
     }
 
-    pub(crate) fn context(&self) -> &Context {
+    /// Returns the overall Thyme [`Context`](struct.Context.html).
+    pub fn context(&self) -> &Context {
         &self.context
     }
 

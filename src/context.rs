@@ -4,6 +4,8 @@ use std::rc::Rc;
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
+use serde::{Serialize, Deserialize};
+
 use crate::{BuildOptions, Error, Point, Frame, Rect, frame::{RendGroup, RendGroupDef}};
 use crate::{font::FontSummary, widget::Widget, image::ImageHandle, theme::ThemeSet, resource::ResourceSet};
 use crate::theme_definition::{AnimState, AnimStateKey};
@@ -37,7 +39,7 @@ fn reset_window_state(ui: &mut Frame, window_id: &str) {
 }
 ```
 */
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PersistentState {
     /// Whether the widget will be shown.  Defaults to true.
     pub is_open: bool,
@@ -124,13 +126,12 @@ pub struct ContextInternal {
     top_rend_group: RendGroup,
     check_set_top_rend_group: Option<String>,
 
-    modal: Option<Modal>,
-
     mouse_pressed_outside: [bool; 3],
-
     keyboard_focus_widget: Option<String>,
-    persistent_state: HashMap<String, PersistentState>,
     empty_persistent_state: PersistentState,
+
+    modal: Option<Modal>,
+    persistent_state: HashMap<String, PersistentState>,
 
     input_modifiers: InputModifiers,
     last_mouse_pos: Point,
@@ -594,6 +595,26 @@ impl Context {
         Ok(())
     }
 
+    /// Generates a [`SavedContext`](struct.SavedContext.html) from the current
+    /// context state.  This can be serialized to a file and restored later using
+    /// [`load`](struct.Context.html#load) to restore the Context state.
+    pub fn save(&self) -> SavedContext {
+        let internal = self.internal.borrow();
+        SavedContext {
+            modal: internal.modal.clone(),
+            persistent_state: internal.persistent_state.clone(),
+        }
+    }
+
+    /// Restores the specified [`SavedContext`](struct.SavedContext.html) to this
+    /// Context, restoring the overall UI state.  The [`SavedContext`](struct.SavedContext.html)
+    /// passed in should be generated from [`save`](struct.Context.html#save).
+    pub fn load(&mut self, save: SavedContext) {
+        let mut internal = self.internal.borrow_mut();
+        internal.modal = save.modal;
+        internal.persistent_state = save.persistent_state;
+    }
+
     /// Creates a [`Frame`](struct.Frame.html), the main object that should pass through
     /// your UI building functions and is responsible for constructing the widget tree.
     /// This method should be called each frame you want to draw / interact with the UI.
@@ -629,6 +650,7 @@ impl Context {
     }
 }
 
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub(crate) struct Modal {
     pub(crate) id: String,
     pub(crate) close_on_click_outside: bool,
@@ -645,4 +667,14 @@ impl Modal {
             prevent_close: true,
         }
     }
+}
+
+/**
+ * The serializable data associated with a [`Context`](struct.Context.html).  Created
+ * using [`Context.save`](struct.Context.html#save).
+ */
+#[derive(Deserialize, Serialize, Default, Debug)]
+pub struct SavedContext {
+    modal: Option<Modal>,
+    persistent_state: HashMap<String, PersistentState>,
 }
