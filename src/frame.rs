@@ -6,6 +6,7 @@ use crate::context::{Context, ContextInternal, InputModifiers};
 use crate::{
     AnimState, AnimStateKey, Rect, Point, WidgetBuilder, PersistentState, Align,
 };
+use crate::theme::ThemeSet;
 use crate::image::ImageHandle;
 use crate::widget::Widget;
 
@@ -253,20 +254,22 @@ impl Frame {
         context.input_modifiers()
     }
 
-    /// Returns the current mouse position and size, in logical pixels
-    pub fn mouse_rect(&self) -> Rect {
-        let context = self.context_internal().borrow();
-
+    // adjust the specified mouse position based on the frame's cursor and return the mouse rect
+    fn mouse_rect_for_pos(&self, mouse_pos: Point, themes: &ThemeSet) -> Rect {
         let (align, size) = if let Some((handle, align)) = self.mouse_cursor {
-            (align, context.themes().image(handle).base_size())
+            (align, themes.image(handle).base_size())
         } else {
             // TODO how to get platform mouse cursor size?
             (Align::TopLeft, Point::new(24.0, 24.0))
         };
 
-        let pos = context.mouse_pos() + align.adjust_for(size);
+        Rect::new(mouse_pos + align.adjust_for(size), size)
+    }
 
-        Rect::new(pos, size)
+    /// Returns the current mouse position and size, in logical pixels
+    pub fn mouse_rect(&self) -> Rect {
+        let context = self.context_internal().borrow();
+        self.mouse_rect_for_pos(context.mouse_pos(), context.themes())
     }
 
     /// Returns whether or not the Thyme UI wants the mouse this frame.
@@ -289,11 +292,14 @@ impl Frame {
         self.context.mouse_time_in_current_widget()
     }
 
-    /// Returns true if the mouse has been hovering over a widget at least as long
-    /// as the tooltip time configured in the [`BuildOptions`](struct.BuildOptions.html).
+    /// If the mouse has been hovering over a widget at least as long as the tooltip
+    /// time configured in the [`BuildOptions`](struct.BuildOptions.html), returns
+    /// the tooltip render position.  Otherwise, returns `None`.
     /// See `mouse_time_in_current_widget`.
-    pub fn tooltip_ready(&self) -> bool {
-        self.context.tooltip_ready()
+    pub fn tooltip_ready(&mut self) -> Option<Point> {
+        let mut context = self.context_internal().borrow_mut();
+        let mouse_rect = self.mouse_rect_for_pos(context.mouse_pos(), context.themes());
+        context.tooltip_ready(mouse_rect)
     }
 
     /// Sets the mouse cursor to the specified image with alignment.  If you are hiding the default

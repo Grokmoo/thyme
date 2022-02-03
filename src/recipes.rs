@@ -526,22 +526,7 @@ impl Frame {
     ```
     **/
     pub fn tooltip_label<T: Into<String>>(&mut self, theme: &str, label: T) {
-        let mouse = self.mouse_rect();
-        let display_size = self.display_size();
-
-        let mut rect = Rect::default();
-
-        let builder = self.start(theme)
-        .unclip()
-        .unparent()
-        .text(label)
-        .always_top()
-        .trigger_layout(&mut rect);
-
-        let x = mouse.right().min(display_size.x - rect.size.x);
-        let y = mouse.bot().min(display_size.y - rect.size.y);
-
-        builder.screen_pos(x, y).finish();
+        self.start(theme).text(label).render_as_tooltip().finish();
     }
 
     /**

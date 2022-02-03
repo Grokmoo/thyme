@@ -121,6 +121,7 @@ pub struct ContextInternal {
     frame_active: bool,
 
     mouse_taken_switch_time: u32,
+    mouse_taken_switch_position: Option<Point>,
     mouse_taken_last_frame: Option<(String, RendGroup)>,
     mouse_in_rend_group_last_frame: Option<RendGroup>,
     top_rend_group: RendGroup,
@@ -282,7 +283,22 @@ impl ContextInternal {
     pub(crate) fn update_mouse_taken_switch_time(&mut self, taken: &Option<(String, RendGroup)>) {
         if taken != &self.mouse_taken_last_frame {
             self.mouse_taken_switch_time = self.time_millis;
+            self.mouse_taken_switch_position = None;
         }
+    }
+
+    pub(crate) fn tooltip_ready(&mut self, mouse_rect: Rect) -> Option<Point> {
+        // do not allow tooltip to show while a mouse button is pressed
+        if self.mouse_pressed.iter().any(|p| *p) {
+            return None;
+        }
+
+        let ready = self.time_millis - self.mouse_taken_switch_time > self.options.tooltip_time;
+        if ready && self.mouse_taken_switch_position.is_none() {
+            self.mouse_taken_switch_position = Some(Point::new(mouse_rect.left(), mouse_rect.bot()));
+        }
+
+        self.mouse_taken_switch_position
     }
 
     pub(crate) fn next_frame(&mut self, mouse_taken: Option<(String, RendGroup)>, mouse_in_rend_group: Option<RendGroup>) {
@@ -343,6 +359,7 @@ impl Context {
             mouse_clicked: [false; 3],
             mouse_wheel: Point::default(),
             mouse_taken_switch_time: 0,
+            mouse_taken_switch_position: None,
             mouse_taken_last_frame: None,
             mouse_in_rend_group_last_frame: None,
             top_rend_group: RendGroup::default(),
@@ -407,14 +424,6 @@ impl Context {
     pub fn mouse_time_in_current_widget(&self) -> u32 {
         let internal = self.internal.borrow();
         internal.time_millis - internal.mouse_taken_switch_time
-    }
-
-    /// Returns true if the mouse has been hovering over a widget at least as long
-    /// as the tooltip time configured in the [`BuildOptions`](struct.BuildOptions.html).
-    /// See `mouse_time_in_current_widget`.
-    pub fn tooltip_ready(&self) -> bool {
-        let internal = self.internal.borrow();
-        internal.time_millis - internal.mouse_taken_switch_time > internal.options.tooltip_time
     }
 
     pub(crate) fn internal(&self) -> &Rc<RefCell<ContextInternal>> {
@@ -501,6 +510,10 @@ impl Context {
         }
 
         internal.mouse_pressed[index] = pressed;
+
+        // do not allow tooltip to show when mouse is pressed
+        internal.mouse_taken_switch_position = None;
+        internal.mouse_taken_switch_time = internal.time_millis;
     }
 
     /// Pushes a character (that was received from the keyboard) to thyme, to be

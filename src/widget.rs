@@ -686,9 +686,10 @@ impl<'a> WidgetBuilder<'a> {
 	/// cursor position.
 	#[must_use]
 	pub fn render_as_tooltip(mut self) -> WidgetBuilder<'a> {
-        if !self.frame.tooltip_ready() {
-            return self.visible(false);
-        }
+        let tooltip_pos = match self.frame.tooltip_ready() {
+            None => return self.visible(false),
+            Some(pos) => pos,
+        };
 
 		// recalculate pos size
 		let (state_moved, state_resize, display_size) = {
@@ -706,8 +707,8 @@ impl<'a> WidgetBuilder<'a> {
 		self.data.unparent = true; // unparent
         self.data.next_render_group = NextRenderGroup::AlwaysTop; // always_top
         
-        let x = mouse.right().min(display_size.x - self.widget.size.x);
-        let y = mouse.bot().min(display_size.y - self.widget.size.y);
+        let x = tooltip_pos.x.min(display_size.x - self.widget.size.x);
+        let y = tooltip_pos.y.min(display_size.y - self.widget.size.y);
         let mut pos = Point::new(x, y);
 
         // shift widget above the cursor if it would overlap
@@ -1190,7 +1191,7 @@ impl<'a> WidgetBuilder<'a> {
 
         let state = WidgetState::new(anim_state, clicked, dragged);
 
-        if state.hovered && self.frame.tooltip_ready() {
+        if state.hovered {
             if let Some(tooltip) = self.data.tooltip.take() {
                 self.frame.tooltip_label("tooltip", tooltip);
             }
