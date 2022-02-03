@@ -686,6 +686,10 @@ impl<'a> WidgetBuilder<'a> {
 	/// cursor position.
 	#[must_use]
 	pub fn render_as_tooltip(mut self) -> WidgetBuilder<'a> {
+        if !self.frame.tooltip_ready() {
+            return self.visible(false);
+        }
+
 		// recalculate pos size
 		let (state_moved, state_resize, display_size) = {
             let internal = self.frame.context_internal().borrow();
