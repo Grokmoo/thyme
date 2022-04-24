@@ -73,7 +73,6 @@ impl Widget {
         let raw_size = Point::new(theme.width.unwrap_or_default(), theme.height.unwrap_or_default());
         let width_from = theme.width_from.unwrap_or_default();
         let height_from = theme.height_from.unwrap_or_default();
-        let size = size(parent, raw_size, border, font, width_from, height_from);
 
         let mut align = theme.align.unwrap_or(parent.child_align);
         let mut manual_pos = theme.pos.is_some() || align != parent.child_align;
@@ -83,7 +82,7 @@ impl Widget {
             parent.scroll
         };
         let mut raw_pos = theme.pos.unwrap_or(cursor_pos) + parent.scroll;
-        let mut pos = pos(parent, raw_pos, size, align);
+        let mut pos = pos(parent, raw_pos, raw_size, align);
         let mut recalc_pos_size = true;
 
         if let Some(screen_pos) = theme.screen_pos {
@@ -129,7 +128,7 @@ impl Widget {
             scroll: Point::default(),
             cursor: Point::default(),
             border,
-            size,
+            size: raw_size,
             id,
             rend_group: RendGroup::default(),
             anim_state: AnimState::normal(),
@@ -281,29 +280,6 @@ impl WidgetState {
     }
 }
 
-fn size(
-    parent: &Widget,
-    size: Point,
-    border: Border,
-    font: Option<FontSummary>,
-    width_from: WidthRelative,
-    height_from: HeightRelative,
-) -> Point {
-    let x = match width_from {
-        WidthRelative::Children => size.x, // this will be added to after children are layed out
-        WidthRelative::Normal => size.x,
-        WidthRelative::Parent => size.x + parent.size.x - parent.border.horizontal(),
-    };
-    let y = match height_from {
-        HeightRelative::Children => size.y, // this will be added to after children are layed out
-        HeightRelative::Normal => size.y,
-        HeightRelative::Parent => size.y + parent.size.y - parent.border.vertical(),
-        HeightRelative::FontLine => size.y + font.map_or(0.0,
-            |sum| sum.line_height) + border.vertical(),
-    };
-    Point { x, y }
-}
-
 fn pos(parent: &Widget, pos: Point, self_size: Point, align: Align) -> Point {
     let size = parent.size;
     let border = parent.border;
@@ -439,30 +415,28 @@ impl<'a> WidgetBuilder<'a> {
     }
 
     fn recalculate_pos_size(&mut self, state_moved: Point, state_resize: Point) {
-        {
-            let parent = self.frame.widget(self.parent);
-            let widget = &self.widget;
-            let size = size (
-                parent,
-                self.data.raw_size,
-                widget.border,
-                widget.font,
-                self.data.width_from,
-                self.data.height_from
-            );
+        let parent = self.frame.widget(self.parent);
+        let widget = &self.widget;
 
-            self.widget.size = size;
-        }
+        let raw = self.data.raw_size;
+        let x = match self.data.width_from {
+            WidthRelative::Children => raw.x, // this will be added to after children are layed out
+            WidthRelative::Normal => raw.x,
+            WidthRelative::Parent => raw.x + parent.size.x - parent.border.horizontal(),
+            WidthRelative::Text => raw.x + self.calculate_single_line_text_width() + 2.0 * widget.border.horizontal(),
+        };
+        let y = match self.data.height_from {
+            HeightRelative::Children => raw.y, // this will be added to after children are layed out
+            HeightRelative::Normal => raw.y,
+            HeightRelative::Parent => raw.y + parent.size.y - parent.border.vertical(),
+            HeightRelative::FontLine => raw.y + widget.font.map_or(0.0, |sum| sum.line_height) + widget.border.vertical(),
+        };
+        let self_size = Point { x, y };
 
-        {
-            let parent = self.frame.widget(self.parent);
-            let widget = &self.widget;
-            let pos = pos(parent, self.data.raw_pos, widget.size, self.data.align);
-            self.widget.pos = pos + state_moved;
-        }
+        let pos = pos(parent, self.data.raw_pos, self_size, self.data.align);
 
-        self.widget.size = self.widget.size + state_resize;
-
+        self.widget.pos = pos + state_moved;
+        self.widget.size = self_size + state_resize;
         self.data.recalc_pos_size = false;
     }
 
@@ -972,15 +946,32 @@ impl<'a> WidgetBuilder<'a> {
         self
     }
 
-    fn calculate_font_layout_cursor(&self, cursor: Point) -> Option<Point> {
-        let text = match &self.widget.text {
-            None => return None,
-            Some(text) => text,
+    fn calculate_single_line_text_width(&self) -> f32 {
+        let (text, font_def) = match (&self.widget.text, self.widget.font) {
+            (Some(text), Some(font)) => (text, font),
+            _ => return 0.0,
         };
 
-        let font_def = match self.widget.font {
-            None => return None,
-            Some(def) => def,
+        let internal = self.frame.context_internal().borrow();
+        let font = internal.themes().font(font_def.handle);
+
+        let mut cursor = Point::default();
+        let params = FontDrawParams {
+            area_size: Point::new(f32::MAX, f32::MAX),
+            pos: Point::default(),
+            indent: self.widget.text_indent(),
+            align: Align::TopLeft,
+        };
+
+        font.layout(params, text, &mut cursor);
+
+        cursor.x
+    }
+
+    fn calculate_font_layout_cursor(&self, cursor: Point) -> Option<Point> {
+        let (text, font_def) = match (&self.widget.text, self.widget.font) {
+            (Some(text), Some(font)) => (text, font),
+            _ => return None,
         };
 
         let widget = &self.widget;
@@ -1126,6 +1117,8 @@ impl<'a> WidgetBuilder<'a> {
         let widget_index = self.frame.num_widgets();
         self.frame.push_widget(self.widget);
 
+        let mut rebound_rend_group = false;
+
         // if there is a child function
         if let Some(f) = f {
             // push the max_child pos and parent index
@@ -1144,27 +1137,23 @@ impl<'a> WidgetBuilder<'a> {
             if self.data.height_from == HeightRelative::Children {
                 let border = self.frame.widget(widget_index).border().bot;
                 self_bounds.size.y += this_children_max_bounds.size.y + border;
-
                 self.frame.widget_mut(widget_index).size.y += this_children_max_bounds.size.y + border;
-
-                // if we just created the render group, rebound it
-                match self.data.next_render_group {
-                    NextRenderGroup::None => (),
-                    NextRenderGroup::Normal | NextRenderGroup::AlwaysTop => self.frame.rebound_cur_render_group(self_bounds),
-                }
+                rebound_rend_group = true;
             }
 
             if self.data.width_from == WidthRelative::Children {
                 let border = self.frame.widget(widget_index).border().right;
                 self_bounds.size.x += this_children_max_bounds.size.x + border;
-
                 self.frame.widget_mut(widget_index).size.x += this_children_max_bounds.size.x + border;
-                
-                // if we just created the render group, rebound it
-                match self.data.next_render_group {
-                    NextRenderGroup::None => (),
-                    NextRenderGroup::Normal | NextRenderGroup::AlwaysTop => self.frame.rebound_cur_render_group(self_bounds),
-                }
+                rebound_rend_group = true;
+            }
+        }
+
+        if rebound_rend_group {
+            // if we just created the render group, rebound it
+            match self.data.next_render_group {
+                NextRenderGroup::None => (),
+                NextRenderGroup::Normal | NextRenderGroup::AlwaysTop => self.frame.rebound_cur_render_group(self_bounds),
             }
         }
 

@@ -10,11 +10,12 @@ widgets:
     children:
       live_reload:
         from: check_button
-        size: [125, 25]
+        height_from: Parent
+        size: [125, 0]
         text: "Live Reload"
       theme_choice:
         from: combo_box
-        size_from: [Normal, Parent]
+        height_from: Parent
         size: [120, 0]
         tooltip: "Select a different theme"
   bench:

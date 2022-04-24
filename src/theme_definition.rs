@@ -539,6 +539,9 @@ pub enum WidthRelative {
 
     /// Width is equal to the parent widget's inner width plus the `x` field of the widget's `size`.
     Parent,
+
+    /// Width is equal to the text layout width plus the `x` field of the widget's `size`.
+    Text,
 }
 
 impl Default for WidthRelative {

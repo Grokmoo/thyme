@@ -40,8 +40,8 @@ widgets:
     background: gui/small_button_normal
     font: small
     text_align: Center
-    size: [200, 30]
-    border: { all: 2 }
+    size_from: [Text, FontLine]
+    border: { all: 5 }
   greyed_out:
     background: gui/greyed_out
   horizontal_slider:
