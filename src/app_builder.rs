@@ -226,10 +226,10 @@ impl AppBuilder {
                 .map_err(Error::Gl)?
         };
 
-        let _gl = {
+        {
             let gl_context = windowed_context.context();
             gl::load_with(|ptr| gl_context.get_proc_address(ptr) as *const _)
-        };
+        }
 
         let mut io = crate::WinitIo::new(&event_loop, self.window_size)
             .map_err(Error::Winit)?;

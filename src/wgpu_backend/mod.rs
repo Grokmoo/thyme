@@ -516,7 +516,7 @@ impl WgpuRenderer {
     }
 }
 
-impl<'a> Renderer for WgpuRenderer {
+impl Renderer for WgpuRenderer {
     fn register_font(
         &mut self,
         handle: crate::render::FontHandle,

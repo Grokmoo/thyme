@@ -35,10 +35,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .make_current().map_err(|(_context, e)| e)?
     };
 
-    let _gl = {
+    {
         let gl_context = windowed_context.context();
         gl::load_with(|ptr| gl_context.get_proc_address(ptr) as *const _)
-    };
+    }
 
     // create thyme backend
     let mut renderer = thyme::GLRenderer::new();
