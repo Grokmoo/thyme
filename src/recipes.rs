@@ -252,6 +252,30 @@ impl Frame {
     }
 
     /**
+    A spinner, but without any restriction on maximum or minimum values.  If there is
+    a minimum or maximum, it is assumed that
+    the user is allowed to wrap around from minimum to maximum or vice-versa.  
+    See [`spinner`](struct.WidgetBuilder.html#method.spinner).
+    */
+    pub fn wrapping_spinner<T: Display>(&mut self, theme: &str, value: T) -> i32 {
+        let mut delta = 0;
+
+        self.start(theme).children(|ui| {
+            if ui.start("decrease").finish().clicked {
+                delta = -1;
+            }
+
+            ui.label("value", value.to_string());
+
+            if ui.start("increase").finish().clicked {
+                delta = 1;
+            }
+        });
+
+        delta
+    }
+
+    /**
     A tree widget.  Depending on its internal `expanded` state (see [`Frame.is_expanded`](struct.Frame.html#method.is_expanded), this
     widget will either show both its `title` and `children` widgets, or just its `title` widgets.  It is intended that
     you use [`height_from`](struct.WidgetBuilder.html#method.height_from) with [`Children`](enum.HeightRelative.html).
