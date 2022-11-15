@@ -240,7 +240,7 @@ impl GliumRenderer {
                     };
                     target.draw(
                         vertices.slice(group.start..group.end).unwrap(),
-                        &indices,
+                        indices,
                         &self.font_program,
                         &uniforms,
                         &self.params
@@ -253,7 +253,7 @@ impl GliumRenderer {
                         matrix: self.matrix,
                     };
                     target.draw(vertices.slice(group.start..group.end).unwrap(),
-                        &indices,
+                        indices,
                         &self.base_program,
                         &uniforms,
                         &self.params

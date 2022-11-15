@@ -31,9 +31,8 @@ impl Program {
         transposed: bool,
         matrix: &[[f32; 4]; 4],
     ) {
-        let transposed = if transposed { 1 } else { 0 };
         unsafe {
-            gl::UniformMatrix4fv(uniform_location, 1, transposed, matrix.as_ptr() as _);
+            gl::UniformMatrix4fv(uniform_location, 1, transposed as u8, matrix.as_ptr() as _);
         }
     }
 
