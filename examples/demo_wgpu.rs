@@ -140,5 +140,6 @@ fn get_surface_config(width: u32, height: u32) -> wgpu::SurfaceConfiguration {
         width,
         height,
         present_mode: wgpu::PresentMode::AutoVsync,
+        alpha_mode: wgpu::CompositeAlphaMode::Auto,
     }
 }

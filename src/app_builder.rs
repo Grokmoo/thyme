@@ -645,6 +645,7 @@ fn surface_config(width: u32, height: u32) -> wgpu::SurfaceConfiguration {
         format: wgpu::TextureFormat::Bgra8Unorm,
         width,
         height,
-        present_mode: wgpu::PresentMode::Mailbox,
+        present_mode: wgpu::PresentMode::AutoVsync,
+        alpha_mode: wgpu::CompositeAlphaMode::Auto,
     }
 }

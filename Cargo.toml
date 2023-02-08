@@ -53,7 +53,7 @@ pulldown-cmark = { version = "0.9", default-features = false }
 
 image = { version = "0.24", optional = true, default_features = false, features = [ "png", "jpeg" ] }
 glium = { version = "0.32", optional = true }
-wgpu = { version = "0.13", optional = true, features = [ "spirv" ] }
+wgpu = { version = "0.14", optional = true, features = [ "spirv" ] }
 futures = { version = "0.3", optional = true }
 bytemuck = { version = "1", optional = true }
 gl = { version = "0.14", optional = true}
