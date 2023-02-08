@@ -25,8 +25,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build(&events_loop)?;
 
     // setup WGPU
-    let instance = wgpu::Instance::new(wgpu::Backends::PRIMARY);
-    let surface = unsafe { instance.create_surface(&window) };
+    let instance_desc = wgpu::InstanceDescriptor {
+        backends: wgpu::Backends::PRIMARY,
+        dx12_shader_compiler: wgpu::Dx12Compiler::Fxc,
+    };
+    let instance = wgpu::Instance::new(instance_desc);
+    let surface = unsafe { instance.create_surface(&window).map_err(thyme::Error::WgpuSurface)? };
     let (_adapter, device, queue) = futures::executor::block_on(setup_wgpu(&instance, &surface));
     let surface_config = get_surface_config(window_size[0] as u32, window_size[1] as u32);
     surface.configure(&device, &surface_config);
@@ -141,5 +145,6 @@ fn get_surface_config(width: u32, height: u32) -> wgpu::SurfaceConfiguration {
         height,
         present_mode: wgpu::PresentMode::AutoVsync,
         alpha_mode: wgpu::CompositeAlphaMode::Auto,
+        view_formats: vec![],
     }
 }

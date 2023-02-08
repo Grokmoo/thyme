@@ -461,6 +461,7 @@ impl WgpuRenderer {
             format,
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             label: None,
+            view_formats: &[],
         });
 
         let bytes = image_data.len();
@@ -491,7 +492,7 @@ impl WgpuRenderer {
             mag_filter: filter,
             min_filter: filter,
             mipmap_filter: filter,
-            lod_min_clamp: -100.0,
+            lod_min_clamp: 0.0,
             lod_max_clamp: 100.0,
             compare: None,
             anisotropy_clamp: None,

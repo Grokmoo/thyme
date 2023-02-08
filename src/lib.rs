@@ -460,6 +460,10 @@ pub enum Error {
     /// An error originating from OpenGl
     #[cfg(feature="gl_backend")]
     Gl(crate::gl_backend::GlError),
+
+    /// An error originating from Wgpu's create surface routine
+    #[cfg(feature="wgpu_backend")]
+    WgpuSurface(wgpu::CreateSurfaceError),
 }
 
 impl std::fmt::Display for Error {
@@ -481,6 +485,9 @@ impl std::fmt::Display for Error {
 
             #[cfg(feature="gl_backend")]
             Gl(error) => write!(f, "OpenGL Error: {}", error),
+
+            #[cfg(feature="wgpu_backend")]
+            WgpuSurface(error) => write!(f, "Wgpu surface error: {}", error),
         }
     }
 }
@@ -504,6 +511,9 @@ impl std::error::Error for Error {
 
             #[cfg(feature="gl_backend")]
             Gl(error) => Some(error),
+
+            #[cfg(feature="wgpu_backend")]
+            WgpuSurface(error) => Some(error),
         }
     }
 }

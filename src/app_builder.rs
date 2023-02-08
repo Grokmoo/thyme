@@ -297,8 +297,12 @@ impl AppBuilder {
             .build(&event_loop).map_err(crate::winit_io::WinitError::Os).map_err(Error::Winit)?;
 
         // setup WGPU
-        let instance = wgpu::Instance::new(wgpu::Backends::PRIMARY);
-        let surface = unsafe { instance.create_surface(&window) };
+        let instance_desc = wgpu::InstanceDescriptor {
+            backends: wgpu::Backends::PRIMARY,
+            dx12_shader_compiler: wgpu::Dx12Compiler::Fxc,
+        };
+        let instance = wgpu::Instance::new(instance_desc);
+        let surface = unsafe { instance.create_surface(&window).map_err(Error::WgpuSurface)? };
         let (_adapter, device, queue) = futures::executor::block_on(setup_wgpu(&instance, &surface));
         let surface_config = surface_config(self.window_size.x as u32, self.window_size.y as u32);
         surface.configure(&device, &surface_config);
@@ -647,5 +651,6 @@ fn surface_config(width: u32, height: u32) -> wgpu::SurfaceConfiguration {
         height,
         present_mode: wgpu::PresentMode::AutoVsync,
         alpha_mode: wgpu::CompositeAlphaMode::Auto,
+        view_formats: vec![],
     }
 }
