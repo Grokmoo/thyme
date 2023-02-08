@@ -1,4 +1,4 @@
-use pulldown_cmark::{Alignment, Event, Options, Parser, Tag};
+use pulldown_cmark::{Alignment, Event, Options, Parser, Tag, HeadingLevel};
 
 use crate::{Frame, Rect, Point, Align, WidthRelative, Color};
 
@@ -307,11 +307,11 @@ impl MarkdownState {
     fn start_tag(&mut self, ui: &mut Frame, tag: Tag) {
         match tag {
             Tag::Paragraph => self.size = SizeMode::Paragraph,
-            Tag::Heading(level) => {
+            Tag::Heading(level, _, _) => {
                 self.set_size(match level {
-                    1 => SizeMode::Heading1,
-                    2 => SizeMode::Heading2,
-                    3 => SizeMode::Heading3,
+                    HeadingLevel::H1 => SizeMode::Heading1,
+                    HeadingLevel::H2 => SizeMode::Heading2,
+                    HeadingLevel::H3 => SizeMode::Heading3,
                     _ => SizeMode::Paragraph,
                 });
             },
@@ -369,7 +369,7 @@ impl MarkdownState {
             Tag::Paragraph => {
                 self.new_line(ui, 1.5);
             },
-            Tag::Heading(_) => {
+            Tag::Heading(_, _, _) => {
                 self.set_size(SizeMode::Paragraph);
                 self.new_line(ui, 1.5);
             },

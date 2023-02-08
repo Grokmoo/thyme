@@ -44,18 +44,18 @@ gl_backend = ["gl", "glutin", "memoffset"]
 log = { version = "0.4" }
 serde = { version = "1", features = [ "derive" ] }
 rusttype = { version = "0.9" }
-winit = "0.26"
+winit = "0.27"
 parking_lot = { version = "0.11" }
 notify = { version = "4" }
 rustc-hash = "1"
 serde_yaml = "0.8"
-pulldown-cmark = { version = "0.8", default-features = false }
+pulldown-cmark = { version = "0.9", default-features = false }
 
-image = { version = "0.23", optional = true, default_features = false, features = [ "png", "jpeg" ] }
-glium = { version = "0.31", optional = true }
+image = { version = "0.24", optional = true, default_features = false, features = [ "png", "jpeg" ] }
+glium = { version = "0.32", optional = true }
 wgpu = { version = "0.12", optional = true, features = [ "spirv" ] }
 futures = { version = "0.3", optional = true }
 bytemuck = { version = "1", optional = true }
 gl = { version = "0.14", optional = true}
-glutin = { version = "0.28", optional = true}
-memoffset = { version = "0.6", optional = true}
+glutin = { version = "0.29", optional = true}
+memoffset = { version = "0.8", optional = true}
