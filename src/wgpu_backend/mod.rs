@@ -78,9 +78,9 @@ impl WgpuRenderer {
         glslc -fshader-stage=fragment -fentry-point=main -o frag_font.spirv frag_font.glsl
         ```
         */
-        let vert_shader = device.create_shader_module(&create_spirv!("shaders/vert.spirv"));
-        let frag_shader = device.create_shader_module(&create_spirv!("shaders/frag.spirv"));
-        let frag_font_shader = device.create_shader_module(&create_spirv!("shaders/frag_font.spirv"));
+        let vert_shader = device.create_shader_module(create_spirv!("shaders/vert.spirv"));
+        let frag_shader = device.create_shader_module(create_spirv!("shaders/frag.spirv"));
+        let frag_font_shader = device.create_shader_module(create_spirv!("shaders/frag_font.spirv"));
 
         // setup the view matrix
         let view_matrix_buffer = device.create_buffer(&BufferDescriptor {
@@ -161,7 +161,7 @@ impl WgpuRenderer {
             fragment: Some(wgpu::FragmentState {
                 module: &frag_shader,
                 entry_point: "main",
-                targets: &[
+                targets: &[Some(
                 wgpu::ColorTargetState {
                     format: TextureFormat::Bgra8Unorm,
                     blend: Some(wgpu::BlendState {
@@ -177,7 +177,7 @@ impl WgpuRenderer {
                         }
                     }),
                     write_mask: ColorWrites::ALL,
-                }],
+                })],
             }),
             primitive: PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
@@ -202,7 +202,7 @@ impl WgpuRenderer {
         pipe_desc.fragment = Some(wgpu::FragmentState {
             module: &frag_font_shader,
             entry_point: "main",
-            targets: &[
+            targets: &[Some(
             wgpu::ColorTargetState {
                 format: TextureFormat::Bgra8Unorm,
                 blend: Some(wgpu::BlendState {
@@ -218,7 +218,7 @@ impl WgpuRenderer {
                     }
                 }),
                 write_mask: ColorWrites::ALL,
-            }],
+            })],
         });
 
         let font_pipe = device.create_render_pipeline(&pipe_desc);

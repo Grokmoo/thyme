@@ -410,14 +410,14 @@ impl WgpuApp {
                     {
                         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                             label: None,
-                            color_attachments: &[wgpu::RenderPassColorAttachment {
+                            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                                 view: &view,
                                 resolve_target: None,
                                 ops: wgpu::Operations {
                                     load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                                     store: true,
                                 },
-                            }],
+                            })],
                             depth_stencil_attachment: None,
                         });
     

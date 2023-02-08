@@ -75,14 +75,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     {
                         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                             label: None,
-                            color_attachments: &[wgpu::RenderPassColorAttachment {
+                            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                                 view: &view,
                                 resolve_target: None,
                                 ops: wgpu::Operations {
                                     load: wgpu::LoadOp::Clear(wgpu::Color { r: 0.5, g: 0.5, b: 0.5, a: 1.0 }),
                                     store: true,
                                 },
-                            }],
+                            })],
                             depth_stencil_attachment: None,
                         });
 
@@ -139,6 +139,6 @@ fn get_surface_config(width: u32, height: u32) -> wgpu::SurfaceConfiguration {
         format: wgpu::TextureFormat::Bgra8Unorm,
         width,
         height,
-        present_mode: wgpu::PresentMode::Mailbox,
+        present_mode: wgpu::PresentMode::AutoVsync,
     }
 }
