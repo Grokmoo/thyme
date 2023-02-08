@@ -1,3 +1,4 @@
+#![allow(clippy::uninlined_format_args)]
 //! A demo RPG character sheet application.  This file contains the common code including
 //! ui layout and logic.  `demo_glium.rs` and `demo_wgpu.rs` both use this file.
 //! This file contains example uses of many of Thyme's features.

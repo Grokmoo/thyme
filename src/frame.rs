@@ -667,7 +667,7 @@ pub(crate) struct RendGroupDef {
 }
 
 impl RendGroupDef {
-    pub(crate) fn iter<'a, 'b>(&'a self, widgets: &'b [Widget]) -> impl Iterator<Item=&'b Widget> {
+    pub(crate) fn iter<'b>(&self, widgets: &'b [Widget]) -> impl Iterator<Item=&'b Widget> {
         let group = self.group;
         widgets.iter().skip(self.start).filter(move |widget| widget.rend_group() == group).take(self.num + 1)
     }

@@ -1,4 +1,5 @@
 #![allow(clippy::upper_case_acronyms)]
+#![allow(clippy::uninlined_format_args)]
 /*!
 Thyme is a highly customizable, themable immediate mode GUI toolkit for Rust.
 
