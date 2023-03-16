@@ -27,8 +27,9 @@ pub fn register_assets(context_builder: &mut ContextBuilder) {
     context_builder.register_font_from_file("Roboto-BoldItalic", Path::new("examples/data/fonts/Roboto-BoldItalic.ttf"));
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Default)]
 enum ThemeChoice {
+    #[default]
     Pixels,
     Fantasy,
     Transparent,
@@ -53,12 +54,6 @@ impl ThemeChoice {
             ThemeChoice::Golden => "examples/data/themes/golden.yml",
             ThemeChoice::NoImage => "examples/data/themes/no_image.yml",
         }
-    }
-}
-
-impl Default for ThemeChoice {
-    fn default() -> Self {
-        ThemeChoice::Pixels
     }
 }
 
@@ -137,8 +132,9 @@ impl Character {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Default)]
 enum Race {
+    #[default]
     Human,
     Elf,
     Dwarf,
@@ -155,12 +151,6 @@ impl Race {
 impl std::fmt::Display for Race {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self)
-    }
-}
-
-impl Default for Race {
-    fn default() -> Self {
-        Race::Human
     }
 }
 

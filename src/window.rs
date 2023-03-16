@@ -88,7 +88,7 @@ impl<'a> WindowBuilder<'a> {
     /// See [`WidgetBuilder.new_render_group`](struct.WidgetBuilder.html#method.new_render_group)
     #[must_use]
     pub fn cancel_render_group(mut self) -> WindowBuilder<'a> {
-        self.builder.set_next_render_group(crate::widget::NextRenderGroup::None);
+        self.builder.set_next_render_group(None);
         self
     }
 

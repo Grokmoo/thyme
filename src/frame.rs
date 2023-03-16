@@ -66,7 +66,7 @@ impl Frame {
                 group: cur_rend_group,
                 start: 0,
                 num: 0,
-                always_top: false,
+                order: RendGroupOrder::Normal,
             }],
             parent_index: 0,
             in_modal_tree: false,
@@ -492,7 +492,7 @@ impl Frame {
     /// When a modal is open, only the modal and its children may receive input.  There may be only one modal open at a time.
     /// If the specified `id` is closed, i.e. via [`close`](#method.close), the modal state ends.
     pub fn open_modal<T: Into<String>>(&mut self, id: T) {
-        let id = id.into();
+        let id: String = id.into();
 
         let mut context = self.context.internal().borrow_mut();
         context.set_top_rend_group_id(&id);
@@ -597,7 +597,7 @@ impl Frame {
         self.cur_rend_group = group;
     }
 
-    pub(crate) fn next_render_group(&mut self, rect: Rect, id: String, always_top: bool) {
+    pub(crate) fn next_render_group(&mut self, rect: Rect, id: String, order: RendGroupOrder) {
         let widgets_len = self.widgets.len();
         let index = self.render_groups.len() as u16;
         let cur_rend_group = RendGroup { index };
@@ -608,7 +608,7 @@ impl Frame {
             group: cur_rend_group,
             start: widgets_len,
             num: 0,
-            always_top,
+            order,
         });
         self.cur_rend_group = cur_rend_group;
     }
@@ -628,12 +628,10 @@ impl Frame {
 
         let mut render_groups = self.render_groups;
         render_groups.sort_by_key(|group| {
-            if group.always_top {
-                -1
-            } else if group.group == top_rend_group {
-                0
-            } else {
-                1
+            match group.order {
+                RendGroupOrder::Normal => if group.group == top_rend_group { 1 } else { 2 },
+                RendGroupOrder::AlwaysTop => 0,
+                RendGroupOrder::AlwaysBottom => 3,
             }
         });
 
@@ -656,6 +654,14 @@ pub(crate) struct RendGroup {
     index: u16,
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
+pub(crate) enum RendGroupOrder {
+    #[default]
+    Normal,
+    AlwaysTop,
+    AlwaysBottom,
+}
+
 #[derive(Debug)]
 pub(crate) struct RendGroupDef {
     rect: Rect,
@@ -663,7 +669,7 @@ pub(crate) struct RendGroupDef {
     group: RendGroup,
     start: usize,
     num: usize,
-    always_top: bool,
+    order: RendGroupOrder,
 }
 
 impl RendGroupDef {

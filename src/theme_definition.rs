@@ -121,17 +121,12 @@ pub struct ImageDefinition {
     pub kind: ImageDefinitionKind,
 }
 
-#[derive(Serialize, Deserialize, Copy, Clone)]
+#[derive(Serialize, Deserialize, Copy, Clone, Default)]
 pub enum ImageFill {
+    #[default]
     None,
     Stretch,
     Repeat,
-}
-
-impl Default for ImageFill {
-    fn default() -> Self {
-        ImageFill::None
-    }
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -428,10 +423,11 @@ pub enum AnimStateKey {
 /// The Layout direction for a widget's children.
 ///
 /// This only has effect if the child widget does not manually specify an alignment.
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, Default)]
 #[serde(deny_unknown_fields)]
 pub enum Layout {
     /// Layout children horizontally, from left to right
+    #[default]
     Horizontal,
 
     /// Layout children vertically, from top to bottom
@@ -442,10 +438,6 @@ pub enum Layout {
     Free,
 }
 
-impl Default for Layout {
-    fn default() -> Self { Layout::Horizontal }
-}
-
 /// Widget or text horizontal and vertical alignment.
 ///
 /// `Left`, `Right`, and `Center` variants will center the element
@@ -453,7 +445,7 @@ impl Default for Layout {
 /// center the element horizontally.  The final position of a widget
 /// is calculated based on the parent position and size, this alignment
 /// and the child [`pos`](struct.WidgetBuilder.html#method.pos)
-#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, Hash, Default)]
 #[serde(deny_unknown_fields)]
 pub enum Align {
     /// Center Left alignment
@@ -478,14 +470,11 @@ pub enum Align {
     BotRight,
 
     /// Top Left alignment
+    #[default]
     TopLeft,
 
     /// Top Right alignment
     TopRight,
-}
-
-impl Default for Align {
-    fn default() -> Self { Align::TopLeft }
 }
 
 impl Align {
@@ -526,10 +515,11 @@ pub struct CharacterRange {
 }
 
 /// What to compute the width of a widget relative to.
-#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash, Default)]
 #[serde(deny_unknown_fields)]
 pub enum WidthRelative {
     /// Width is equal to the `x` field of the widget's `size`.
+    #[default]
     Normal,
 
     /// Width is sized so that the widget's inner width just encompasses all child widgets, plus the `x` field
@@ -544,15 +534,12 @@ pub enum WidthRelative {
     Text,
 }
 
-impl Default for WidthRelative {
-    fn default() -> Self { WidthRelative::Normal }
-}
-
 /// What to compute the height of widget relative to.
-#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, PartialEq, Eq, Hash, Default)]
 #[serde(deny_unknown_fields)]
 pub enum HeightRelative {
     /// Height is equal to the `y` field of the widget's `size`.
+    #[default]
     Normal,
 
     /// Height is equal to the parent widget's inner height plus the `y` field of the widget's `size`.
@@ -565,10 +552,6 @@ pub enum HeightRelative {
 
     /// Height is equal to the line height of the widget's font plus the `y` field of the widget's `size`.
     FontLine,
-}
-
-impl Default for HeightRelative {
-    fn default() -> Self { HeightRelative::Normal }
 }
 
 /// A Color with red, green, blue, and alpha components, with each component stored as a `u8`.
