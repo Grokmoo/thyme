@@ -139,6 +139,7 @@ impl GLRenderer {
                         clip: widget.clip(),
                         time_millis,
                         scale,
+                        color: widget.image_color(),
                     },
                 );
             }
@@ -167,6 +168,7 @@ impl GLRenderer {
                             clip: widget.clip(),
                             time_millis,
                             scale,
+                            color: widget.image_color(),
                         },
                     );
                 }
@@ -217,6 +219,7 @@ impl GLRenderer {
                 clip,
                 time_millis,
                 scale,
+                color: Color::white(),
             };
 
             image.draw(&mut self.draw_list, params);

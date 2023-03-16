@@ -31,6 +31,7 @@ pub struct Widget {
     text_align: Align,
     text_indent: f32,
     font: Option<FontSummary>,
+    image_color: Color,
     background: Option<ImageHandle>,
     foreground: Option<ImageHandle>,
     pos: Point,
@@ -49,6 +50,7 @@ impl Widget {
             text_indent: 0.0,
             text_color: Color::default(),
             font: None,
+            image_color: Color::default(),
             background: None,
             foreground: None,
             layout: Layout::default(),
@@ -122,6 +124,7 @@ impl Widget {
             text_align: theme.text_align.unwrap_or_default(),
             text_indent: 0.0,
             font,
+            image_color: theme.image_color.unwrap_or_default(),
             background: theme.background,
             foreground: theme.foreground,
             pos,
@@ -159,6 +162,9 @@ impl Widget {
 
     /// The font to render text for this widget, if any
     pub fn font(&self) -> Option<FontSummary> { self.font }
+
+    /// The foreground and background image color for this widget
+    pub fn image_color(&self) -> Color { self.image_color }
 
     /// The current foreground image for this widget.
     pub fn foreground(&self) -> Option<ImageHandle> { self.foreground }
@@ -577,6 +583,15 @@ impl<'a> WidgetBuilder<'a> {
 
         self.widget.font = font;
         self.data.recalc_pos_size = true;
+        self
+    }
+
+    /// Specify a [`Color`](struct.Color.html) for the images of this widget to display.  The default
+    /// color is white.  This multiplies the color of the background and foreground images.
+    /// This may also be specified in the widget's [`theme`](index.html).
+    #[must_use]
+    pub fn image_color(mut self, color: Color) -> WidgetBuilder<'a> {
+        self.widget.image_color = color;
         self
     }
 

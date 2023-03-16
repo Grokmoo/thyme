@@ -146,6 +146,7 @@ impl GliumRenderer {
                         clip: widget.clip(),
                         time_millis,
                         scale,
+                        color: widget.image_color(),
                     }
                 );
             }
@@ -172,6 +173,7 @@ impl GliumRenderer {
                             clip: widget.clip(),
                             time_millis,
                             scale,
+                            color: widget.image_color(),
                         }
                     );
                 }
@@ -218,7 +220,8 @@ impl GliumRenderer {
                 anim_state,
                 clip,
                 time_millis,
-                scale
+                scale,
+                color: Color::white(),
             };
 
             image.draw(&mut self.draw_list, params);

@@ -278,6 +278,7 @@ impl WgpuRenderer {
                         clip: widget.clip(),
                         time_millis,
                         scale,
+                        color: widget.image_color(),
                     }
                 );
             }
@@ -305,6 +306,7 @@ impl WgpuRenderer {
                             clip: widget.clip(),
                             time_millis,
                             scale,
+                            color: widget.image_color(),
                         }
                     );
                 }
@@ -351,7 +353,8 @@ impl WgpuRenderer {
                 anim_state,
                 clip,
                 time_millis,
-                scale
+                scale,
+                color: Color::white(),
             };
 
             image.draw(&mut self.draw_list, params);

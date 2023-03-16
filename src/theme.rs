@@ -347,6 +347,7 @@ pub struct WidgetTheme {
     pub text: Option<String>,
     pub text_color: Option<Color>,
     pub font: Option<FontSummary>,
+    pub image_color: Option<Color>,
     pub background: Option<ImageHandle>,
     pub foreground: Option<ImageHandle>,
     pub tooltip: Option<String>,
@@ -383,6 +384,7 @@ impl WidgetTheme {
             text: None,
             text_color: None,
             font: None,
+            image_color: None,
             background: None,
             foreground: None,
             tooltip: None,
@@ -480,6 +482,7 @@ impl WidgetTheme {
             text: def.text.clone(),
             text_color: def.text_color,
             font,
+            image_color: def.image_color,
             background,
             foreground,
             tooltip: def.tooltip.clone(),
@@ -540,12 +543,13 @@ fn merge_from(
     let to = &mut themes[to_id.id as usize];
     let to_children = to.children.clone();
 
-    // preserve any as-yet unresolve child from refs
+    // preserve any as-yet unresolved child from refs
     to.from = from.from;
 
     if to.wants_mouse.is_none() { to.wants_mouse = from.wants_mouse; }
     if to.wants_scroll.is_none() { to.wants_scroll = from.wants_scroll; }
     if to.font.is_none() { to.font = from.font; }
+    if to.image_color.is_none() { to.image_color = from.image_color; }
     if to.background.is_none() { to.background = from.background; }
     if to.foreground.is_none() { to.foreground = from.foreground; }
     if to.text_align.is_none() { to.text_align = from.text_align; }
@@ -561,6 +565,7 @@ fn merge_from(
     if to.layout.is_none() { to.layout = from.layout; }
     if to.layout_spacing.is_none() { to.layout_spacing = from.layout_spacing; }
     if to.text.is_none() { to.text = from.text.clone(); }
+    if to.text_color.is_none() { to.text_color = from.text_color; }
     if to.tooltip.is_none() { to.tooltip = from.tooltip.clone(); }
 
     for (id, value) in from.custom.iter() {

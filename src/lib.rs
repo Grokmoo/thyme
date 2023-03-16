@@ -339,6 +339,7 @@ the widget will layout its children.
      text_color: "#FFAA00"
      text_align: Center
      font: medium
+     image_color: "#FFFFFF"
      background: gui/button
      foreground: gui/button_icon
      tooltip: "This is a button!"

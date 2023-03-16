@@ -66,6 +66,7 @@ pub struct WidgetThemeDefinition {
 
     // all fields are options instead of using default so
     // we can detect when to override them
+    pub image_color: Option<Color>,
     pub text_color: Option<Color>,
     pub wants_mouse: Option<bool>,
     pub wants_scroll: Option<bool>,
@@ -615,8 +616,30 @@ impl Color {
     }
 }
 
+impl std::ops::Mul for Color {
+    type Output = Color;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        let c1: [f32; 4] = self.into();
+        let c2: [f32; 4] = rhs.into();
+
+        [c1[0] * c2[0], c1[1] * c2[1], c1[2] * c2[2], c1[3] * c2[3]].into()
+    }
+}
+
 impl Default for Color {
     fn default() -> Self { Color::white() }
+}
+
+impl From<[f32; 4]> for Color {
+    fn from(value: [f32; 4]) -> Self {
+        Color {
+            r: (value[0] * 255.0).round() as u8,
+            g: (value[1] * 255.0).round() as u8,
+            b: (value[2] * 255.0).round() as u8,
+            a: (value[3] * 255.0).round() as u8,
+        }
+    }
 }
 
 impl From<Color> for [f32; 4] {

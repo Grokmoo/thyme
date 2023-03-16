@@ -58,6 +58,7 @@ pub(crate) struct ImageDrawParams {
     pub clip: Rect,
     pub time_millis: u32,
     pub scale: f32,
+    pub color: Color,
 }
 
 #[derive(Clone)]
@@ -116,6 +117,7 @@ impl Image {
                         clip,
                         time_millis: params.time_millis,
                         scale: params.scale,
+                        color: params.color,
                     };
 
                     image.draw(draw_list, sub_params);
@@ -128,7 +130,8 @@ impl Image {
                     [grid_size[0] * params.scale, grid_size[1] * params.scale],
                     [params.pos[0] * params.scale, params.pos[1] * params.scale],
                     [params.size[0] * params.scale, params.size[1] * params.scale],
-                    params.clip * params.scale
+                    params.clip * params.scale,
+                    params.color,
                 );
             },
             ImageKind::ComposedVertical { tex_coords, grid_size } => {
@@ -138,7 +141,8 @@ impl Image {
                     [grid_size[0] * params.scale, grid_size[1] * params.scale],
                     [params.pos[0] * params.scale, params.pos[1] * params.scale],
                     [params.size[0] * params.scale, params.size[1] * params.scale],
-                    params.clip * params.scale
+                    params.clip * params.scale,
+                    params.color,
                 )
             },
             ImageKind::ComposedHorizontal { tex_coords, grid_size } => {
@@ -148,7 +152,8 @@ impl Image {
                     [grid_size[0] * params.scale, grid_size[1] * params.scale],
                     [params.pos[0] * params.scale, params.pos[1] * params.scale],
                     [params.size[0] * params.scale, params.size[1] * params.scale],
-                    params.clip * params.scale
+                    params.clip * params.scale,
+                    params.color,
                 )
             },
             ImageKind::Solid => {
@@ -158,6 +163,7 @@ impl Image {
                     [params.pos[0] * params.scale, params.pos[1] * params.scale],
                     [params.size[0] * params.scale, params.size[1] * params.scale],
                     clip,
+                    params.color,
                 );
             }
             ImageKind::Simple { tex_coords, base_size, fill } => {
@@ -170,6 +176,7 @@ impl Image {
                             [params.pos[0] * params.scale, params.pos[1] * params.scale],
                             [base_size[0] * params.scale, base_size[1] * params.scale],
                             clip,
+                            params.color,
                         );
                     }, ImageFill::Stretch => {
                         self.draw_simple(
@@ -178,6 +185,7 @@ impl Image {
                             [params.pos[0] * params.scale, params.pos[1] * params.scale],
                             [params.size[0] * params.scale, params.size[1] * params.scale],
                             clip,
+                            params.color,
                         );
                     }, ImageFill::Repeat => {
                         let mut y = params.pos[1];
@@ -190,6 +198,7 @@ impl Image {
                                     [x * params.scale, y * params.scale],
                                     [base_size[0] * params.scale, base_size[1] * params.scale],
                                     clip,
+                                    params.color,
                                 );
 
                                 x += base_size[0];
@@ -363,12 +372,13 @@ impl Image {
         pos: [f32; 2],
         size: [f32; 2],
         clip: Rect,
+        color: Color,
     ) {
         draw_list.push_rect(
             [pos[0], pos[1]],
             [size[0], size[1]],
             [TexCoord::default(), TexCoord::default()],
-            self.color,
+            self.color * color,
             clip,
         )
     }
@@ -380,16 +390,18 @@ impl Image {
         pos: [f32; 2],
         size: [f32; 2],
         clip: Rect,
+        color: Color,
     ) {
         draw_list.push_rect(
             [pos[0], pos[1]],
             [size[0], size[1]],
             *tex,
-            self.color,
+            self.color * color,
             clip
         );
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn draw_composed_horizontal<D: DrawList>(
         &self,
         draw_list: &mut D,
@@ -398,12 +410,13 @@ impl Image {
         pos: [f32; 2],
         size: [f32; 2],
         clip: Rect,
+        color: Color,
     ) {
         draw_list.push_rect(
             pos,
             [grid_size[0], size[1]],
             [tex[0][0], tex[1][1]],
-            self.color,
+            self.color * color,
             clip,
         );
 
@@ -412,7 +425,7 @@ impl Image {
                 [pos[0] + grid_size[0], pos[1]],
                 [size[0] - 2.0 * grid_size[0], size[1]],
                 [tex[1][0], tex[2][1]],
-                self.color,
+                self.color * color,
                 clip,
             );
         }
@@ -421,11 +434,12 @@ impl Image {
             [pos[0] + size[0] - grid_size[0], pos[1]],
             [grid_size[0], size[1]],
             [tex[2][0], tex[3][1]],
-            self.color,
+            self.color * color,
             clip,
         );
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn draw_composed_vertical<D: DrawList>(
         &self,
         draw_list: &mut D,
@@ -434,12 +448,13 @@ impl Image {
         pos: [f32; 2],
         size: [f32; 2],
         clip: Rect,
+        color: Color,
     ) {
         draw_list.push_rect(
             pos,
             [size[0], grid_size[1]],
             [tex[0][0], tex[1][1]],
-            self.color,
+            self.color * color,
             clip,
         );
 
@@ -448,7 +463,7 @@ impl Image {
                 [pos[0], pos[1] + grid_size[1]],
                 [size[0], size[1] - 2.0 * grid_size[1]],
                 [tex[0][1], tex[1][2]],
-                self.color,
+                self.color * color,
                 clip,
             );
         }
@@ -457,11 +472,12 @@ impl Image {
             [pos[0], pos[1] + size[1] - grid_size[1]],
             [size[0], grid_size[1]],
             [tex[0][2], tex[1][3]],
-            self.color,
+            self.color * color,
             clip,
         );
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn draw_composed<D: DrawList>(
         &self,
         draw_list: &mut D,
@@ -470,12 +486,13 @@ impl Image {
         pos: [f32; 2],
         size: [f32; 2],
         clip: Rect,
+        color: Color,
     ) {
         draw_list.push_rect(
             pos,
             grid_size,
             [tex[0][0], tex[1][1]],
-            self.color,
+            self.color * color,
             clip,
         );
 
@@ -484,7 +501,7 @@ impl Image {
                 [pos[0] + grid_size[0], pos[1]],
                 [size[0] - 2.0 * grid_size[0], grid_size[1]],
                 [tex[1][0], tex[2][1]],
-                self.color,
+                self.color * color,
                 clip,
             );
         }
@@ -493,7 +510,7 @@ impl Image {
             [pos[0] + size[0] - grid_size[0], pos[1]],
             grid_size,
             [tex[2][0], tex[3][1]],
-            self.color,
+            self.color * color,
             clip,
         );
 
@@ -502,7 +519,7 @@ impl Image {
                 [pos[0], pos[1] + grid_size[1]],
                 [grid_size[0], size[1] - 2.0 * grid_size[1]],
                 [tex[0][1], tex[1][2]],
-                self.color,
+                self.color * color,
                 clip,
             );
 
@@ -511,7 +528,7 @@ impl Image {
                     [pos[0] + grid_size[0], pos[1] + grid_size[1]],
                     [size[0] - 2.0 * grid_size[0], size[1] - 2.0 * grid_size[1]],
                     [tex[1][1], tex[2][2]],
-                    self.color,
+                    self.color * color,
                     clip,
                 );
             }
@@ -520,7 +537,7 @@ impl Image {
                 [pos[0] + size[0] - grid_size[0], pos[1] + grid_size[1]],
                 [grid_size[0], size[1] - 2.0 * grid_size[1]],
                 [tex[2][1], tex[3][2]],
-                self.color,
+                self.color * color,
                 clip,
             );
         }
@@ -529,7 +546,7 @@ impl Image {
             [pos[0], pos[1] + size[1] - grid_size[1]],
             grid_size,
             [tex[0][2], tex[1][3]],
-            self.color,
+            self.color * color,
             clip,
         );
 
@@ -538,7 +555,7 @@ impl Image {
                 [pos[0] + grid_size[0], pos[1] + size[1] - grid_size[1]],
                 [size[0] - 2.0 * grid_size[0], grid_size[1]],
                 [tex[1][2], tex[2][3]],
-                self.color,
+                self.color * color,
                 clip,
             );
         }
@@ -547,7 +564,7 @@ impl Image {
             [pos[0] + size[0] - grid_size[0], pos[1] + size[1] - grid_size[1]],
             grid_size,
             [tex[2][2], tex[3][3]],
-            self.color,
+            self.color * color,
             clip,
         );
     }
