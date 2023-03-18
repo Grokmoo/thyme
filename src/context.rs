@@ -219,7 +219,6 @@ impl ContextInternal {
     pub(crate) fn mouse_pos(&self) -> Point { self.mouse_pos }
     pub(crate) fn last_mouse_pos(&self) -> Point { self.last_mouse_pos }
     pub(crate) fn mouse_pressed(&self, index: usize) -> bool { self.mouse_pressed[index] }
-    pub(crate) fn mouse_clicked(&self, index: usize) -> bool { self.mouse_clicked[index] }
 
     pub(crate) fn mouse_pressed_button(&self) -> Option<MouseButton> {
         if self.mouse_pressed[0] { Some(MouseButton::Left) }
