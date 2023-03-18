@@ -11,7 +11,7 @@ use crate::image::ImageHandle;
 use crate::widget::Widget;
 
 const MOUSE_NOT_TAKEN: MouseState =
-    MouseState { clicked: false, anim: AnimState::normal(), dragged: Point { x: 0.0, y: 0.0 } };
+    MouseState { clicked: false, anim: AnimState::normal(), dragged: Point { x: 0.0, y: 0.0 }, button: None };
 
 /// A Frame, holding the widget tree to be drawn on a given frame, and a reference to the
 /// Thyme [`Context`](struct.Context.html)
@@ -50,6 +50,7 @@ pub(crate) struct MouseState {
     pub clicked: bool,
     pub anim: AnimState,
     pub dragged: Point,
+    pub button: Option<MouseButton>,
 }
 
 impl Frame {
@@ -151,18 +152,18 @@ impl Frame {
         let was_taken_last = context.mouse_taken_last_frame_id() == Some(widget.id());
 
         // check if we are dragging on this widget
-        if context.mouse_pressed(0) {
+        if let Some(mouse_button) = context.mouse_pressed_button() {
             if was_taken_last {
                 self.mouse_taken = Some((widget.id().to_string(), widget.rend_group()));
                 let dragged = context.mouse_pos() - context.last_mouse_pos();
 
-                if context.mouse_pressed(0) {
-                    context.set_top_rend_group(widget.rend_group());
-                }
+                context.set_top_rend_group(widget.rend_group());
+
                 return MouseState {
-                    clicked: context.mouse_clicked(0),
+                    clicked: context.mouse_clicked_button().is_some(),
                     anim: AnimState::new(AnimStateKey::Pressed),
-                    dragged
+                    dragged,
+                    button: Some(mouse_button),
                 };
             } else {
                 return MOUSE_NOT_TAKEN;
@@ -181,10 +182,12 @@ impl Frame {
         self.mouse_taken = Some((widget.id().to_string(), widget.rend_group()));
         context.update_mouse_taken_switch_time(&self.mouse_taken);
 
+        let mouse_button = context.mouse_clicked_button();
         MouseState {
-            clicked: was_taken_last && context.mouse_clicked(0),
+            clicked: was_taken_last && mouse_button.is_some(),
             anim: AnimState::new(AnimStateKey::Hover),
-            dragged: Point::default()
+            dragged: Point::default(),
+            button: mouse_button,
         }
     }
 
@@ -680,6 +683,19 @@ impl RendGroupDef {
 
     pub(crate) fn id(&self) -> &str { &self.id }
     pub(crate) fn group(&self) -> RendGroup { self.group }
+}
+
+/// An enum for representing which mouse button has been pressed or clicked.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum MouseButton {
+    /// The left mouse button
+    Left,
+
+    /// The right mouse button
+    Right,
+
+    /// The middle mouse button
+    Middle,
 }
 
 #[macro_export]

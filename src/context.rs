@@ -6,7 +6,7 @@ use std::time::Instant;
 
 use serde::{Serialize, Deserialize};
 
-use crate::{BuildOptions, Error, Point, Frame, Rect, frame::{RendGroup, RendGroupDef}};
+use crate::{BuildOptions, Error, Point, Frame, MouseButton, Rect, frame::{RendGroup, RendGroupDef}};
 use crate::{font::FontSummary, widget::Widget, image::ImageHandle, theme::ThemeSet, resource::ResourceSet};
 use crate::theme_definition::{AnimState, AnimStateKey};
 use crate::render::Renderer;
@@ -220,6 +220,20 @@ impl ContextInternal {
     pub(crate) fn last_mouse_pos(&self) -> Point { self.last_mouse_pos }
     pub(crate) fn mouse_pressed(&self, index: usize) -> bool { self.mouse_pressed[index] }
     pub(crate) fn mouse_clicked(&self, index: usize) -> bool { self.mouse_clicked[index] }
+
+    pub(crate) fn mouse_pressed_button(&self) -> Option<MouseButton> {
+        if self.mouse_pressed[0] { Some(MouseButton::Left) }
+        else if self.mouse_pressed[1] { Some(MouseButton::Right) }
+        else if self.mouse_pressed[2] { Some(MouseButton::Middle) }
+        else { None }
+    }
+
+    pub(crate) fn mouse_clicked_button(&self) -> Option<MouseButton> {
+        if self.mouse_clicked[0] { Some(MouseButton::Left) }
+        else if self.mouse_clicked[1] { Some(MouseButton::Right) }
+        else if self.mouse_clicked[2] { Some(MouseButton::Middle) }
+        else { None }
+    }
 
     pub (crate) fn set_focus_keyboard(&mut self, id: String) {
         self.keyboard_focus_widget = Some(id);

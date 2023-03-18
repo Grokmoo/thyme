@@ -417,7 +417,7 @@ mod gl_backend;
 #[cfg(feature = "gl_backend")]
 pub use gl_backend::{GLRenderer, GlError};
 
-pub use frame::{Frame};
+pub use frame::{Frame, MouseButton};
 pub use point::{Rect, Point, Border};
 pub use widget::{WidgetBuilder, WidgetState};
 pub use context_builder::{BuildOptions, ContextBuilder};

@@ -3,7 +3,7 @@ use crate::{
     Layout, WidthRelative, HeightRelative, Rect,
 };
 use crate::font::FontDrawParams;
-use crate::{frame::{RendGroup, RendGroupOrder}, font::FontSummary, image::ImageHandle};
+use crate::{frame::{MouseButton, RendGroup, RendGroupOrder}, font::FontSummary, image::ImageHandle};
 use crate::theme_definition::CustomData;
 use crate::theme::{WidgetTheme};
 use crate::window::WindowBuilder;
@@ -255,6 +255,9 @@ pub struct WidgetState {
 
     /// How far the mouse has been dragged or scrolled on this widget, in logical pixels.
     pub moved: Point,
+
+    /// If the mouse was pressed or clicked, which mouse button was used.
+    pub mouse_button: Option<MouseButton>,
 }
 
 impl WidgetState {
@@ -265,10 +268,11 @@ impl WidgetState {
             pressed: false,
             clicked: false,
             moved: Point::default(),
+            mouse_button: None,
         }
     }
 
-    fn new(anim_state: AnimState, clicked: bool, moved: Point) -> WidgetState {
+    fn new(anim_state: AnimState, clicked: bool, moved: Point, mouse_button: Option<MouseButton>) -> WidgetState {
         let (hovered, pressed) = if anim_state.contains(AnimStateKey::Pressed) {
             (true, true)
         } else if anim_state.contains(AnimStateKey::Hover) {
@@ -283,6 +287,7 @@ impl WidgetState {
             pressed,
             clicked,
             moved,
+            mouse_button,
         }
     }
 }
@@ -1182,11 +1187,11 @@ impl<'a> WidgetBuilder<'a> {
             self.frame.set_max_child_bounds(old_max_child_bounds);
         }
 
-        let (clicked, mut anim_state, mut dragged) = if self.data.enabled && self.data.wants_mouse {
+        let (clicked, mut anim_state, mut dragged, button) = if self.data.enabled && self.data.wants_mouse {
             let mouse_state = self.frame.check_mouse_state(widget_index);
-            (mouse_state.clicked, mouse_state.anim, mouse_state.dragged)
+            (mouse_state.clicked, mouse_state.anim, mouse_state.dragged, mouse_state.button)
         } else {
-            (false, AnimState::disabled(), Point::default())
+            (false, AnimState::disabled(), Point::default(), None)
         };
 
         if self.data.wants_scroll {
@@ -1196,7 +1201,7 @@ impl<'a> WidgetBuilder<'a> {
             }
         }
 
-        let state = WidgetState::new(anim_state, clicked, dragged);
+        let state = WidgetState::new(anim_state, clicked, dragged, button);
 
         if state.hovered {
             if let Some(tooltip) = self.data.tooltip.take() {
