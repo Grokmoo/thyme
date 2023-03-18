@@ -236,6 +236,7 @@ fn create_button(ui: &mut Frame) {
 }
 ```
 */
+#[derive(Debug)]
 pub struct WidgetState {
     /// Whether this widget was drawn.  In general, if a widget is not visible, any children
     /// were not created and closures, such as passed to [`WidgetBuilder.children`](struct.WidgetBuilder.html#method.children)
@@ -483,6 +484,10 @@ impl<'a> WidgetBuilder<'a> {
     /// widgets may overlap, and determine input routing and draw order in those cases.  If your UI doesn't have moveable elements such as
     /// windows, you should generally be ok to draw your entire UI in one render group, with the exception of modal popups.
     /// [`Windows`](struct.WindowBuilder.html) make use of render groups.
+    /// Render groups allow a widget that is created later in your UI code to pick up input instead of a widget that is created earlier, even if
+    /// those widgets overlap.  Note that the system internally relies on the render group ordering.  In particular, having your layout create
+    /// a new render group earlier in the UI code as a result of an action on a later render group will cause that later render group to lose
+    /// input focus.
     #[must_use]
     pub fn new_render_group(mut self) -> WidgetBuilder<'a> {
         self.data.next_render_group = Some(RendGroupOrder::Normal);
@@ -674,7 +679,7 @@ impl<'a> WidgetBuilder<'a> {
 	
 	/// Helper to treat this widget as a tooltip.  The widget will be placed on top
 	/// of other widgets in its own render group.  Positioning will be based on the mouse
-	/// cursor position.
+	/// cursor position.  See [`new_render_group`](#method.new_render_group).
 	#[must_use]
 	pub fn render_as_tooltip(mut self) -> WidgetBuilder<'a> {
         let tooltip_pos = match self.frame.tooltip_ready() {
@@ -1183,7 +1188,6 @@ impl<'a> WidgetBuilder<'a> {
         } else {
             (false, AnimState::disabled(), Point::default())
         };
-
 
         if self.data.wants_scroll {
             if let Some(wheel) = self.frame.check_mouse_wheel(widget_index) {

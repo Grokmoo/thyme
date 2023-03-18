@@ -198,7 +198,7 @@ pub enum ImageDefinitionKind {
 /// to concatenate multiple states, and whitespace is ignored.  The [`Normal`](enum.AnimStateKey.html#normal)
 /// key is special and can only be present by itself.
 /// `AnimState`s are used in Animated images in order to pick a particular image from a set.
-#[derive(Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub struct AnimState {
     keys: [AnimStateKey; 4],
 }
@@ -607,6 +607,9 @@ impl Color {
 
     /// The color magenta or purple.  `#FF00FF` or `#F0F` in the theme
     pub fn magenta() -> Self { Color { r: 255, g: 0, b: 255, a: 255 }}
+
+    /// The color gray or grey.  `#888888` or `#888` in the theme
+    pub fn grey() -> Self { Color { r: 127, g: 127, b: 127, a: 255 }}
 
     /// Attempts to parse a Color from the specified `value` string.  Returns None if
     /// it cannot be parsed.  See the main [`Color`](struct.Color.html) serialization rules.

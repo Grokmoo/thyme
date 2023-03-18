@@ -228,6 +228,14 @@ impl Rect {
             size: max - min,
         }
     }
+
+    /// Returns a `Rect` with all components rounded to the nearest integer.
+    pub fn round(self) -> Rect {
+        Rect {
+            pos: self.pos.round(),
+            size: self.size.round(),
+        }
+    }
 }
 
 impl Mul<Rect> for f32 {
