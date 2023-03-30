@@ -236,6 +236,12 @@ impl Rect {
             size: self.size.round(),
         }
     }
+
+    /// Returns true if the specified `other` `Rect` is entirely contained inside this Rect.
+    pub fn contains_rect(&self, other: Rect) -> bool {
+        self.pos.x <= other.pos.x && self.pos.x + self.size.x >= other.pos.x + other.size.x &&
+            self.pos.y <= other.pos.y && self.pos.y + self.size.y >= other.pos.y + other.size.y
+    }
 }
 
 impl Mul<Rect> for f32 {
