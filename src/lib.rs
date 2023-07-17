@@ -404,7 +404,7 @@ pub use glium_backend::{GliumRenderer, GliumError};
 mod wgpu_backend;
 
 #[cfg(feature = "wgpu_backend")]
-pub use wgpu_backend::{WgpuRenderer};
+pub use wgpu_backend::WgpuRenderer;
 
 pub use app_builder::AppBuilder;
 

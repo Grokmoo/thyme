@@ -20,7 +20,7 @@ impl VAO {
             gl::BindBuffer(gl::ARRAY_BUFFER, vbo_handle);
             gl::BufferData(
                 gl::ARRAY_BUFFER,
-                (vertices.len() * std::mem::size_of::<GLVertex>()) as _,
+                std::mem::size_of_val(vertices) as _,
                 vertices.as_ptr() as _,
                 gl::STATIC_DRAW,
             );
