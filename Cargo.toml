@@ -1,6 +1,6 @@
 [package]
 name = "thyme"
-version = "0.6.0"
+version = "0.7.0"
 authors = ["Jared Stephen <grok_moo@yahoo.com>"]
 description = "Themable Immediate Mode GUI"
 documentation = "https://docs.rs/thyme/"

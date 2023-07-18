@@ -4,6 +4,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2023-07-17
+### Changed
+- Improved handling of custom variables across widgets
+- Better formatting and spacing for table widgets
+- More flexible benchmarking
+- Configurable build options, including tooltip time and line scroll which can be set manually or via AppBuilder
+- Better tooltip layout and edge of screen positioning
+- Improved render group ordering and ability to specify always top / always bottom
+
+### Added
+- Handy macro `set_variables` to set multiple variables on a text field
+- Text elements within text areas can now specify a text color
+- `force_hover` and `force_pressed` methods when building widgets
+- An optional `edit` method is now available to improve chaining of certain types of control logic
+- AppBuilder now supports GL renderer
+- Optionally specify `height` and `width` instead of `size` in theme
+- New multiline text widget with simple rendering (as opposed to text area)
+- if / else statements supported in text area definition
+- Method to obtain mouse position from the context
+- Vertical (in addition to horizontal) progress bars
+- Support for saving and loading of persistent state to a file / other output
+- Text layout option based on text width for single line widgets
+- Wrapping spinner widget
+- Can now specify a dynamic / theme based image color attribute
+- Now fully handle left / right / middle clicks
+
+### Fixed
+- Fixed text area end of line behavior in some cases
+- Color space issues for GL renderer
+- Custom ints are now parsed correctly
+
 ## [0.6.0] - 2021-03-31
 ### Changed
 - Improved the theme definitions for the demo example
