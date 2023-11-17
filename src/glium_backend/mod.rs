@@ -9,7 +9,7 @@ use glium::uniforms::{MagnifySamplerFilter, MinifySamplerFilter, Sampler, Sample
 use glium::texture::{Texture2d, RawImage2d};
 use glium::index::PrimitiveType;
 
-use crate::{image::ImageDrawParams};
+use crate::image::ImageDrawParams;
 use crate::render::{view_matrix, TexCoord, DrawList, DrawMode, Renderer, TextureHandle, TextureData, FontHandle};
 use crate::font::{Font, FontSource, FontTextureWriter, FontDrawParams};
 use crate::theme_definition::CharacterRange;

@@ -5,7 +5,7 @@ use crate::{
 use crate::font::FontDrawParams;
 use crate::{frame::{MouseButton, RendGroup, RendGroupOrder}, font::FontSummary, image::ImageHandle};
 use crate::theme_definition::CustomData;
-use crate::theme::{WidgetTheme};
+use crate::theme::WidgetTheme;
 use crate::window::WindowBuilder;
 use crate::scrollpane::ScrollpaneBuilder;
 

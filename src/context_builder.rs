@@ -1,8 +1,8 @@
-use std::{path::Path};
+use std::path::Path;
 
 use crate::{Error, Context};
-use crate::{resource::ResourceSet};
-use crate::theme_definition::{ThemeDefinition};
+use crate::resource::ResourceSet;
+use crate::theme_definition::ThemeDefinition;
 use crate::render::{Renderer, IO};
 
 /// Global options that may be specified when building the Thyme context with
