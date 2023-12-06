@@ -269,6 +269,12 @@ impl Frame {
         Rect::new(mouse_pos + align.adjust_for(size), size)
     }
 
+    /// Returns the current mouse cursor position, in logical pixels
+    pub fn mouse_pos(&self) -> Point {
+        let context = self.context_internal().borrow();
+        context.mouse_pos()
+    }
+
     /// Returns the current mouse position and size, in logical pixels
     pub fn mouse_rect(&self) -> Rect {
         let context = self.context_internal().borrow();
