@@ -229,6 +229,14 @@ impl Rect {
         }
     }
 
+    /// Returns the center point of this rect
+    pub fn center(self) -> Point {
+        Point {
+            x: self.pos.x + self.size.x * 0.5,
+            y: self.pos.y + self.size.y * 0.5,
+        }
+    }
+
     /// Returns a `Rect` with all components rounded to the nearest integer.
     pub fn round(self) -> Rect {
         Rect {
@@ -241,6 +249,27 @@ impl Rect {
     pub fn contains_rect(&self, other: Rect) -> bool {
         self.pos.x <= other.pos.x && self.pos.x + self.size.x >= other.pos.x + other.size.x &&
             self.pos.y <= other.pos.y && self.pos.y + self.size.y >= other.pos.y + other.size.y
+    }
+
+    /// Returns true if the specified `other` `Rect` intersects this rect at any point.
+    pub fn intersects(&self, other: Rect) -> bool {
+        if self.pos.x > other.pos.x + other.size.x { return false; }
+        if other.pos.x > self.pos.x + self.size.x { return false; }
+        if self.pos.y > other.pos.y + other.size.y { return false; }
+        if other.pos.y > self.pos.y + self.size.y { return false; }
+
+        true
+    }
+
+    /// Returns true if the specified `other` `Rect` is `within` the amount specified of intersecting
+    /// this rect at any point
+    pub fn intersects_within(&self, other: Rect, within: f32) -> bool {
+        if self.pos.x > other.pos.x + other.size.x + within { return false; }
+        if other.pos.x > self.pos.x + self.size.x + within { return false; }
+        if self.pos.y > other.pos.y + other.size.y + within { return false; }
+        if other.pos.y > self.pos.y + self.size.y + within { return false; }
+
+        true
     }
 }
 
