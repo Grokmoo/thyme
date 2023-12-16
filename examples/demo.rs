@@ -142,9 +142,11 @@ enum Race {
 }
 
 impl Race {
-    fn all() -> &'static [Race] {
+    fn all() -> impl Iterator<Item=&'static Race> {
         use Race::*;
-        &[Human, Elf, Dwarf, Halfling]
+        const ALL: [Race; 4] = [Human, Elf, Dwarf, Halfling];
+
+        ALL.iter()
     }
 }
 
@@ -209,7 +211,7 @@ pub fn build_ui(ui: &mut Frame, party: &mut Party) {
             party.live_reload_disabled = !party.live_reload_disabled;
         }
 
-        if let Some(choice) = ui.combo_box("theme_choice", "theme_choice", &party.theme_choice, &THEME_CHOICES) {
+        if let Some(choice) = ui.combo_box("theme_choice", "theme_choice", &party.theme_choice, THEME_CHOICES.iter()) {
             party.old_theme_choice = Some(party.theme_choice);
             party.theme_choice = *choice;
             party.reload_assets = true;
