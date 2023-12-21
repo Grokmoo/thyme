@@ -76,6 +76,8 @@ impl Frame {
     ```
     **/
     pub fn text_area(&mut self, theme: &str) {
+        let scale_factor = self.context().scale_factor();
+
         let builder = self.start(theme);
 
         let mut state = MarkdownState {
@@ -83,6 +85,7 @@ impl Frame {
             tab_width: builder.custom_float("tab_width", 4.0),
             list_bullet: builder.custom_string("list_bullet", "*".to_string()),
             column_width: builder.custom_float("column_width", 25.0),
+            scale_factor,
             text_indent: 0.0,
             indent_level: 0.0,
             list_stack: Vec::new(),
@@ -277,6 +280,7 @@ struct MarkdownState {
     tab_width: f32,
     list_bullet: String,
     column_width: f32,
+    scale_factor: f32,
 
     // current state
 
@@ -521,7 +525,7 @@ impl MarkdownState {
     }
 
     fn update_cursor(&mut self, ui: &mut Frame) {
-        self.text_indent = self.cursor.x;
+        self.text_indent = self.cursor.x * self.scale_factor;
 
         if let Some(col) = self.table_column {
             ui.set_cursor(col as f32 * self.column_width, self.cursor.y);
