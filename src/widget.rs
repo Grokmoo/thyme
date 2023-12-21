@@ -692,10 +692,10 @@ impl<'a> WidgetBuilder<'a> {
         };
 
 		// recalculate pos size
-		let (state_moved, state_resize, display_size) = {
+		let (state_moved, state_resize, display_size, scale_factor) = {
             let internal = self.frame.context_internal().borrow();
             let state = internal.state(&self.widget.id);
-            (state.moved, state.resize, internal.display_size())
+            (state.moved, state.resize, internal.display_size(), internal.scale_factor())
         };
         let mouse = self.frame.mouse_rect();
 
@@ -706,9 +706,9 @@ impl<'a> WidgetBuilder<'a> {
         self.widget.clip = Rect::new(Point::default(), display_size); // unclip
 		self.data.unparent = true; // unparent
         self.data.next_render_group = Some(RendGroupOrder::AlwaysTop); // always_top
-        
-        let x = tooltip_pos.x.min(display_size.x - self.widget.size.x);
-        let y = tooltip_pos.y.min(display_size.y - self.widget.size.y);
+
+        let x = tooltip_pos.x.min(display_size.x / scale_factor - self.widget.size.x);
+        let y = tooltip_pos.y.min(display_size.y / scale_factor - self.widget.size.y);
         let mut pos = Point::new(x, y);
 
         // shift widget above the cursor if it would overlap
