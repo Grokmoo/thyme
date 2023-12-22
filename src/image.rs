@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{Error};
+use crate::Error;
 use crate::render::{TexCoord, DrawList, TextureHandle, TextureData};
 use crate::{Rect, Color, AnimState, Point};
 use crate::theme_definition::{ImageFill, ImageDefinition, ImageDefinitionKind};
@@ -239,7 +239,8 @@ impl Image {
                 base_size = Point::default();
                 ImageKind::Empty
             },
-            ImageDefinitionKind::Alias { .. } | ImageDefinitionKind::Group { .. } => unreachable!(),
+            ImageDefinitionKind::Alias { .. } => unreachable!(),
+            ImageDefinitionKind::Group { .. } | ImageDefinitionKind::ComposedGroup { .. }=> unreachable!(),
             ImageDefinitionKind::Composed { grid_size, position} => {
                 let mut tex_coords = [[TexCoord::default(); 4]; 4];
                 for y in 0..4 {

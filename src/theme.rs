@@ -127,6 +127,16 @@ impl ThemeSet {
                             images_in_set.insert(generated_id.to_string(), image);
                         }
                     },
+                    ImageDefinitionKind::ComposedGroup { grid_size, images } => {
+                        for (generated_id, xy) in images {
+                            let generated_def = ImageDefinition {
+                                color: image_def.color,
+                                kind: ImageDefinitionKind::Composed { position: *xy, grid_size: *grid_size }
+                            };
+                            let image = Image::new(generated_id, &generated_def, texture, &images_in_set, set.scale)?;
+                            images_in_set.insert(generated_id.to_string(), image);
+                        }
+                    },
                     _ => {
                         let image = Image::new(image_id, image_def, texture, &images_in_set, set.scale)?;
                         images_in_set.insert(image_id.to_string(), image);
