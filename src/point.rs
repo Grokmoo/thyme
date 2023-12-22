@@ -273,6 +273,17 @@ impl Rect {
     }
 }
 
+impl Add<Point> for Rect {
+    type Output = Rect;
+
+    fn add(self, rhs: Point) -> Self::Output {
+        Rect {
+            pos: self.pos + rhs,
+            size: self.size,
+        }
+    }
+}
+
 impl Mul<Rect> for f32 {
     type Output = Rect;
     fn mul(self, rect: Rect) -> Rect {

@@ -155,14 +155,14 @@ impl<'a> ScrollpaneBuilder<'a> {
                 .trigger_layout(&mut content_bounds)
                 .clip(content_bounds)
                 .children(children);
-        
+
                 let content_min = content_bounds.pos;
                 let content_max = content_bounds.pos + content_bounds.size;
         
                 let pane_bounds = ui.parent_max_child_bounds();
                 let pane_min = pane_bounds.pos;
                 let pane_max = pane_bounds.pos + pane_bounds.size;
-        
+
                 let mut delta_scroll = Point::default();
 
                 let enable_horiz = pane_min.x < content_min.x || pane_max.x > content_max.x;
@@ -261,7 +261,7 @@ impl<'a> ScrollpaneBuilder<'a> {
                         scroll_button_center_y = pos_y + size_y * 0.5 + ui.cursor().y;
                         let scrollbar_dist = max_y - min_y - size_y; // total distance the scrollbar may move
                         let content_dist = pane_bounds.size.y - content_bounds.size.y; // total distance the content may move
-                        scroll_ratio = content_dist / (2.0 * scrollbar_dist);
+                        scroll_ratio = content_dist / scrollbar_dist;
 
                         let result = ui.start("scroll")
                         .size(size_x, size_y)
@@ -288,7 +288,7 @@ impl<'a> ScrollpaneBuilder<'a> {
         // set the scroll every frame to bound it, in case it was modified externally
         ui.modify(&content_id, |state| {
             let min = min_scroll + state.scroll;
-            let max = max_scroll + state.scroll;
+            let max = Point::default();
 
             state.scroll = (state.scroll + delta).max(min).min(max);
         });

@@ -82,7 +82,7 @@ impl Widget {
         } else {
             parent.scroll
         };
-        let mut raw_pos = theme.pos.unwrap_or(cursor_pos) + parent.scroll;
+        let mut raw_pos = theme.pos.unwrap_or(cursor_pos);
         let mut pos = pos(parent, raw_pos, raw_size, align);
         let mut recalc_pos_size = true;
 
@@ -193,6 +193,9 @@ impl Widget {
     pub fn inner_size(&self) -> Point {
         Point { x: self.size.x - self.border.horizontal(), y: self.size.y - self.border.vertical() }
     }
+
+    /// The scroll of this widget in logical pixels
+    pub fn scroll(&self) -> Point { self.scroll }
 
     /// The current cursor position of this widget
     pub fn cursor(&self) -> Point { self.cursor }
