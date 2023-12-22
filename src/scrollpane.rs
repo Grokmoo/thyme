@@ -142,7 +142,7 @@ impl<'a> ScrollpaneBuilder<'a> {
         let horiz = state.show_horiz;
         let vert = state.show_vert;
 
-        let (ui, result) = self.builder.finish_with(
+        let (ui, _) = self.builder.finish_with(
             Some(|ui: &mut Frame| {
                 let mut content_bounds = Rect::default();
         
@@ -204,7 +204,13 @@ impl<'a> ScrollpaneBuilder<'a> {
                         .finish();
         
                         if result.pressed {
-                            delta_scroll.x -= result.moved.x / width_frac;
+                            // total distance the scrollbar may move
+                            let scrollbar_dist = max_x - min_x - size_x;
+
+                            // total distance the content may move
+                            let content_dist = pane_bounds.size.x - content_bounds.size.x;
+
+                            delta_scroll.x -= result.moved.x * (content_dist / (2.0 * scrollbar_dist));
                         }
                     });
                 }
@@ -248,8 +254,14 @@ impl<'a> ScrollpaneBuilder<'a> {
                         .enabled(enable_vertical)
                         .finish();
         
-                        if result.pressed {
-                            delta_scroll.y -= result.moved.y / height_frac;
+                        if result.pressed && result.moved.y != 0.0 {
+                            // total distance the scrollbar may move
+                            let scrollbar_dist = max_y - min_y - size_y;
+
+                            // total distance the content may move
+                            let content_dist = pane_bounds.size.y - content_bounds.size.y;
+
+                            delta_scroll.y -= result.moved.y * (content_dist / (2.0 * scrollbar_dist));
                         }
                     });
                 }
@@ -265,7 +277,7 @@ impl<'a> ScrollpaneBuilder<'a> {
             let min = min_scroll + state.scroll;
             let max = max_scroll + state.scroll;
 
-            state.scroll = (state.scroll + delta + result.moved).max(min).min(max);
+            state.scroll = (state.scroll + delta).max(min).min(max);
         });
     }
 }
