@@ -167,7 +167,10 @@ impl<'a> ScrollpaneBuilder<'a> {
                 let enable_horiz = pane_min.x < content_min.x || pane_max.x > content_max.x;
                 // check whether to show horizontal scrollbar
                 if horiz.show(enable_horiz) {
-                    ui.start("scrollbar_horizontal")
+                    let mut scroll_button_center_x = 0.0;
+                    let mut scroll_ratio = 1.0;
+
+                    let scrollbar_result = ui.start("scrollbar_horizontal")
                     .children(|ui| {
                         let mut right_rect = Rect::default();
                         let result = ui.start("right")
@@ -197,6 +200,11 @@ impl<'a> ScrollpaneBuilder<'a> {
                         let size_x = width_frac * (max_x - min_x);
                         let size_y = left_rect.size.y;
         
+                        scroll_button_center_x = pos_x + size_x * 0.5 + ui.cursor().x;
+                        let scrollbar_dist = max_x - min_x - size_x; // total distance the scrollbar may move
+                        let content_dist = pane_bounds.size.x - content_bounds.size.x; // total distance the content may move
+                        scroll_ratio = content_dist / (2.0 * scrollbar_dist);
+
                         let result = ui.start("scroll")
                         .size(size_x, size_y)
                         .pos(pos_x, pos_y)
@@ -204,21 +212,22 @@ impl<'a> ScrollpaneBuilder<'a> {
                         .finish();
         
                         if result.pressed {
-                            // total distance the scrollbar may move
-                            let scrollbar_dist = max_x - min_x - size_x;
-
-                            // total distance the content may move
-                            let content_dist = pane_bounds.size.x - content_bounds.size.x;
-
-                            delta_scroll.x -= result.moved.x * (content_dist / (2.0 * scrollbar_dist));
+                            delta_scroll.x -= result.moved.x * scroll_ratio;
                         }
                     });
+
+                    if scrollbar_result.clicked {
+                        delta_scroll.x -= (ui.mouse_pos().x - scroll_button_center_x) * scroll_ratio;
+                    }
                 }
         
                 let enable_vertical = pane_min.y < content_min.y || pane_max.y > content_max.y;
                 // check whether to show vertical scrollbar
                 if vert.show(enable_vertical) {
-                    ui.start("scrollbar_vertical")
+                    let mut scroll_button_center_y = 0.0;
+                    let mut scroll_ratio = 1.0;
+
+                    let scrollbar_result = ui.start("scrollbar_vertical")
                     .children(|ui| {
                         let mut top_rect = Rect::default();
                         let result = ui.start("up")
@@ -247,7 +256,12 @@ impl<'a> ScrollpaneBuilder<'a> {
                         let pos_x = 0.0;
                         let size_y = height_frac * (max_y - min_y);
                         let size_x = top_rect.size.x;
-        
+
+                        scroll_button_center_y = pos_y + size_y * 0.5 + ui.cursor().y;
+                        let scrollbar_dist = max_y - min_y - size_y; // total distance the scrollbar may move
+                        let content_dist = pane_bounds.size.y - content_bounds.size.y; // total distance the content may move
+                        scroll_ratio = content_dist / (2.0 * scrollbar_dist);
+
                         let result = ui.start("scroll")
                         .size(size_x, size_y)
                         .pos(pos_x, pos_y)
@@ -255,15 +269,13 @@ impl<'a> ScrollpaneBuilder<'a> {
                         .finish();
         
                         if result.pressed && result.moved.y != 0.0 {
-                            // total distance the scrollbar may move
-                            let scrollbar_dist = max_y - min_y - size_y;
-
-                            // total distance the content may move
-                            let content_dist = pane_bounds.size.y - content_bounds.size.y;
-
-                            delta_scroll.y -= result.moved.y * (content_dist / (2.0 * scrollbar_dist));
+                            delta_scroll.y -= result.moved.y * scroll_ratio;
                         }
                     });
+
+                    if scrollbar_result.clicked {
+                        delta_scroll.y -= (ui.mouse_pos().y - scroll_button_center_y) * scroll_ratio;
+                    }
                 }
         
                 min_scroll = content_max - pane_max;
