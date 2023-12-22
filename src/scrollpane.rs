@@ -137,6 +137,7 @@ impl<'a> ScrollpaneBuilder<'a> {
         let mut max_scroll = Point::default();
         let mut delta = Point::default();
 
+        let scrollpane_pos = self.builder.widget.pos();
         let state = self.state;
         let content_id = state.content_id;
         let horiz = state.show_horiz;
@@ -274,7 +275,7 @@ impl<'a> ScrollpaneBuilder<'a> {
                     });
 
                     if scrollbar_result.clicked {
-                        delta_scroll.y -= (ui.mouse_pos().y - scroll_button_center_y) * scroll_ratio;
+                        delta_scroll.y -= (ui.mouse_pos().y - scroll_button_center_y - scrollpane_pos.y) * scroll_ratio;
                     }
                 }
         
