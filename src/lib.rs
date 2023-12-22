@@ -217,6 +217,19 @@ There are also composed horizontal and composed vertical images, that consist of
 are defined and used in the same manner as regular composed images, but use `grid_size_horiz` and `grid_size_vert` to
 differentiate the different types.
 
+#### Composed Groups
+You can create a composed image group as a shorthand for multiple composed images.  You specify an overall grid size, then for each image,
+x, and y.  All composed images in a group are immediately expanded as if they were specified as individual images for purposes of being
+referenced by other image types.
+```yaml
+  buttons_set:
+    grid_size: [24, 24]
+    images:
+      button_normal: [0, 0]
+      button_hover: [24, 0]
+      button_pressed: [48, 0]
+```
+
 #### Timed Images
 Timed images display one out of several frames, on a timer.  Timed images can repeat continuously (the default), or only display once,
 based on the value of the optional `once` parameter.  `frame_time_millis` is how long each frame is shown for, in milliseconds.  Each
