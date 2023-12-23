@@ -321,13 +321,14 @@ impl WgpuRenderer {
                             pos: fg_pos * scale,
                             indent: widget.text_indent(),
                             align: widget.text_align(),
+                            color: widget.text_color(),
+                            scale_factor: context.scale_factor(),
                         };
 
                         font.draw(
                             &mut self.draw_list,
                             params,
                             text,
-                            widget.text_color(),
                             widget.clip() * scale,
                         )
                     }

@@ -70,7 +70,6 @@ impl Font {
             self,
             &mut draw_list,
             params,
-            Color::white(),
             Rect::default(),
         );
         renderer.render(text);
@@ -90,14 +89,12 @@ impl Font {
         draw_list: &mut D,
         params: FontDrawParams,
         text: &str,
-        color: Color,
         clip: Rect,
     ) {
         let mut renderer = FontRenderer::new(
             self,
             draw_list,
             params,
-            color,
             clip
         );
         renderer.render(text);
@@ -109,6 +106,7 @@ struct FontRenderer<'a,  D> {
     draw_list: &'a mut D,
     initial_index: usize,
 
+    scale_factor: f32,
     clip: Rect,
     align: Align,
     color: Color,
@@ -131,7 +129,6 @@ impl<'a, D: DrawList> FontRenderer<'a, D> {
         font: &'a Font,
         draw_list: &'a mut D,
         params: FontDrawParams,
-        color: Color,
         clip: Rect,
     ) -> FontRenderer<'a, D> {
         let initial_index = draw_list.len();
@@ -141,7 +138,8 @@ impl<'a, D: DrawList> FontRenderer<'a, D> {
             draw_list,
             initial_index,
             align: params.align,
-            color,
+            color: params.color,
+            scale_factor: params.scale_factor,
             clip,
             area_size: params.area_size,
             initial_pos: params.pos,
@@ -204,8 +202,11 @@ impl<'a, D: DrawList> FontRenderer<'a, D> {
 
     fn draw_cur_word(&mut self) {
         for font_char in self.cur_word.drain(..) {
+            let x = (self.pos.x * self.scale_factor).round() / self.scale_factor;
+            let y = ((self.pos.y + font_char.y_offset + self.font.ascent) * self.scale_factor).round() / self.scale_factor;
+
             self.draw_list.push_rect(
-                [self.pos.x, self.pos.y + font_char.y_offset + self.font.ascent],
+                [x, y],
                 [font_char.size.x, font_char.size.y],
                 font_char.tex_coords,
                 self.color,
@@ -264,9 +265,12 @@ impl<'a, D: DrawList> FontRenderer<'a, D> {
         };
     
         self.pos.x += x_offset;
+
+        let x = (x_offset * self.scale_factor).round() / self.scale_factor;
+
         self.draw_list.back_adjust_positions(
             self.cur_line_index,
-            Point { x: x_offset, y: 0.0 }
+            Point { x, y: 0.0 }
         );
     }
 }
@@ -418,4 +422,6 @@ pub struct FontDrawParams {
     pub pos: Point,
     pub indent: f32,
     pub align: Align,
+    pub color: Color,
+    pub scale_factor: f32,
 }

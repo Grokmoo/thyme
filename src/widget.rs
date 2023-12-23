@@ -990,6 +990,8 @@ impl<'a> WidgetBuilder<'a> {
             pos: Point::default(),
             indent: self.widget.text_indent(),
             align: Align::TopLeft,
+            color: Color::white(),
+            scale_factor: internal.scale_factor(),
         };
 
         font.layout(params, text, &mut cursor);
@@ -1020,6 +1022,8 @@ impl<'a> WidgetBuilder<'a> {
             pos: fg_pos * scale,
             indent,
             align,
+            color: Color::white(),
+            scale_factor: internal.scale_factor(),
         };
 
         font.layout(params, text, &mut scaled_cursor);
