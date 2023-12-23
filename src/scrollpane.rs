@@ -178,7 +178,7 @@ impl<'a> ScrollpaneBuilder<'a> {
                         .enabled(pane_max.x > content_max.x)
                         .trigger_layout(&mut right_rect).finish();
                         if result.clicked {
-                            delta_scroll.x -= 10.0;
+                            delta_scroll.x -= ui.context().options().line_scroll;
                         }
         
                         let mut left_rect = Rect::default();
@@ -186,7 +186,7 @@ impl<'a> ScrollpaneBuilder<'a> {
                         .enabled(pane_min.x < content_min.x)
                         .trigger_layout(&mut left_rect).finish();
                         if result.clicked {
-                            delta_scroll.x += 10.0;
+                            delta_scroll.x += ui.context().options().line_scroll;
                         }
         
                         // compute size and position for main scroll button
@@ -235,7 +235,7 @@ impl<'a> ScrollpaneBuilder<'a> {
                         .enabled(pane_min.y < content_min.y)
                         .trigger_layout(&mut top_rect).finish();
                         if result.clicked {
-                            delta_scroll.y += 10.0;
+                            delta_scroll.y += ui.context().options().line_scroll;
                         }
         
                         let mut bot_rect = Rect::default();
@@ -243,7 +243,7 @@ impl<'a> ScrollpaneBuilder<'a> {
                         .enabled(pane_max.y > content_max.y)
                         .trigger_layout(&mut bot_rect).finish();
                         if result.clicked {
-                            delta_scroll.y -= 10.0;
+                            delta_scroll.y -= ui.context().options().line_scroll;
                         }
         
                         // compute size and position for main scroll button

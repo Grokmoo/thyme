@@ -439,6 +439,12 @@ impl Context {
         internal.time_millis - internal.mouse_taken_switch_time
     }
 
+    /// Returns the [`BuildOptions`](struct.BuildOptions.html) that this `Context`
+    /// was built with.
+    pub fn options(&self) -> BuildOptions {
+        self.internal.borrow().options.clone()
+    }
+
     pub(crate) fn internal(&self) -> &Rc<RefCell<ContextInternal>> {
         &self.internal
     }
