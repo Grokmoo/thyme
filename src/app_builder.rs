@@ -231,7 +231,7 @@ impl AppBuilder {
             gl::load_with(|ptr| gl_context.get_proc_address(ptr) as *const _)
         }
 
-        let mut io = crate::WinitIo::new(&event_loop, self.window_size, self.options.line_scroll)
+        let mut io = crate::WinitIo::new(&event_loop, self.window_size)
             .map_err(Error::Winit)?;
         let mut renderer = crate::GLRenderer::new();
         let mut context_builder = crate::ContextBuilder::new(self.options.clone());
@@ -263,7 +263,7 @@ impl AppBuilder {
         let display = Display::new(builder, context, &event_loop).map_err(GliumError::DisplayCreation)
             .map_err(Error::Glium)?;
 
-        let mut io = crate::WinitIo::new(&event_loop, self.window_size, self.options.line_scroll)
+        let mut io = crate::WinitIo::new(&event_loop, self.window_size)
             .map_err(Error::Winit)?;
         let mut renderer = crate::GliumRenderer::new(&display)
             .map_err(Error::Glium)?;
@@ -308,7 +308,7 @@ impl AppBuilder {
         surface.configure(&device, &surface_config);
 
         // create thyme backend
-        let mut io = crate::WinitIo::new(&event_loop, self.window_size, self.options.line_scroll).map_err(Error::Winit)?;
+        let mut io = crate::WinitIo::new(&event_loop, self.window_size).map_err(Error::Winit)?;
         let mut renderer = crate::WgpuRenderer::new(Arc::clone(&device), Arc::clone(&queue));
         let mut context_builder = crate::ContextBuilder::new(self.options.clone());
 

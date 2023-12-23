@@ -37,7 +37,6 @@ fn main_loop(event_loop: winit::EventLoop<()>, thyme: thyme::Context) {
 pub struct WinitIo {
     scale_factor: f32,
     display_size: Point,
-    line_scroll: f32,
 }
 
 impl IO for WinitIo {
@@ -52,14 +51,12 @@ impl WinitIo {
     pub fn new<T>(
         event_loop: &EventLoop<T>,
         logical_display_size: Point,
-        line_scroll: f32,
     ) -> Result<WinitIo, WinitError> {
         let monitor = event_loop.primary_monitor().ok_or(WinitError::PrimaryMonitorNotFound)?;
         let scale_factor = monitor.scale_factor() as f32;
         Ok(WinitIo {
             scale_factor,
             display_size: logical_display_size * scale_factor,
-            line_scroll,
         })
     }
 
@@ -109,11 +106,11 @@ impl WinitIo {
                 match delta {
                     MouseScrollDelta::LineDelta(x, y) => {
                         // TODO configure line delta
-                        context.add_mouse_wheel(Point::new(*x * self.line_scroll, *y * self.line_scroll));
+                        context.add_mouse_wheel(Point::new(*x, *y), true);
                     }, MouseScrollDelta::PixelDelta(pos) => {
                         let x = pos.x as f32;
                         let y = pos.y as f32;
-                        context.add_mouse_wheel(Point::new(x, y));
+                        context.add_mouse_wheel(Point::new(x, y), false);
                     }
                 }
             },

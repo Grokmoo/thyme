@@ -29,7 +29,7 @@ impl Default for BuildOptions {
         Self {
             enable_live_reload: true,
             tooltip_time: 0,
-            line_scroll: 10.0,
+            line_scroll: 20.0,
         }
     }
 }

@@ -479,10 +479,10 @@ impl Context {
     /// This is normally handled by the [`IO`](trait.IO.html) backend, which will set
     /// this in response to a window resize event.  User code should
     /// not need to call this.
-    pub fn add_mouse_wheel(&mut self, delta: Point) {
+    pub fn add_mouse_wheel(&mut self, delta: Point, line: bool) {
         let mut internal = self.internal.borrow_mut();
 
-        internal.mouse_wheel = internal.mouse_wheel + delta;
+        internal.mouse_wheel = internal.mouse_wheel + delta * if line { internal.options.line_scroll } else { 1.0 };
     }
 
     /// Set the input modifiers - the status of keys such as `ctrl` and `shift`.

@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // create thyme backend
     let mut renderer = thyme::GliumRenderer::new(&display)?;
-    let mut io = thyme::WinitIo::new(&events_loop, window_size.into(), 20.0)?;
+    let mut io = thyme::WinitIo::new(&events_loop, window_size.into())?;
     let mut context_builder = thyme::ContextBuilder::with_defaults();
 
     demo::register_assets(&mut context_builder);

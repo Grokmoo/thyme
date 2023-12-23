@@ -47,7 +47,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     demo::register_assets(&mut context_builder);
 
     let window_size = [1280.0, 720.0];
-    let mut io = thyme::WinitIo::new(&event_loop, window_size.into(), 20.0)?;
+    let mut io = thyme::WinitIo::new(&event_loop, window_size.into())?;
     let mut context = context_builder.build(&mut renderer, &mut io)?;
     let mut party = demo::Party::default();
 
