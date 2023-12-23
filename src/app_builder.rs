@@ -1,4 +1,4 @@
-use std::path::{PathBuf};
+use std::path::PathBuf;
 
 #[cfg(feature="wgpu_backend")]
 use std::sync::Arc;
@@ -231,7 +231,7 @@ impl AppBuilder {
             gl::load_with(|ptr| gl_context.get_proc_address(ptr) as *const _)
         }
 
-        let mut io = crate::WinitIo::new(&event_loop, self.window_size)
+        let mut io = crate::WinitIo::new(&event_loop, self.window_size, self.options.line_scroll)
             .map_err(Error::Winit)?;
         let mut renderer = crate::GLRenderer::new();
         let mut context_builder = crate::ContextBuilder::new(self.options.clone());
@@ -247,8 +247,8 @@ impl AppBuilder {
     /// in this Builder and using the [`GliumRenderer`](struct.GliumRenderer.html).
     #[cfg(feature="glium_backend")]
     pub fn build_glium(self) -> Result<GliumApp, Error> {
-        use glium::glutin::{event_loop::{EventLoop}, window::WindowBuilder};
-        use glium::{Display};
+        use glium::glutin::{event_loop::EventLoop, window::WindowBuilder};
+        use glium::Display;
         use crate::glium_backend::GliumError;
 
         if self.logger {
@@ -263,7 +263,7 @@ impl AppBuilder {
         let display = Display::new(builder, context, &event_loop).map_err(GliumError::DisplayCreation)
             .map_err(Error::Glium)?;
 
-        let mut io = crate::WinitIo::new(&event_loop, self.window_size)
+        let mut io = crate::WinitIo::new(&event_loop, self.window_size, self.options.line_scroll)
             .map_err(Error::Winit)?;
         let mut renderer = crate::GliumRenderer::new(&display)
             .map_err(Error::Glium)?;
@@ -308,7 +308,7 @@ impl AppBuilder {
         surface.configure(&device, &surface_config);
 
         // create thyme backend
-        let mut io = crate::WinitIo::new(&event_loop, self.window_size).map_err(Error::Winit)?;
+        let mut io = crate::WinitIo::new(&event_loop, self.window_size, self.options.line_scroll).map_err(Error::Winit)?;
         let mut renderer = crate::WgpuRenderer::new(Arc::clone(&device), Arc::clone(&queue));
         let mut context_builder = crate::ContextBuilder::new(self.options.clone());
 
@@ -475,7 +475,7 @@ impl GlApp {
     pub fn main_loop<F: Fn(&mut Frame) + 'static>(self, f: F) -> ! {
         use glutin::{
             event::{Event, WindowEvent},
-            event_loop::{ControlFlow},
+            event_loop::ControlFlow,
         };
 
         let event_loop = self.event_loop;
@@ -531,9 +531,9 @@ impl GliumApp {
     pub fn main_loop<F: Fn(&mut Frame) + 'static>(self, f: F) -> ! {
         use glium::glutin::{
             event::{Event, WindowEvent},
-            event_loop::{ControlFlow},
+            event_loop::ControlFlow,
         };
-        use glium::{Surface};
+        use glium::Surface;
 
         let event_loop = self.event_loop;
         let display = self.display;

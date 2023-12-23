@@ -127,7 +127,12 @@ impl Frame {
             return None;
         }
 
-        Some(context.take_mouse_wheel())
+        let point = context.take_mouse_wheel();
+        if point == Point::default() {
+            None
+        } else {
+            Some(point)
+        }
     }
 
     pub(crate) fn check_mouse_state(&mut self, index: usize) -> MouseState {

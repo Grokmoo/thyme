@@ -482,7 +482,7 @@ impl Context {
     pub fn add_mouse_wheel(&mut self, delta: Point) {
         let mut internal = self.internal.borrow_mut();
 
-        internal.mouse_wheel = internal.mouse_wheel + delta * internal.options.line_scroll;
+        internal.mouse_wheel = internal.mouse_wheel + delta;
     }
 
     /// Set the input modifiers - the status of keys such as `ctrl` and `shift`.

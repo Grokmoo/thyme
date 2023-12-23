@@ -143,7 +143,7 @@ impl<'a> ScrollpaneBuilder<'a> {
         let horiz = state.show_horiz;
         let vert = state.show_vert;
 
-        let (ui, _) = self.builder.finish_with(
+        let (ui, pane_result) = self.builder.finish_with(
             Some(|ui: &mut Frame| {
                 let mut content_bounds = Rect::default();
         
@@ -284,6 +284,8 @@ impl<'a> ScrollpaneBuilder<'a> {
                 delta = delta_scroll;
             })
         );
+
+        delta = delta + pane_result.moved;
 
         // set the scroll every frame to bound it, in case it was modified externally
         ui.modify(&content_id, |state| {

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use winit::{event::{Event, WindowEvent}, event_loop::{EventLoop, ControlFlow}};
-use thyme::{bench};
+use thyme::bench;
 
 mod demo;
 
@@ -10,7 +10,7 @@ mod demo;
 /// the `demo.rs` file contains the Thyme UI code and logic.
 /// A simple party creator and character sheet for an RPG.
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    use winit::{ window::WindowBuilder };
+    use winit::window::WindowBuilder;
 
     // initialize our very basic logger so error messages go to stdout
     thyme::log::init(log::Level::Warn).unwrap();
@@ -37,7 +37,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // create thyme backend
     let mut renderer = thyme::WgpuRenderer::new(Arc::clone(&device), Arc::clone(&queue));
-    let mut io = thyme::WinitIo::new(&events_loop, window_size.into())?;
+    let mut io = thyme::WinitIo::new(&events_loop, window_size.into(), 20.0)?;
     let mut context_builder = thyme::ContextBuilder::with_defaults();
 
     demo::register_assets(&mut context_builder);
