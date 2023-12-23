@@ -203,7 +203,7 @@ impl<'a, D: DrawList> FontRenderer<'a, D> {
     fn draw_cur_word(&mut self) {
         for font_char in self.cur_word.drain(..) {
             let x = (self.pos.x * self.scale_factor).round() / self.scale_factor;
-            let y = ((self.pos.y + font_char.y_offset + self.font.ascent) * self.scale_factor).round() / self.scale_factor;
+            let y = (self.pos.y + font_char.y_offset + self.font.ascent).round();
 
             self.draw_list.push_rect(
                 [x, y],
