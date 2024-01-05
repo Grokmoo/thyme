@@ -194,13 +194,19 @@ impl<'a> ScrollpaneBuilder<'a> {
                         let width_frac = content_bounds.size.x / pane_bounds.size.x;
         
                         // assume left button starts at 0,0 within the parent widget
-                        let min_x = left_rect.size.x;
-                        let max_x = right_rect.pos.x - left_rect.pos.x;
-                        let pos_x = min_x + start_frac * (max_x - min_x);
-                        let pos_y = 0.0;
-                        let size_x = width_frac * (max_x - min_x);
                         let size_y = left_rect.size.y;
-        
+                        let min_x = left_rect.size.x;
+                        let mut max_x = right_rect.pos.x - left_rect.pos.x;
+                        let mut size_x = width_frac * (max_x - min_x);
+                        if size_x < size_y {
+                            // don't let scroll button get too small
+                            max_x -= size_y - size_x;
+                            size_x = size_y;
+                        }
+
+                        let pos_y = 0.0;
+                        let pos_x = min_x + start_frac * (max_x - min_x);
+
                         scroll_button_center_x = pos_x + size_x * 0.5 + ui.cursor().x;
                         let scrollbar_dist = max_x - min_x - size_x; // total distance the scrollbar may move
                         let content_dist = pane_bounds.size.x - content_bounds.size.x; // total distance the content may move
@@ -251,12 +257,18 @@ impl<'a> ScrollpaneBuilder<'a> {
                         let height_frac = content_bounds.size.y / pane_bounds.size.y;
         
                         // assume top button starts at 0,0 within the parent widget
-                        let min_y = top_rect.size.y;
-                        let max_y = bot_rect.pos.y - top_rect.pos.y;
-                        let pos_y = min_y + start_frac * (max_y - min_y);
-                        let pos_x = 0.0;
-                        let size_y = height_frac * (max_y - min_y);
                         let size_x = top_rect.size.x;
+                        let min_y = top_rect.size.y;
+                        let mut max_y = bot_rect.pos.y - top_rect.pos.y;
+                        let mut size_y = height_frac * (max_y - min_y);
+                        if size_y < size_x {
+                            // don't let scroll button get too small
+                            max_y -= size_x - size_y;
+                            size_y = size_x;
+                        }
+
+                        let pos_x = 0.0;
+                        let pos_y = min_y + start_frac * (max_y - min_y);
 
                         scroll_button_center_y = pos_y + size_y * 0.5 + ui.cursor().y;
                         let scrollbar_dist = max_y - min_y - size_y; // total distance the scrollbar may move
