@@ -444,7 +444,9 @@ pub enum Layout {
 
     /// Layout children in grid rows, left to right, starting a new row
     /// to prevent placing children outside the parent inner bounds.
-    Grid,
+    /// Optionally specify a maximum width for each row, independant of the
+    /// normal widget size
+    Grid(Option<i16>),
 }
 
 /// Widget or text horizontal and vertical alignment.
