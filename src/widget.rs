@@ -209,6 +209,7 @@ impl Widget {
             Layout::Horizontal => self.cursor.x += gap,
             Layout::Vertical => self.cursor.y += gap,
             Layout::Free => (),
+            Layout::Grid => self.cursor.x += gap,
         }
     }
 
@@ -1260,6 +1261,13 @@ impl<'a> WidgetBuilder<'a> {
                 Horizontal => parent.cursor.x += x + parent.layout_spacing.x,
                 Vertical => parent.cursor.y += y + parent.layout_spacing.y,
                 Free => (),
+                Grid => {
+                    parent.cursor.x += x + parent.layout_spacing.x;
+                    if parent.cursor.x + size.x > parent.inner_size().x {
+                        parent.cursor.x = 0.0;
+                        parent.cursor.y += y + parent.layout_spacing.y;
+                    }
+                }
             }
         }
         

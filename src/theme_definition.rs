@@ -441,6 +441,10 @@ pub enum Layout {
     /// Don't layout children in any order.  Children must specify manual alignments to
     /// avoid overlap.
     Free,
+
+    /// Layout children in grid rows, left to right, starting a new row
+    /// to prevent placing children outside the parent inner bounds.
+    Grid,
 }
 
 /// Widget or text horizontal and vertical alignment.
