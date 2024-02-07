@@ -33,8 +33,8 @@ impl Frame {
       height_from: FontLine
     ```
     **/
-    pub fn label<T: Into<String>>(&mut self, theme: &str, text: T) {
-        self.start(theme).text(text).finish();
+    pub fn label<T: Into<String>>(&mut self, theme: &str, text: T) -> WidgetState {
+        self.start(theme).text(text).finish()
     }
 
     /**
@@ -42,13 +42,19 @@ impl Frame {
     you should use `height_from: Normal`. Computes the widget height based on the theme width
     and number of lines of text.
     **/
-    pub fn multiline_label<T: Into<String>>(&mut self, theme: &str, text: T) {
+    pub fn multiline_label<T: Into<String>>(&mut self, theme: &str, text: T) -> WidgetState {
         let mut cursor = Point::default();
-        self.start(theme)
+        let builder = self.start(theme)
             .text(text)
-            .trigger_text_layout(&mut cursor)
-            .height(cursor.y)
-            .finish();
+            .trigger_text_layout(&mut cursor);
+
+        let mut height = cursor.y;
+        if let Some(font) = builder.widget().font() {
+            height += font.line_height;
+        }
+        height += builder.widget().border().vertical();
+
+        builder.height(height).finish()
     }
 
     /**
@@ -459,17 +465,22 @@ impl Frame {
         let mut text_out = None;
 
         self.modify(id, |state| {
-            if state.text.is_none() {
-                state.text = Some(initial_value.unwrap_or_default());
-            }
+            let text = match state.text.as_mut() {
+                Some(text) => text,
+                None => {
+                    state.text = Some(initial_value.unwrap_or_default());
+                    state.text.as_mut().unwrap()
+                }
+            };
 
             let mut text_changed = false;
             for c in state.characters.drain(..) {
-                if c as u32 == 8 { //backspace
-                    state.text.as_mut().unwrap().pop();
-                } else {
-                    state.text.as_mut().unwrap().push(c);
+                match c {
+                    '\x08' => { text.pop(); }, // backspace
+                    '\r' => { text.push('\n'); },
+                    _ => { text.push(c); },
                 }
+
                 text_changed = true;
             }
 

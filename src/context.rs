@@ -538,7 +538,7 @@ impl Context {
     /// Pushes a character (that was received from the keyboard) to thyme, to be
     /// dispatched to the appropriate widget based on keyboard focus in the next Frame.
     /// This is normally handled by the [`IO`](trait.IO.html) backend, which will set
-    /// this in response to a window resize event.  User code should
+    /// this in response to a window character event.  User code should
     /// not need to call this.
     pub fn push_character(&mut self, c: char) {
         let mut internal = self.internal.borrow_mut();
