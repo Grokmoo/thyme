@@ -6,6 +6,7 @@ use std::time::Instant;
 
 use serde::{Serialize, Deserialize};
 
+use crate::KeyEvent;
 use crate::{BuildOptions, Error, Point, Frame, MouseButton, Rect, frame::{RendGroup, RendGroupDef}};
 use crate::{font::FontSummary, widget::Widget, image::ImageHandle, theme::ThemeSet, resource::ResourceSet};
 use crate::theme_definition::{AnimState, AnimStateKey};
@@ -65,6 +66,10 @@ pub struct PersistentState {
     /// empty.  Widgets should typically drain this list as they work with input.
     pub characters: Vec<char>,
 
+    /// Any key events that have been sent to this widget from the keyboard.  Defaults to empty.
+    /// Widgets should typically drain this list as they work with input
+    pub key_events: Vec<KeyEvent>,
+
     /// The text for this widget, overriding default text.  Defaults to `None`.
     pub text: Option<String>,
 
@@ -94,6 +99,7 @@ impl Default for PersistentState {
             scroll: Point::default(),
             base_time_millis: 0,
             characters: Vec::default(),
+            key_events: Vec::default(),
             text: None,
             timer: 0,
         }
@@ -550,6 +556,22 @@ impl Context {
 
         let state = internal.state_mut(id);
         state.characters.push(c);
+    }
+
+    /// Pushes a key event (that was received from the keyboard as virtual key code) to thyme,
+    /// to be dispatched to the appropriate widget based on keyboard focus in the next frame.
+    /// This is normally handled by the [`IO`](trait.IO.html) backend, which should set this
+    /// in response to a window event.  User code should not need to call this.
+    pub fn push_key_event(&mut self, event: KeyEvent) {
+        let mut internal = self.internal.borrow_mut();
+
+        let id = match &internal.keyboard_focus_widget {
+            Some(id) => id.to_string(),
+            None => return,
+        };
+
+        let state = internal.state_mut(id);
+        state.key_events.push(event);
     }
 
     /// Returns the current mouse position, based on mouse cursor movement.  The scale

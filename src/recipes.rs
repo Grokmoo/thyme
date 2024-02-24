@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use crate::{Align, Frame, Point, Rect, WidgetState};
+use crate::{Align, Frame, KeyEvent, Point, Rect, WidgetState};
 
 // Specific widget builders and convenience methods
 impl Frame {
@@ -430,9 +430,9 @@ impl Frame {
     /**
     Creates a simple text input field.  The `id` that is passed in must be unique.
     The text input will grab keyboard focus when the user clicks on it, allowing
-    the user to type text.  The return value will be `None` if the text didn't change
-    this frame, or will contain the current text displayed by the textbox if it did
-    change.  Optionally, pass an initial_value which will set the field's text if it
+    the user to type text.  The return value will be `None` if no event occurred
+    this frame, or will contain the character added or key event if an event did occur.
+    Optionally, pass an initial_value which will set the field's text if it
     is not already set.
 
     An example YAML theme definition:
@@ -461,8 +461,8 @@ impl Frame {
     }
     ```
     */
-    pub fn input_field(&mut self, theme: &str, id: &str, initial_value: Option<String>) -> Option<String> {
-        let mut text_out = None;
+    pub fn input_field(&mut self, theme: &str, id: &str, initial_value: Option<String>) -> Option<InputFieldResult> {
+        let mut output = None;
 
         self.modify(id, |state| {
             let text = match state.text.as_mut() {
@@ -473,19 +473,21 @@ impl Frame {
                 }
             };
 
-            let mut text_changed = false;
-            for c in state.characters.drain(..) {
+            if let Some(c) = state.characters.pop() {
                 match c {
                     '\x08' => { text.pop(); }, // backspace
-                    '\r' => { text.push('\n'); },
-                    _ => { text.push(c); },
+                    '\r' => {}, // do nothing on enter, user will receive this as a key event as well
+                    _ => {
+                        output = Some(InputFieldResult::Char(c));
+                        text.push(c);
+                    },
                 }
-
-                text_changed = true;
             }
 
-            if text_changed {
-                text_out = state.text.clone();
+            if output.is_none() {
+                if let Some(e) = state.key_events.pop() {
+                    output = Some(InputFieldResult::KeyEvent(e));
+                }
             }
         });
         let mut text_pos = Point::default();
@@ -503,7 +505,7 @@ impl Frame {
             self.focus_keyboard(id);
         }
 
-        text_out
+        output
     }
 
     /**
@@ -609,4 +611,14 @@ impl Frame {
     pub fn scrollpane<F: FnOnce(&mut Frame)>(&mut self, theme: &str, content_id: &str, children: F) {
         self.start(theme).scrollpane(content_id).children(children);
     }
+}
+
+/// A single frame of input that has been passed to an input field
+#[derive(Debug)]
+pub enum InputFieldResult {
+    /// A keyboard character input
+    Char(char),
+
+    /// A virtual keycode event
+    KeyEvent(KeyEvent),
 }

@@ -1,4 +1,4 @@
-use std::fs::{File};
+use std::fs::File;
 use std::io::Read;
 use std::time::Duration;
 use std::path::{Path, PathBuf};

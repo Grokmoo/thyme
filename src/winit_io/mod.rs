@@ -1,11 +1,12 @@
 use std::error::Error;
 
-use winit::event::{Event, WindowEvent, MouseButton, MouseScrollDelta, ElementState};
+use winit::event::{ElementState, Event, MouseButton, MouseScrollDelta, VirtualKeyCode, WindowEvent};
 use winit::event_loop::EventLoop;
 
 use crate::point::Point;
 use crate::context::{InputModifiers, Context};
 use crate::render::IO;
+use crate::KeyEvent;
 
 /**
 A Thyme Input/Output adapter for [`winit`](https://github.com/rust-windowing/winit).
@@ -119,7 +120,12 @@ impl WinitIo {
             },
             ReceivedCharacter(c) => {
                 context.push_character(*c);
-            }
+            },
+            KeyboardInput { input, .. } => {
+                if let Some(event) = key_event(input.virtual_keycode) {
+                    context.push_key_event(event);
+                }
+            },
             _ => (),
         }
     }
@@ -149,4 +155,42 @@ impl Error for WinitError {
             Os(e) => Some(e),
         }
     }
+}
+
+fn key_event(input: Option<VirtualKeyCode>) -> Option<KeyEvent> {
+    let input = match input {
+        None => return None,
+        Some(i) => i,
+    };
+
+    use VirtualKeyCode::*;
+    Some(match input {
+        Insert => KeyEvent::Insert,
+        Home => KeyEvent::Home,
+        Delete => KeyEvent::Delete,
+        End => KeyEvent::End,
+        PageDown => KeyEvent::PageDown,
+        PageUp => KeyEvent::PageUp,
+        Left => KeyEvent::Left,
+        Up => KeyEvent::Up,
+        Right => KeyEvent::Right,
+        Down => KeyEvent::Down,
+        Back => KeyEvent::Back,
+        Return => KeyEvent::Return,
+        Space => KeyEvent::Space,
+        Escape => KeyEvent::Escape,
+        F1 => KeyEvent::F1,
+        F2 => KeyEvent::F2,
+        F3 => KeyEvent::F3,
+        F4 => KeyEvent::F4,
+        F5 => KeyEvent::F5,
+        F6 => KeyEvent::F6,
+        F7 => KeyEvent::F7,
+        F8 => KeyEvent::F8,
+        F9 => KeyEvent::F9,
+        F10 => KeyEvent::F10,
+        F11 => KeyEvent::F11,
+        F12 => KeyEvent::F12,
+        _ => return None,
+    })
 }

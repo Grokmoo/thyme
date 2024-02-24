@@ -236,8 +236,8 @@ pub fn build_ui(ui: &mut Frame, party: &mut Party) {
             ui.scrollpane("pane", "character_content", |ui| {
                 ui.start("name_panel")
                 .children(|ui| {
-                    if let Some(new_name) = ui.input_field("name_input", "name_input", None) {
-                        character.name = new_name;
+                    if ui.input_field("name_input", "name_input", None).is_some() {
+                        character.name = ui.text_for("name_input").unwrap_or_default();
                     }
                 });
 

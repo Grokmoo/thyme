@@ -395,6 +395,7 @@ mod context_builder;
 mod font;
 mod frame;
 mod image;
+mod key_event;
 mod theme;
 mod recipes;
 mod render;
@@ -431,6 +432,7 @@ mod gl_backend;
 pub use gl_backend::{GLRenderer, GlError};
 
 pub use frame::{Frame, MouseButton};
+pub use key_event::KeyEvent;
 pub use point::{Rect, Point, Border};
 pub use widget::{WidgetBuilder, WidgetState};
 pub use context_builder::{BuildOptions, ContextBuilder};
@@ -438,6 +440,7 @@ pub use context::{Context, PersistentState, InputModifiers, SavedContext};
 pub use scrollpane::{ScrollpaneBuilder, ShowElement};
 pub use theme_definition::{AnimStateKey, AnimState, Align, Color, Layout, WidthRelative, HeightRelative};
 pub use window::WindowBuilder;
+pub use recipes::InputFieldResult;
 pub use winit_io::WinitIo;
 
 pub use render::{IO, Renderer};
