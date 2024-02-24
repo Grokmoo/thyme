@@ -123,7 +123,9 @@ impl WinitIo {
             },
             KeyboardInput { input, .. } => {
                 if let Some(event) = key_event(input.virtual_keycode) {
-                    context.push_key_event(event);
+                    if let ElementState::Released = input.state {
+                        context.push_key_event(event);
+                    }
                 }
             },
             _ => (),
