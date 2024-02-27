@@ -45,6 +45,9 @@ pub enum KeyEvent {
     /// The escape key
     Escape,
 
+    /// The tab key
+    Tab,
+
     /// Function key 1
     F1,
 

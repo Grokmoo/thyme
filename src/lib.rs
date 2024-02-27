@@ -440,7 +440,7 @@ pub use context::{Context, PersistentState, InputModifiers, SavedContext};
 pub use scrollpane::{ScrollpaneBuilder, ShowElement};
 pub use theme_definition::{AnimStateKey, AnimState, Align, Color, Layout, WidthRelative, HeightRelative};
 pub use window::WindowBuilder;
-pub use recipes::InputFieldResult;
+pub use recipes::{InputFieldResult, InputFieldKeyboard};
 pub use winit_io::WinitIo;
 
 pub use render::{IO, Renderer};

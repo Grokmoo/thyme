@@ -461,8 +461,11 @@ impl Frame {
     }
     ```
     */
-    pub fn input_field(&mut self, theme: &str, id: &str, initial_value: Option<String>) -> Option<InputFieldResult> {
-        let mut output = None;
+    pub fn input_field(&mut self, theme: &str, id: &str, initial_value: Option<String>) -> InputFieldResult {
+        let mut output = InputFieldResult {
+            cursor: Point::default(),
+            keyboard: None,
+        };
 
         self.modify(id, |state| {
             let text = match state.text.as_mut() {
@@ -478,15 +481,15 @@ impl Frame {
                     '\x08' => { text.pop(); }, // backspace
                     '\r' => {}, // do nothing on enter, user will receive this as a key event as well
                     _ => {
-                        output = Some(InputFieldResult::Char(c));
+                        output.keyboard = Some(InputFieldKeyboard::Char(c));
                         text.push(c);
                     },
                 }
             }
 
-            if output.is_none() {
+            if output.keyboard.is_none() {
                 if let Some(e) = state.key_events.pop() {
-                    output = Some(InputFieldResult::KeyEvent(e));
+                    output.keyboard = Some(InputFieldKeyboard::KeyEvent(e));
                 }
             }
         });
@@ -500,6 +503,8 @@ impl Frame {
                 ui.start("caret").pos(text_pos.x, text_pos.y).finish();
             }
         });
+
+        output.cursor = text_pos;
 
         if result.clicked {
             self.focus_keyboard(id);
@@ -613,9 +618,19 @@ impl Frame {
     }
 }
 
-/// A single frame of input that has been passed to an input field
+/// Result struct returned from the creation of an input field
 #[derive(Debug)]
-pub enum InputFieldResult {
+pub struct InputFieldResult {
+    /// The current text cursor position for this input field
+    pub cursor: Point,
+
+    /// Any keyboard input for this input field this frame
+    pub keyboard: Option<InputFieldKeyboard>,
+}
+
+/// A single frame of keyboard input that has been passed to an input field
+#[derive(Debug)]
+pub enum InputFieldKeyboard {
     /// A keyboard character input
     Char(char),
 

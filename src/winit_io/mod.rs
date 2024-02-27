@@ -181,6 +181,7 @@ fn key_event(input: Option<VirtualKeyCode>) -> Option<KeyEvent> {
         Return => KeyEvent::Return,
         Space => KeyEvent::Space,
         Escape => KeyEvent::Escape,
+        Tab => KeyEvent::Tab,
         F1 => KeyEvent::F1,
         F2 => KeyEvent::F2,
         F3 => KeyEvent::F3,
