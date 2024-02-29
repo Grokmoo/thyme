@@ -1262,7 +1262,7 @@ impl<'a> WidgetBuilder<'a> {
                 Vertical => parent.cursor.y += y + parent.layout_spacing.y,
                 Free => (),
                 Grid(max_width) => {
-                    let max_x = parent.inner_size().x.min(max_width.map_or(0.0, |m| m as f32));
+                    let max_x = parent.inner_size().x.max(max_width.map_or(0.0, |m| m as f32));
 
                     parent.cursor.x += x + parent.layout_spacing.x;
                     if parent.cursor.x + size.x > max_x {
