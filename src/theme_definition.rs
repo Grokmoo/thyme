@@ -308,7 +308,7 @@ impl AnimState {
 
 struct AnimStateVisitor;
 
-impl<'de> Visitor<'de> for AnimStateVisitor {
+impl Visitor<'_> for AnimStateVisitor {
     type Value = AnimState;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -576,6 +576,7 @@ pub enum HeightRelative {
 /// * 6 digits - each set of 2 digits specifies one color component - red, green, and blue.  Alpha is assumed to be the maximum value of FF.
 /// * 4 digits - each single digit specifies one color component - red, green, blue, then alpha, with half precision.
 /// * 3 digits - each single digit specifies one color component - red, green, then blue.  Alpha ia assumed to be the maximum value of F.
+/// 
 /// For the 4 and 3 digit variants - each component has one of 16 possible values.  The value is multiplied by 17 to determine the
 /// corresponding full precision value.  For example, `0` maps to `00`, `F` maps to `FF`, and `8` maps to `88`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -663,7 +664,7 @@ impl From<Color> for [f32; 4] {
 
 struct ColorVisitor;
 
-impl<'de> Visitor<'de> for ColorVisitor {
+impl Visitor<'_> for ColorVisitor {
     type Value = Color;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {

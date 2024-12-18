@@ -510,6 +510,7 @@ impl Context {
     /// # Inputs:
     /// - button `pressed` state
     /// - index: 0 = LeftClick, 1 = Right Click, 2 = Middle Click
+    /// 
     /// This is normally handled by the [`IO`](trait.IO.html) backend, which will set
     /// this in response to a window resize event.  User code should
     /// not need to call this.

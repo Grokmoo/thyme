@@ -400,7 +400,6 @@ impl Frame {
     ```
 
     */
-    
     pub fn cur_time_millis(&self) -> u32 {
         let context = self.context.internal().borrow();
         context.time_millis()

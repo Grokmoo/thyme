@@ -16,7 +16,6 @@ impl Frame {
     }
     ```
     */
-    
     pub fn child(&mut self, theme: &str) -> WidgetState {
         self.start(theme).finish()
     }
