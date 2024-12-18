@@ -30,6 +30,10 @@ impl Frame {
     be parsed by the [`Color`](struct.Color.html) struct.  Quotes are not used in specifying the value.  For
     example, `<e c=#f00>Red text</e>`.  The extended tag may be nested.
 
+    ### Column Widths
+    In addition to specifying a default column width using the `custom` value `column_width`, the width of individual
+    columns of tables may be set using the `<e>` tag with `width` attribute, for example `<e width=30.0></e>`.
+
     An example theme definition:
     ```yaml
     text_area_item:
@@ -80,11 +84,13 @@ impl Frame {
 
         let builder = self.start(theme);
 
+        let column_width = builder.custom_float("column_width", 25.0);
         let mut state = MarkdownState {
             line_height: 0.0,
             tab_width: builder.custom_float("tab_width", 4.0),
             list_bullet: builder.custom_string("list_bullet", "*".to_string()),
-            column_width: builder.custom_float("column_width", 25.0),
+            base_column_width: column_width,
+            column_widths: [column_width; 8],
             scale_factor,
             text_indent: 0.0,
             indent_level: 0.0,
@@ -245,7 +251,7 @@ fn item(
 
         builder = builder
             .width_from(WidthRelative::Normal)
-            .size(state.column_width, 0.0)
+            .size(state.width_for_column(col), 0.0)
             .text_align(align);
     }
 
@@ -279,7 +285,8 @@ struct MarkdownState {
     line_height: f32,
     tab_width: f32,
     list_bullet: String,
-    column_width: f32,
+    base_column_width: f32,
+    column_widths: [f32; 8],
     scale_factor: f32,
 
     // current state
@@ -397,6 +404,7 @@ impl MarkdownState {
             Tag::Strong => self.set_font(self.font.remove(FontMode::Strong)),
             Tag::Table(_) => {
                 self.table.clear();
+                self.column_widths = [self.base_column_width; 8];
             }
             Tag::TableHead => {
                 self.table_column = None;
@@ -432,6 +440,22 @@ impl MarkdownState {
                         ui.log(log::Level::Warn, format!("Unable to parse color from {}", val));
                     }, Some(c) => {
                         self.color_stack.push(c);
+                    }
+                }
+            },
+            "w" | "width" => {
+                match val.parse::<f32>() {
+                    Ok(val) => {
+                        if let Some(col) = self.table_column {
+                            if col < 8 {
+                                ui.log(log::Level::Warn, format!("Set {val} for {col}"));
+                                self.column_widths[col as usize] = val;
+                            }
+                        } else {
+                            ui.log(log::Level::Warn, format!("Attempted to set column width to {val} outside of table"));
+                        }
+                    }, Err(_) => {
+                        ui.log(log::Level::Warn, format!("Unable to parse float value from {val}"));
                     }
                 }
             },
@@ -495,10 +519,7 @@ impl MarkdownState {
         }
 
         if end_tag {
-            let popped = self.color_stack.pop();
-            if popped.is_none() {
-                ui.log(log::Level::Warn, format!("Unexpected close tag: {}", data));
-            }
+            self.color_stack.pop();
         }
     }
 
@@ -528,10 +549,23 @@ impl MarkdownState {
         self.text_indent = self.cursor.x * self.scale_factor;
 
         if let Some(col) = self.table_column {
-            ui.set_cursor(col as f32 * self.column_width, self.cursor.y);
+            ui.set_cursor(self.pos_at_column(col), self.cursor.y);
         } else {
             ui.set_cursor(self.indent_level * self.tab_width, self.cursor.y);
         }
+    }
+
+    fn pos_at_column(&self, col: u16) -> f32 {
+        let mut width = 0.0;
+        for c in 0..col {
+            width += self.width_for_column(c);
+        }
+
+        width
+    }
+
+    fn width_for_column(&self, col: u16) -> f32 {
+        if col < 8 { self.column_widths[col as usize] } else { self.base_column_width }
     }
 
     fn cur_theme(&self) -> &str {
