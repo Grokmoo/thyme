@@ -10,7 +10,7 @@ impl Frame {
     combination that is not defined, the widget will log an error.
 
     The widget can currently handle a subset of common Markdown, including headings, strong / emphasis text, unordered
-    and ordered lists, and tables with column alignments.
+    and ordered lists, atables with column alignments, and images.
 
     Several parameters need to be specified for the widget to function properly, including `tab_width`, `column_width`, and
     a `list_bullet` character.  See the example below.  Note that the widget does not perform look-ahead to determine
@@ -227,6 +227,27 @@ impl Frame {
     }
 }
 
+fn image(
+    ui: &mut Frame,
+    state: &mut MarkdownState,
+    src: &str,
+) {
+    let current_cursor = ui.cursor();
+    ui.set_cursor(current_cursor.x + state.text_indent, current_cursor.y);
+    let mut rect = Rect::default();
+    ui.start("text_area_image").background(src).trigger_layout(&mut rect).finish();
+
+    if state.currently_at_new_line {
+        // if this is the first element in a new line, reset the line height
+        state.line_height = rect.size.y;
+    } else {
+        state.line_height = state.line_height.max(rect.size.y);
+    }
+    state.cursor.x += rect.size.x;
+    state.update_cursor(ui);
+    state.currently_at_new_line = false;
+}
+
 fn item(
     ui: &mut Frame,
     state: &mut MarkdownState,
@@ -369,7 +390,10 @@ impl MarkdownState {
                 self.cursor.x = 0.0;
                 self.update_cursor(ui);
             },
-            Tag::BlockQuote | Tag::CodeBlock(_) | Tag::FootnoteDefinition(_) | Tag::Strikethrough | Tag::Link(_, _, _) | Tag::Image(_, _, _) => {
+            Tag::Image(_, src, _) => {
+                image(ui, self, &src);
+            },
+            Tag::BlockQuote | Tag::CodeBlock(_) | Tag::FootnoteDefinition(_) | Tag::Strikethrough | Tag::Link(_, _, _) => {
                 ui.log(log::Level::Warn, format!("Tag {:?} is unsupported", tag));
             }
         }
@@ -423,8 +447,9 @@ impl MarkdownState {
             Tag::TableCell => {
                 let col = self.table_column.get_or_insert(0);
                 *col += 1;
-            }
-            Tag::BlockQuote | Tag::CodeBlock(_) | Tag::FootnoteDefinition(_) | Tag::Strikethrough | Tag::Link(_, _, _) | Tag::Image(_, _, _) => {
+            },
+            Tag::Image(_, _, _) => { },
+            Tag::BlockQuote | Tag::CodeBlock(_) | Tag::FootnoteDefinition(_) | Tag::Strikethrough | Tag::Link(_, _, _) => {
                 ui.log(log::Level::Warn, format!("Tag {:?} is unsupported", tag));
             }
         }
@@ -448,7 +473,6 @@ impl MarkdownState {
                     Ok(val) => {
                         if let Some(col) = self.table_column {
                             if col < 8 {
-                                ui.log(log::Level::Warn, format!("Set {val} for {col}"));
                                 self.column_widths[col as usize] = val;
                             }
                         } else {
@@ -549,13 +573,13 @@ impl MarkdownState {
         self.text_indent = self.cursor.x * self.scale_factor;
 
         if let Some(col) = self.table_column {
-            ui.set_cursor(self.pos_at_column(col), self.cursor.y);
+            ui.set_cursor(self.pos_for_column(col), self.cursor.y);
         } else {
             ui.set_cursor(self.indent_level * self.tab_width, self.cursor.y);
         }
     }
 
-    fn pos_at_column(&self, col: u16) -> f32 {
+    fn pos_for_column(&self, col: u16) -> f32 {
         let mut width = 0.0;
         for c in 0..col {
             width += self.width_for_column(c);
