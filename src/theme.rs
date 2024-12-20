@@ -127,6 +127,20 @@ impl ThemeSet {
                             images_in_set.insert(generated_id.to_string(), image);
                         }
                     },
+                    ImageDefinitionKind::Group1x1 { group_scale, fill, images } => {
+                        for (generated_id, xy) in images {
+                            let generated_def = ImageDefinition {
+                                color: image_def.color,
+                                kind: ImageDefinitionKind::Simple {
+                                    position: [xy[0] * group_scale[0], xy[1] * group_scale[1]],
+                                    size: [group_scale[0], group_scale[1]],
+                                    fill: *fill,
+                                }
+                            };
+                            let image = Image::new(generated_id, &generated_def, texture, &images_in_set, set.scale)?;
+                            images_in_set.insert(generated_id.to_string(), image);
+                        }
+                    },
                     ImageDefinitionKind::ComposedGroup { grid_size, images } => {
                         for (generated_id, xy) in images {
                             let generated_def = ImageDefinition {

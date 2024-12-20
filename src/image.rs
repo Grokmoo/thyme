@@ -239,8 +239,8 @@ impl Image {
                 base_size = Point::default();
                 ImageKind::Empty
             },
-            ImageDefinitionKind::Alias { .. } => unreachable!(),
-            ImageDefinitionKind::Group { .. } | ImageDefinitionKind::ComposedGroup { .. }=> unreachable!(),
+            ImageDefinitionKind::Alias { .. } | ImageDefinitionKind::Group { .. } | ImageDefinitionKind::ComposedGroup { .. } |
+                ImageDefinitionKind::Group1x1 { .. } => unreachable!(),
             ImageDefinitionKind::Composed { grid_size, position} => {
                 let mut tex_coords = [[TexCoord::default(); 4]; 4];
                 for y in 0..4 {

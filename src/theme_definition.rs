@@ -150,6 +150,11 @@ pub enum ImageDefinitionKind {
         fill: ImageFill,
         images: HashMap<String, [u32; 4]>,
     },
+    Group1x1 {
+        group_scale: [u32; 2],
+        fill: ImageFill,
+        images: HashMap<String, [u32; 2]>,
+    },
     ComposedGroup {
         grid_size: [u32; 2],
         images: HashMap<String, [u32; 2]>,
