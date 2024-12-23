@@ -119,6 +119,9 @@ widgets:
   age_label:
     from: label
     width_from: Parent
+  tooltip_button:
+    from: button
+    text_align: Center
   race_selector:
     from: combo_box
     width_from: Parent
@@ -229,3 +232,13 @@ widgets:
             from: button
             width_from: Parent
             size: [0, 25]
+  inventory_tooltip:
+    size_from: [Children, Children]
+    background: gui/small_button_normal
+    border: { all: 5 }
+    layout: Vertical
+    align: TopLeft
+    children:
+      label:
+        from: label
+        size_from: [Text, FontLine]

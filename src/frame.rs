@@ -35,6 +35,7 @@ pub struct Frame {
     cur_rend_group: RendGroup,
 
     parent_index: usize,
+    child_request_rebound_parent: Option<u32>,
     pub(crate) in_modal_tree: bool,
     parent_max_child_bounds: Rect,
     max_child_bounds: Rect,
@@ -71,6 +72,7 @@ impl Frame {
                 order: RendGroupOrder::Normal,
             }],
             parent_index: 0,
+            child_request_rebound_parent: None,
             in_modal_tree: false,
             parent_max_child_bounds: Rect::default(),
             max_child_bounds: Rect::default(),
@@ -205,6 +207,14 @@ impl Frame {
 
     pub(crate) fn set_parent_max_child_bounds(&mut self, bounds: Rect) {
         self.parent_max_child_bounds = bounds;
+    }
+
+    pub(crate) fn child_request_rebound_parent(&self) -> Option<u32> {
+        self.child_request_rebound_parent
+    }
+
+    pub(crate) fn set_child_request_rebound_parent(&mut self, value: Option<u32>) {
+        self.child_request_rebound_parent = value;
     }
 
     pub(crate) fn parent_index(&self) -> usize { self.parent_index }
@@ -651,6 +661,20 @@ impl Frame {
         } else {
             default_value
         }
+    }
+
+    /// Causes the parent of the current widget to have its position recomputed.
+    /// Depending on the theme alignment and sizing, this may move the parent widget and
+    /// all children.  This must be called at the start of a widget's child block, and will execute
+    /// after the block ends.  It can be used to center a widget based on actual size or to prevent
+    /// hovers from going off the screen.  Note however, that Thyme GUIs are Immediate Mode. - If this
+    /// causes mouse input accepting widgets to change position, it will have undesirable results.
+    /// Therefore, this method cannot be used with elements that interact with the mouse - this is a
+    /// limitation of Thyme and Immediate Mode GUIs.
+    /// [`WidgetBuilder.render_as_tooltip`](struct.WidgetBuilder.html#method.render_as_tooltip)
+    /// automatically sets this.
+    pub fn rebound_parent(&mut self) {
+        self.child_request_rebound_parent = Some(self.widgets.len() as u32 - 1);
     }
 
     pub(crate) fn push_widget(&mut self, mut widget: Widget) {

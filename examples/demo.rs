@@ -274,6 +274,16 @@ pub fn build_ui(ui: &mut Frame, party: &mut Party) {
                 
                 ui.gap(10.0);
     
+                if ui.button("tooltip_button", "Hover Inventory").hovered {
+                    ui.start("inventory_tooltip").render_as_tooltip().children(|ui| {
+                        ui.label("label", "This is a tooltip that will show your list of items.");
+                        ui.label("label", "It inherits size from its children.");
+                        for item in character.items.iter() {
+                            ui.label("label", item.name);
+                        }
+                    });
+                }
+
                 ui.tree("inventory_panel", "inventory_panel", true,
                 |ui| {
                     ui.child("title");

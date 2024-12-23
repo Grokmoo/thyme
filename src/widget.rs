@@ -695,6 +695,8 @@ impl<'a> WidgetBuilder<'a> {
             Some(pos) => pos,
         };
 
+        self.frame.set_child_request_rebound_parent(Some(self.frame.num_widgets() as u32));
+
 		// recalculate pos size
 		let (state_moved, state_resize, display_size, scale_factor) = {
             let internal = self.frame.context_internal().borrow();
@@ -721,7 +723,10 @@ impl<'a> WidgetBuilder<'a> {
             pos.y = (mouse.pos.y - mouse.size.y - self.widget.size.y).max(0.0);
         }
 
-        self.screen_pos(pos.x, pos.y)
+        let align = self.data.align;
+        let mut builder= self.screen_pos(pos.x, pos.y);
+        builder.data.align = align;
+        builder
 	}
 
     /// Specify the position of the widget, with respect to its alignment within the parent.
@@ -1177,6 +1182,21 @@ impl<'a> WidgetBuilder<'a> {
                 let border = self.frame.widget(widget_index).border().right;
                 self_bounds.size.x += this_children_max_bounds.size.x + border;
                 self.frame.widget_mut(widget_index).size.x += this_children_max_bounds.size.x + border;
+                rebound_rend_group = true;
+            }
+
+            if Some(widget_index as u32) == self.frame.child_request_rebound_parent() {
+                let size = self.frame.widget(widget_index).size;
+                let mut adjust = self.data.align.adjust_for(size);
+                let pos = self.frame.widget(widget_index).pos - adjust;
+                let max = self.frame.context().display_size();
+                adjust.x -= if pos.x < 0.0 { -pos.x } else if pos.x + size.x > max.x { max.x - pos.x - size.x } else { 0.0 };
+                adjust.y -= if pos.y < 0.0 { -pos.y } else if pos.y + size.y > max.y { max.y - pos.y - size.y } else { 0.0 };
+                for index in widget_index..self.frame.num_widgets() {
+                    self.frame.widget_mut(index).pos.x -= adjust.x;
+                    self.frame.widget_mut(index).pos.y -= adjust.y;
+                }
+                
                 rebound_rend_group = true;
             }
         }
