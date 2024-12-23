@@ -414,12 +414,6 @@ mod glium_backend;
 #[cfg(feature = "glium_backend")]
 pub use glium_backend::{GliumRenderer, GliumError};
 
-#[cfg(feature = "wgpu_backend")]
-mod wgpu_backend;
-
-#[cfg(feature = "wgpu_backend")]
-pub use wgpu_backend::WgpuRenderer;
-
 pub use app_builder::AppBuilder;
 
 #[cfg(feature="glium_backend")]
@@ -477,10 +471,6 @@ pub enum Error {
     /// An error originating from OpenGl
     #[cfg(feature="gl_backend")]
     Gl(crate::gl_backend::GlError),
-
-    /// An error originating from Wgpu's create surface routine
-    #[cfg(feature="wgpu_backend")]
-    WgpuSurface(wgpu::CreateSurfaceError),
 }
 
 impl std::fmt::Display for Error {
@@ -502,9 +492,6 @@ impl std::fmt::Display for Error {
 
             #[cfg(feature="gl_backend")]
             Gl(error) => write!(f, "OpenGL Error: {}", error),
-
-            #[cfg(feature="wgpu_backend")]
-            WgpuSurface(error) => write!(f, "Wgpu surface error: {}", error),
         }
     }
 }
@@ -528,9 +515,6 @@ impl std::error::Error for Error {
 
             #[cfg(feature="gl_backend")]
             Gl(error) => Some(error),
-
-            #[cfg(feature="wgpu_backend")]
-            WgpuSurface(error) => Some(error),
         }
     }
 }

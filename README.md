@@ -8,7 +8,7 @@ Thyme is a Graphical User Interface (GUI) library written in pure, safe, Rust.  
 A composite image showcasing three different themes:
 ![Screenshot](screenshot.png)
 
-Thyme produces a set of Draw Lists which are sent to a swappable graphics backend - currently [Glium](https://github.com/glium/glium) and [wgpu](https://github.com/gfx-rs/wgpu-rs) are supported.  The I/O backend is also swappable - although currently only [winit](https://github.com/rust-windowing/winit) is supported.  Fonts are rendered to a texture on the GPU using [rusttype](https://github.com/redox-os/rusttype).  
+Thyme produces a set of Draw Lists which are sent to a swappable graphics backend - currently [Glium](https://github.com/glium/glium) and [Raw GL](https://github.com/brendanzab/gl-rs/) are supported.  We have previously supported [wgpu](https://github.com/gfx-rs/wgpu) but the rate of change there has been too great for the author to keep up and support is not current.  The I/O backend is also swappable - although currently only [winit](https://github.com/rust-windowing/winit) is supported.  Fonts are rendered to a texture on the GPU using [rusttype](https://github.com/redox-os/rusttype).  
 
 Performance is acceptable or better for most use cases, with the complete cycle of generating the widget tree, creating the draw data, and rendering taking less than 1 ms for quite complex UIs.
 
@@ -22,14 +22,13 @@ The demo contains an example role playing game (RPG) character generator program
 git clone https://github.com/Grokmoo/thyme.git
 cd thyme
 cargo run --example demo_glium --features glium_backend # Run demo using glium
-cargo run --example demo_wgpu --features wgpu_backend # Run demo using wgpu
 cargo run --example demo_gl --features gl_backend # Run demo using OpenGL
 ```
 
-Run the hello_world example with either Glium or wgpu:
+Run the hello_world example with either Glium or GL:
 ```bash
 cargo run --example hello_glium --features glium_backend
-cargo run --example hello_wgpu --features wgpu_backend
+cargo run --example hello_gl --features gl_backend
 ```
 
 ### Starting your own project
@@ -38,10 +37,10 @@ Add the following to your Cargo.toml file:
 
 ```toml
 [dependencies]
-thyme = { version = "0.7", features = ["wgpu_backend"] }
+thyme = { version = "0.7", features = ["glium_backend"] }
 ```
 
-See [hello_wgpu](examples/hello_wgpu.rs) or [hello_glium](examples/hello_glium.rs) for the bare minimum to get started with your preferred renderer.  As a starting point, you can copy the [data](examples/data) folder into your own project and import the resources there, as in the example.
+See [hello_glium](examples/hello_glium.rs) for the bare minimum to get started with your preferred renderer.  As a starting point, you can copy the [data](examples/data) folder into your own project and import the resources there, as in the example.
 
 ## [Documentation](https://docs.rs/thyme)
 
@@ -53,7 +52,8 @@ At its core, Thyme is an immediate mode GUI library similar to other libraries s
 unlike many of those libraries Thyme is focused on extreme customizability and flexibility needed for production applications, especially games.
 
 With Thyme, you can customize exactly how you want your UI to look and operate.  Thyme also focuses a great deal on being performant, while still
-retaining the benefits of a true immediate mode GUI.
+retaining the benefits of a true immediate mode GUI.  Thyme also implements a number of tricks granting more layout flexibility than traditional
+immediate mode libraries, although there are still some limitations.
 
 This flexibility comes at the cost of needing to specify theme, font, and image files.  But, Thyme comes with some such files as examples to help you
 get started.  Separating assets out in this manner can also significantly improve your workflow, especially with Thyme's built in support for live

@@ -23,13 +23,7 @@ name = "hello_gl"
 name = "hello_glium"
 
 [[example]]
-name = "hello_wgpu"
-
-[[example]]
 name = "demo_glium"
-
-[[example]]
-name = "demo_wgpu"
 
 [[example]]
 name = "demo_gl"
@@ -37,7 +31,6 @@ name = "demo_gl"
 [features]
 default = ["image"]
 glium_backend = ["glium"]
-wgpu_backend = ["wgpu", "futures", "bytemuck" ]
 gl_backend = ["gl", "glutin", "memoffset"]
 
 [dependencies]
@@ -53,7 +46,6 @@ pulldown-cmark = { version = "0.9", default-features = false }
 
 image = { version = "0.24", optional = true, default-features = false, features = [ "png", "jpeg" ] }
 glium = { version = "0.32", optional = true }
-wgpu = { version = "0.15", optional = true, features = [ "spirv" ] }
 futures = { version = "0.3", optional = true }
 bytemuck = { version = "1", optional = true }
 gl = { version = "0.14", optional = true}

@@ -1,8 +1,5 @@
 use std::path::PathBuf;
 
-#[cfg(feature="wgpu_backend")]
-use std::sync::Arc;
-
 use crate::{Error, Point, BuildOptions, ContextBuilder, Context, WinitIo, Frame};
 
 /// An easy to use but still fairly configurable builder, allowing you to get
@@ -276,49 +273,6 @@ impl AppBuilder {
         Ok(GliumApp { io, renderer, context, display, event_loop })
     }
 
-    /// Creates a [`WgpuApp`](struct.WgpuApp.html) object, setting up Thyme as specified
-    /// in this Builder and using the [`WgpuRenderer`](struct.WgpuRenderer.html).
-    #[cfg(feature="wgpu_backend")]
-    pub fn build_wgpu(self) -> Result<WgpuApp, Error> {
-        use winit::{
-            event_loop::EventLoop,
-            window::WindowBuilder,
-            dpi::LogicalSize
-        };
-
-        if self.logger {
-            crate::log::init(log::Level::Warn).unwrap();
-        }
-
-        let event_loop = EventLoop::new();
-        let window = WindowBuilder::new()
-            .with_title(&self.title)
-            .with_inner_size(LogicalSize::new(self.window_size.x, self.window_size.y))
-            .build(&event_loop).map_err(crate::winit_io::WinitError::Os).map_err(Error::Winit)?;
-
-        // setup WGPU
-        let instance_desc = wgpu::InstanceDescriptor {
-            backends: wgpu::Backends::PRIMARY,
-            dx12_shader_compiler: wgpu::Dx12Compiler::Fxc,
-        };
-        let instance = wgpu::Instance::new(instance_desc);
-        let surface = unsafe { instance.create_surface(&window).map_err(Error::WgpuSurface)? };
-        let (_adapter, device, queue) = futures::executor::block_on(setup_wgpu(&instance, &surface));
-        let surface_config = surface_config(self.window_size.x as u32, self.window_size.y as u32);
-        surface.configure(&device, &surface_config);
-
-        // create thyme backend
-        let mut io = crate::WinitIo::new(&event_loop, self.window_size).map_err(Error::Winit)?;
-        let mut renderer = crate::WgpuRenderer::new(Arc::clone(&device), Arc::clone(&queue));
-        let mut context_builder = crate::ContextBuilder::new(self.options.clone());
-
-        self.register_resources(&mut context_builder)?;
-
-        let context = context_builder.build(&mut renderer, &mut io)?;
-
-        Ok(WgpuApp { io, renderer, context, event_loop, window, surface, device, queue })
-    }
-
     fn register_resources(&self, context_builder: &mut ContextBuilder) -> Result<(), Error> {
         let theme_src = match self.themes.as_ref() {
             None => return Err(Error::Theme("No theme files specified".to_string())),
@@ -349,102 +303,6 @@ impl AppBuilder {
         }
         
         Ok(())
-    }
-}
-
-/// The WgpuApp object, containing the Thyme [`Context`](struct.Context.html), [`Renderer`](struct.WgpuRenderer.html),
-/// and [`IO`](struct.WinitIo.html).   You can manually use the public members of this struct, or use [`main_loop`](#method.main_loop)
-/// for basic use cases.
-#[cfg(feature="wgpu_backend")]
-pub struct WgpuApp {
-    /// The Thyme IO
-    pub io: WinitIo,
-
-    /// The Thyme Renderer
-    pub renderer: crate::WgpuRenderer,
-
-    /// The Thyme Context
-    pub context: Context,
-
-    /// Winit Event loop
-    pub event_loop: winit::event_loop::EventLoop<()>,
-
-    /// Winit window
-    pub window: winit::window::Window,
-
-    /// The Wgpu output surface
-    pub surface: wgpu::Surface,
-
-    /// Wgpu output device
-    pub device: Arc<wgpu::Device>,
-
-    /// Wgpu output queue
-    pub queue: Arc<wgpu::Queue>,
-}
-
-#[cfg(feature="wgpu_backend")]
-impl WgpuApp {
-    /// Runs the Winit main loop for this app
-    pub fn main_loop<F: Fn(&mut Frame) + 'static>(self, f: F) -> ! {
-        use winit::{
-            event::{Event, WindowEvent},
-            event_loop::ControlFlow,
-        };
-
-        let event_loop = self.event_loop;
-        let mut renderer = self.renderer;
-        let mut io = self.io;
-        let mut context = self.context;
-        let window = self.window;
-        let queue = self.queue;
-        let device = self.device;
-        let surface = self.surface;
-
-        event_loop.run(move |event, _, control_flow| {
-            match event {
-                Event::MainEventsCleared => {
-                    let frame = surface.get_current_texture().unwrap();
-                    let view = frame.texture.create_view(&wgpu::TextureViewDescriptor::default());
-                    let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-    
-                    let mut ui = context.create_frame();
-    
-                    (f)(&mut ui);
-    
-                    {
-                        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                            label: None,
-                            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                                view: &view,
-                                resolve_target: None,
-                                ops: wgpu::Operations {
-                                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                                    store: true,
-                                },
-                            })],
-                            depth_stencil_attachment: None,
-                        });
-    
-                        renderer.draw_frame(ui, &mut render_pass);
-                    }
-    
-                    queue.submit(Some(encoder.finish()));
-                    frame.present();
-                },
-                Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => *control_flow = ControlFlow::Exit,
-                event => {
-                    // reconfigure surface on resize, but also still pass the event to thyme
-                    if let Event::WindowEvent { event: WindowEvent::Resized(_), ..} = event {
-                        let size: (u32, u32) = window.inner_size().into();
-    
-                        let surface_config = surface_config(size.0, size.1);
-                        surface.configure(&device, &surface_config);
-                    }
-    
-                    io.handle_event(&mut context, &event);
-                }
-            }
-        })
     }
 }
 
@@ -615,42 +473,4 @@ fn add_path(path: PathBuf, out: &mut Vec<(String, PathBuf)>) {
     };
 
     out.push((stem.to_string(), path));
-}
-
-#[cfg(feature="wgpu_backend")]
-async fn setup_wgpu(
-    instance: &wgpu::Instance,
-    surface: &wgpu::Surface
-) -> (wgpu::Adapter, Arc<wgpu::Device>, Arc<wgpu::Queue>) {
-    let adapter = instance.request_adapter(&wgpu::RequestAdapterOptions {
-        power_preference: wgpu::PowerPreference::LowPower,
-        // Request an adapter which can render to our surface
-        compatible_surface: Some(surface),
-        force_fallback_adapter: false,
-    }).await.unwrap();
-    
-    // Create the logical device and command queue
-    let (device, queue) = adapter.request_device(
-        &wgpu::DeviceDescriptor {
-            label: None,
-            features: wgpu::Features::empty(),
-            limits: wgpu::Limits::default(),
-        },
-        None,
-    ).await.expect("Failed to create WGPU device");
-
-    (adapter, Arc::new(device), Arc::new(queue))
-}
-
-#[cfg(feature="wgpu_backend")]
-fn surface_config(width: u32, height: u32) -> wgpu::SurfaceConfiguration {
-    wgpu::SurfaceConfiguration {
-        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-        format: wgpu::TextureFormat::Bgra8Unorm,
-        width,
-        height,
-        present_mode: wgpu::PresentMode::AutoVsync,
-        alpha_mode: wgpu::CompositeAlphaMode::Auto,
-        view_formats: vec![],
-    }
 }
