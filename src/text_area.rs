@@ -1,4 +1,4 @@
-use pulldown_cmark::{Alignment, Event, Options, Parser, Tag, HeadingLevel};
+use pulldown_cmark::{Alignment, Event, HeadingLevel, Options, Parser, Tag, TagEnd};
 
 use crate::{Frame, Rect, Point, Align, WidthRelative, Color};
 
@@ -215,10 +215,11 @@ impl Frame {
                     Event::HardBreak => {
                         state.new_line(ui, 1.5);
                     },
-                    Event::Html(data) => {
+                    Event::Html(data) | Event::InlineHtml(data) => {
                         state.parse_extended(ui, data.as_ref());
                     },
-                    Event::Rule | Event::Code(_) | Event::FootnoteReference(_) | Event::TaskListMarker(_) => {
+                    Event::Rule | Event::Code(_) | Event::FootnoteReference(_) | Event::TaskListMarker(_) |
+                        Event::InlineMath(_) | Event::DisplayMath(_) => {
                         ui.log(log::Level::Warn, format!("Tag {:?} event is unsupported", event));
                     }
                 }
@@ -339,7 +340,7 @@ impl MarkdownState {
     fn start_tag(&mut self, ui: &mut Frame, tag: Tag) {
         match tag {
             Tag::Paragraph => self.size = SizeMode::Paragraph,
-            Tag::Heading(level, _, _) => {
+            Tag::Heading{ level, .. } => {
                 self.set_size(match level {
                     HeadingLevel::H1 => SizeMode::Heading1,
                     HeadingLevel::H2 => SizeMode::Heading2,
@@ -390,26 +391,27 @@ impl MarkdownState {
                 self.cursor.x = 0.0;
                 self.update_cursor(ui);
             },
-            Tag::Image(_, src, _) => {
-                image(ui, self, &src);
+            Tag::Image{ dest_url, .. } => {
+                image(ui, self, &dest_url);
             },
-            Tag::BlockQuote | Tag::CodeBlock(_) | Tag::FootnoteDefinition(_) | Tag::Strikethrough | Tag::Link(_, _, _) => {
+            Tag::BlockQuote(_) | Tag::CodeBlock(_) | Tag::FootnoteDefinition(_) | Tag::Strikethrough | Tag::Link{ .. } |
+                Tag::DefinitionList | Tag::DefinitionListDefinition | Tag::DefinitionListTitle | Tag::HtmlBlock | Tag::MetadataBlock(_) => {
                 ui.log(log::Level::Warn, format!("Tag {:?} is unsupported", tag));
             }
         }
     }
 
-    fn end_tag(&mut self, ui: &mut Frame, tag: Tag) {
+    fn end_tag(&mut self, ui: &mut Frame, tag: TagEnd) {
         match tag {
-            Tag::Paragraph => {
+            TagEnd::Paragraph => {
                 self.new_line(ui, 1.5);
             },
-            Tag::Heading(_, _, _) => {
+            TagEnd::Heading(_) => {
                 self.set_size(SizeMode::Paragraph);
                 self.new_line(ui, 1.5);
             },
             
-            Tag::List(_) => {
+            TagEnd::List(_) => {
                 self.indent_level -= 1.0;
                 self.list_stack.pop();
                 if self.list_stack.is_empty() {
@@ -417,20 +419,20 @@ impl MarkdownState {
                     self.new_line(ui, 1.0);
                 }
             },
-            Tag::Item => {
+            TagEnd::Item => {
                 if !self.currently_at_new_line {
                     self.new_line(ui, 1.0);
                 } else {
                     self.update_cursor(ui);
                 }
             },
-            Tag::Emphasis => self.set_font(self.font.remove(FontMode::Emphasis)),
-            Tag::Strong => self.set_font(self.font.remove(FontMode::Strong)),
-            Tag::Table(_) => {
+            TagEnd::Emphasis => self.set_font(self.font.remove(FontMode::Emphasis)),
+            TagEnd::Strong => self.set_font(self.font.remove(FontMode::Strong)),
+            TagEnd::Table => {
                 self.table.clear();
                 self.column_widths = [self.base_column_width; 8];
             }
-            Tag::TableHead => {
+            TagEnd::TableHead => {
                 self.table_column = None;
                 self.table_header = false;
                 if !self.currently_at_new_line {
@@ -438,18 +440,19 @@ impl MarkdownState {
                 }
                 self.set_font(self.font.remove(FontMode::Strong));
             }
-            Tag::TableRow => {
+            TagEnd::TableRow => {
                 self.table_column = None;
                 if !self.currently_at_new_line {
                     self.new_line(ui, 1.0);
                 }
             }
-            Tag::TableCell => {
+            TagEnd::TableCell => {
                 let col = self.table_column.get_or_insert(0);
                 *col += 1;
             },
-            Tag::Image(_, _, _) => { },
-            Tag::BlockQuote | Tag::CodeBlock(_) | Tag::FootnoteDefinition(_) | Tag::Strikethrough | Tag::Link(_, _, _) => {
+            TagEnd::Image => { },
+            TagEnd::BlockQuote(_) | TagEnd::CodeBlock | TagEnd::FootnoteDefinition | TagEnd::Strikethrough | TagEnd::Link | TagEnd::HtmlBlock |
+                TagEnd::MetadataBlock(_) | TagEnd::DefinitionList | TagEnd::DefinitionListDefinition | TagEnd::DefinitionListTitle => {
                 ui.log(log::Level::Warn, format!("Tag {:?} is unsupported", tag));
             }
         }
