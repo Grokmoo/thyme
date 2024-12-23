@@ -1002,7 +1002,7 @@ impl<'a> WidgetBuilder<'a> {
 
         font.layout(params, text, &mut cursor);
 
-        cursor.x
+        cursor.x / internal.scale_factor()
     }
 
     fn calculate_font_layout_cursor(&self, cursor: Point) -> Option<Point> {
@@ -1189,7 +1189,9 @@ impl<'a> WidgetBuilder<'a> {
                 let size = self.frame.widget(widget_index).size;
                 let mut adjust = self.data.align.adjust_for(size);
                 let pos = self.frame.widget(widget_index).pos - adjust;
-                let max = self.frame.context().display_size();
+                let mut max = self.frame.context().display_size();
+                max.x /= self.frame.context().scale_factor();
+                max.y /= self.frame.context().scale_factor();
                 adjust.x -= if pos.x < 0.0 { -pos.x } else if pos.x + size.x > max.x { max.x - pos.x - size.x } else { 0.0 };
                 adjust.y -= if pos.y < 0.0 { -pos.y } else if pos.y + size.y > max.y { max.y - pos.y - size.y } else { 0.0 };
                 for index in widget_index..self.frame.num_widgets() {
