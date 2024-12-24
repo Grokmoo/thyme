@@ -201,6 +201,7 @@ impl AppBuilder {
         use glutin::context::{ContextApi, ContextAttributesBuilder, Version, NotCurrentGlContext};
         use glutin_winit::DisplayBuilder;
         use glutin::display::{GlDisplay, GetGlDisplay};
+        use winit::dpi::LogicalSize;
         use winit::raw_window_handle::HasWindowHandle;
         use winit::window::Window;
 
@@ -218,8 +219,8 @@ impl AppBuilder {
             .build().map_err(|e| Error::Winit(WinitError::EventLoop(e)))?;
 
         let attrs = Window::default_attributes()
-            .with_title("Thyme GL Demo")
-            .with_inner_size(winit::dpi::PhysicalSize::new(1280, 720));
+            .with_title(&self.title)
+            .with_inner_size(LogicalSize::new(self.window_size.x as u32, self.window_size.y as u32));
 
         let display_builder = DisplayBuilder::new().with_window_attributes(Some(attrs));
         let config_template_builder = ConfigTemplateBuilder::new();
@@ -280,6 +281,8 @@ impl AppBuilder {
     /// in this Builder and using the [`GliumRenderer`](struct.GliumRenderer.html).
     #[cfg(feature="glium_backend")]
     pub fn build_glium(self) -> Result<GliumApp, Error> {
+        use winit::{dpi::LogicalSize, window::Window};
+
         use crate::winit_io::WinitError;
 
         if self.logger {
@@ -289,9 +292,12 @@ impl AppBuilder {
         let event_loop = glium::winit::event_loop::EventLoop::builder()
             .build().map_err(|e| Error::Winit(WinitError::EventLoop(e)))?;
 
-        let (window, display) = glium::backend::glutin::SimpleWindowBuilder::new()
+        let attrs = Window::default_attributes()
             .with_title(&self.title)
-            .with_inner_size(self.window_size.x as u32, self.window_size.y as u32)
+            .with_inner_size(LogicalSize::new(self.window_size.x as u32, self.window_size.y as u32));
+
+        let (window, display) = glium::backend::glutin::SimpleWindowBuilder::new()
+            .set_window_builder(attrs)
             .build(&event_loop);
 
         let mut io = crate::WinitIo::new(&window, self.window_size)
