@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use glium::glutin::surface::WindowSurface;
+use glutin::surface::GlSurface;
 use winit::{application::ApplicationHandler, error::EventLoopError};
 
 use crate::{Error, Point, BuildOptions, ContextBuilder, Context, WinitIo, Frame};
@@ -195,13 +196,20 @@ impl AppBuilder {
     /// builder and using the [`GlRenderer`](struct.GlRenderer.html).
     #[cfg(feature="gl_backend")]
     pub fn build_gl(self) -> Result<GlApp, Error> {
-        use glium::backend::Facade;
-        use glutin::context::{ContextApi, ContextAttributesBuilder, Version};
-        use winit::raw_window_handle::HasWindowHandle;
-        use glutin::display::GlDisplay;
+        use std::ffi::CString;
+        use std::num::NonZeroU32;
 
-        use crate::gl_backend::GlError;
+        use glutin::prelude::*;
+        use glutin::config::ConfigTemplateBuilder;
+        use glutin::context::{ContextApi, ContextAttributesBuilder, Version};
+        use glutin_winit::DisplayBuilder;
+        use glutin::display::GetGlDisplay;
+        use winit::raw_window_handle::HasWindowHandle;
+        use glium::backend::glutin::simple_window_builder::GliumEventLoop;
+        use winit::window::Window;
+
         use crate::winit_io::WinitError;
+        use crate::GlError;
 
         const OPENGL_MAJOR_VERSION: u8 = 3;
         const OPENGL_MINOR_VERSION: u8 = 2;
@@ -213,38 +221,53 @@ impl AppBuilder {
         let event_loop = glium::winit::event_loop::EventLoop::builder()
         .build().map_err(|e| Error::Winit(WinitError::EventLoop(e)))?;
 
-        let (window, display) = glium::backend::glutin::SimpleWindowBuilder::new()
-            .with_title(&self.title)
-            .with_inner_size(self.window_size.x as u32, self.window_size.y as u32)
-            .build(&event_loop);
+        let attrs = Window::default_attributes()
+            .with_title("Simple Glium Window")
+            .with_inner_size(winit::dpi::PhysicalSize::new(800, 480));
+
+        let display_builder = DisplayBuilder::new().with_window_attributes(Some(attrs));
+        let config_template_builder = ConfigTemplateBuilder::new();
+        let (window, gl_config) = event_loop.build(display_builder, config_template_builder, |mut configs| {
+                configs.next().unwrap()
+            })
+            .unwrap();
+        let window = window.unwrap();
 
         let window_handle = window.window_handle().map_err(|e| Error::Winit(WinitError::HandleError(e)))?;
         let raw_window_handle = window_handle.as_raw();
 
-        let context_attrs = ContextAttributesBuilder::new()
+        // Now we get the window size to use as the initial size of the Surface
+        let (width, height): (u32, u32) = window.inner_size().into();
+        let attrs =
+            glutin::surface::SurfaceAttributesBuilder::<glutin::surface::WindowSurface>::new()
+                .build(
+                    raw_window_handle,
+                    NonZeroU32::new(width).unwrap(),
+                    NonZeroU32::new(height).unwrap(),
+                );
+
+        let surface = unsafe {
+            gl_config.display().create_window_surface(&gl_config, &attrs).unwrap()
+        };
+
+        let context_attributes = ContextAttributesBuilder::new()
             .with_context_api(ContextApi::OpenGl(Some(Version::new(OPENGL_MAJOR_VERSION, OPENGL_MINOR_VERSION))))
             .build(Some(raw_window_handle));
 
-        // let windowed_context = glutin::ContextBuilder::new()
-        //     .with_gl(glutin::GlRequest::Specific(
-        //         glutin::Api::OpenGl,
-        //         (OPENGL_MAJOR_VERSION, OPENGL_MINOR_VERSION),
-        //     ))
-        //     .build_windowed(window_builder, &event_loop)
-        //     .map_err(GlError::GlutinCreation)
-        //     .map_err(Error::Gl)?;
+        let windowed_context = unsafe {
+            gl_config.display().create_context(&gl_config, &context_attributes).map_err(GlError::Glutin).map_err(Error::Gl)?
+        };
 
-        // let windowed_context = unsafe {
-        //     windowed_context
-        //         .make_current()
-        //         .map_err(|(_context, e)| GlError::GlutinContext(e))
-        //         .map_err(Error::Gl)?
-        // };
+        let display_context = windowed_context.make_current(&surface).map_err(GlError::Glutin).map_err(Error::Gl)?;
 
-        // {
-        //     let gl_context = windowed_context.context();
-        //     gl::load_with(|ptr| gl_context.get_proc_address(ptr) as *const _)
-        // }
+        {
+            let gl_context = display_context.display();
+            gl::load_with(|ptr| {
+                let c_str = CString::new(ptr).unwrap();
+                gl_context.get_proc_address(&c_str) as *const _
+            })
+
+        }
 
         let mut io = crate::WinitIo::new(&window, self.window_size)
             .map_err(Error::Winit)?;
@@ -255,7 +278,7 @@ impl AppBuilder {
 
         let context = context_builder.build(&mut renderer, &mut io)?;
 
-        Ok(GlApp { io, renderer, context, event_loop, window })
+        Ok(GlApp { io, renderer, context, event_loop, window, surface, display_context })
     }
     
     /// Creates a [`GliumApp`](struct.GliumApp.html) object, setting up Thyme as specified
@@ -339,9 +362,14 @@ pub struct GlApp {
     /// The OpenGL / Winit event loop
     pub event_loop: winit::event_loop::EventLoop<()>,
 
-    /// The OpenGL / Glutin windowed context
+    /// The OpenGL / Glutin window
     pub window: winit::window::Window,
-    //pub windowed_context: glutin::ContextWrapper<glutin::PossiblyCurrent, glutin::window::Window>,
+
+    /// the window surface for drawing
+    pub surface: glutin::surface::Surface<WindowSurface>,
+
+    /// the GL display context
+    pub display_context: glutin::context::PossiblyCurrentContext,
 }
 
 #[cfg(feature="gl_backend")]
@@ -350,12 +378,18 @@ struct GlAppRunner<F: Fn(&mut Frame)> {
     renderer: crate::GLRenderer,
     context: Context,
     window: winit::window::Window,
+    surface: glutin::surface::Surface<WindowSurface>,
+    display_context: glutin::context::PossiblyCurrentContext,
     f: F,
 }
 
 #[cfg(feature="gl_backend")]
 impl<F: Fn(&mut Frame)> ApplicationHandler for GlAppRunner<F> {
     fn resumed(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) { }
+
+    fn about_to_wait(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) {
+        self.window.request_redraw();
+    }
 
     fn window_event(
         &mut self,
@@ -373,6 +407,8 @@ impl<F: Fn(&mut Frame)> ApplicationHandler for GlAppRunner<F> {
                 (self.f)(&mut ui);
     
                 self.renderer.draw_frame(ui);
+
+                self.surface.swap_buffers(&self.display_context).unwrap();
     
                 // Was:
                 // renderer.clear_color(0.0, 0.0, 0.0, 1.0);
@@ -398,6 +434,8 @@ impl GlApp {
             renderer: self.renderer,
             context: self.context,
             window: self.window,
+            surface: self.surface,
+            display_context: self.display_context,
             f,
         };
 
