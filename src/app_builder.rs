@@ -405,13 +405,6 @@ impl<F: Fn(&mut Frame)> ApplicationHandler for GlAppRunner<F> {
                 self.renderer.draw_frame(ui);
 
                 self.surface.swap_buffers(&self.display_context).unwrap();
-    
-                // Was:
-                // renderer.clear_color(0.0, 0.0, 0.0, 1.0);
-                // let mut ui = context.create_frame();
-                // (f)(&mut ui);
-                // renderer.draw_frame(ui);
-                // windowed_context.swap_buffers().unwrap();
             }
             WindowEvent::CloseRequested => event_loop.exit(),
             event => {

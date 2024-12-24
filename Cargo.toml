@@ -39,7 +39,7 @@ serde = { version = "1", features = [ "derive" ] }
 rusttype = { version = "0.9" }
 winit = "0.30"
 parking_lot = { version = "0.12" }
-notify = { version = "4" }
+notify = { version = "7" }
 rustc-hash = "2"
 serde_yaml = "0.8"
 pulldown-cmark = { version = "0.12", default-features = false }

@@ -1,11 +1,10 @@
 use std::fs::File;
 use std::io::Read;
-use std::time::Duration;
 use std::path::{Path, PathBuf};
 use std::collections::HashMap;
 use std::sync::{atomic::{AtomicBool, Ordering}, mpsc::{Receiver, channel}};
 
-use notify::{Watcher, RecommendedWatcher, RecursiveMode, watcher, DebouncedEvent};
+use notify::{Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 
 use crate::Error;
 use crate::theme::ThemeSet;
@@ -44,7 +43,7 @@ impl ResourceSet {
         let (tx, rx) = channel();
 
         let watcher = if enable_live_reload {
-            match watcher(tx, Duration::from_secs(1)) {
+            match RecommendedWatcher::new(tx, Config::default()) {
                 Err(e) => {
                     log::error!("Unable to initialize file watching for live-reload:");
                     log::error!("{}", e);
@@ -331,25 +330,22 @@ impl ResourceSet {
 
 pub(crate) const INTERNAL_SINGLE_PIX_IMAGE_ID: &str = "__INTERNAL_SINGLE_PIX__";
 
-fn watcher_loop(rx: Receiver<DebouncedEvent>) {
-    loop {
-        match rx.recv() {
+fn watcher_loop(rx: Receiver<Result<Event, notify::Error>>) {
+    for res in rx {
+        match res {
             Ok(event) => {
-                use DebouncedEvent::*;
-                match event {
-                    NoticeWrite(..) | NoticeRemove(..) | Chmod(..) | Rescan => (),
-                    Create(..) | Write(..) | Remove(..) | Rename(..) => {
+                match event.kind {
+                    EventKind::Any => (),
+                    EventKind::Access(_) => (),
+                    EventKind::Create(_) | EventKind::Modify(_) | EventKind::Remove(_) => {
                         log::info!("Received file notification: {:?}", event);
                         RELOAD_THEME.store(true, Ordering::Release);
                     },
-                    Error(error, path) => {
-                        log::warn!("Received file notification error for path {:?}", path);
-                        log::warn!("{}", error);
-                    }
+                    EventKind::Other => (),
                 }
             },
             Err(e) => {
-               log::info!("Disconnected live-reload watcher: {}", e);
+                log::info!("Disconnected live-reload watcher: {}", e);
             }
         }
     }
