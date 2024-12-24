@@ -1,7 +1,5 @@
 use std::path::PathBuf;
 
-use glium::glutin::surface::WindowSurface;
-use glutin::surface::GlSurface;
 use winit::{application::ApplicationHandler, error::EventLoopError};
 
 use crate::{Error, Point, BuildOptions, ContextBuilder, Context, WinitIo, Frame};
@@ -205,7 +203,6 @@ impl AppBuilder {
         use glutin_winit::DisplayBuilder;
         use glutin::display::GetGlDisplay;
         use winit::raw_window_handle::HasWindowHandle;
-        use glium::backend::glutin::simple_window_builder::GliumEventLoop;
         use winit::window::Window;
 
         use crate::winit_io::WinitError;
@@ -222,16 +219,16 @@ impl AppBuilder {
         .build().map_err(|e| Error::Winit(WinitError::EventLoop(e)))?;
 
         let attrs = Window::default_attributes()
-            .with_title("Simple Glium Window")
-            .with_inner_size(winit::dpi::PhysicalSize::new(800, 480));
+            .with_title("Thyme GL Demo")
+            .with_inner_size(winit::dpi::PhysicalSize::new(1280, 720));
 
         let display_builder = DisplayBuilder::new().with_window_attributes(Some(attrs));
         let config_template_builder = ConfigTemplateBuilder::new();
-        let (window, gl_config) = event_loop.build(display_builder, config_template_builder, |mut configs| {
-                configs.next().unwrap()
-            })
-            .unwrap();
-        let window = window.unwrap();
+
+        let (window, gl_config) = display_builder.build(&event_loop, config_template_builder, |mut configs| {
+            configs.next().unwrap()
+        }).map_err(GlError::DipslayContextCreation).map_err(Error::Gl)?;
+        let window = window.ok_or(GlError::NoWindow).map_err(Error::Gl)?;
 
         let window_handle = window.window_handle().map_err(|e| Error::Winit(WinitError::HandleError(e)))?;
         let raw_window_handle = window_handle.as_raw();
@@ -366,7 +363,7 @@ pub struct GlApp {
     pub window: winit::window::Window,
 
     /// the window surface for drawing
-    pub surface: glutin::surface::Surface<WindowSurface>,
+    pub surface: glutin::surface::Surface<glutin::surface::WindowSurface>,
 
     /// the GL display context
     pub display_context: glutin::context::PossiblyCurrentContext,
@@ -378,7 +375,7 @@ struct GlAppRunner<F: Fn(&mut Frame)> {
     renderer: crate::GLRenderer,
     context: Context,
     window: winit::window::Window,
-    surface: glutin::surface::Surface<WindowSurface>,
+    surface: glutin::surface::Surface<glutin::surface::WindowSurface>,
     display_context: glutin::context::PossiblyCurrentContext,
     f: F,
 }
@@ -397,6 +394,7 @@ impl<F: Fn(&mut Frame)> ApplicationHandler for GlAppRunner<F> {
         _window_id: winit::window::WindowId,
         event: winit::event::WindowEvent,
     ) {
+        use glutin::surface::GlSurface;
         use winit::event::WindowEvent;
         match event {
             WindowEvent::RedrawRequested => {
@@ -461,7 +459,7 @@ pub struct GliumApp {
     pub window: winit::window::Window,
 
     /// The Glium / Winit Display
-    pub display: glium::Display<WindowSurface>,
+    pub display: glium::Display<glium::glutin::surface::WindowSurface>,
 
     /// The Glium / Winit Event loop
     pub event_loop: winit::event_loop::EventLoop<()>,
@@ -489,7 +487,7 @@ struct GliumAppRunner<F: Fn(&mut Frame)> {
     pub io: WinitIo,
     pub renderer: crate::GliumRenderer,
     pub context: Context,
-    pub display: glium::Display<WindowSurface>,
+    pub display: glium::Display<glium::glutin::surface::WindowSurface>,
     pub window: winit::window::Window,
     pub f: F,
 }

@@ -568,6 +568,12 @@ pub(crate) struct GLVertex {
 pub enum GlError {
     /// An error originating from glutin
     Glutin(glutin::error::Error),
+
+    /// An error from creating the display context
+    DipslayContextCreation(Box<dyn Error>),
+
+    /// No window was able to be created
+    NoWindow,
 }
 
 impl std::fmt::Display for GlError {
@@ -575,6 +581,8 @@ impl std::fmt::Display for GlError {
         use self::GlError::*;
         match self {
             Glutin(e) => write!(f, "Glutin error: {}", e),
+            DipslayContextCreation(e) => write!(f, "Display Context Creation: {}", e),
+            NoWindow => write!(f, "No window was created."),
         }
     }
 }
@@ -584,6 +592,8 @@ impl Error for GlError {
         use self::GlError::*;
         match self {
             Glutin(e) => Some(e),
+            DipslayContextCreation(e) => Some(e.as_ref()),
+            NoWindow => None,
         }
     }
 }
