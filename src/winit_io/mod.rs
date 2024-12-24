@@ -117,6 +117,14 @@ impl WinitIo {
                 context.set_mouse_pos((position.x as f32 / self.scale_factor, position.y as f32 / self.scale_factor).into());
             },
             KeyboardInput { event, .. } => {
+                if let Some(str) = event.text.as_ref() {
+                    if let ElementState::Pressed = event.state {
+                        for c in str.chars() {
+                            context.push_character(c);
+                        }
+                    }
+                }
+
                 match &event.logical_key {
                     Key::Named(named_key) => {
                         if let ElementState::Released = event.state {
@@ -125,12 +133,7 @@ impl WinitIo {
                             }
                         }
                     },
-                    Key::Character(c) => {
-                        for c in c.chars() {
-                            context.push_character(c);
-                        }
-                    },
-                    Key::Unidentified(_) | Key::Dead(_) => (),
+                    Key::Character(_) | Key::Unidentified(_) | Key::Dead(_) => (),
                 }
             },
             _ => (),
