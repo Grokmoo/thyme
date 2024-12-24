@@ -197,11 +197,10 @@ impl AppBuilder {
         use std::ffi::CString;
         use std::num::NonZeroU32;
 
-        use glutin::prelude::*;
         use glutin::config::ConfigTemplateBuilder;
-        use glutin::context::{ContextApi, ContextAttributesBuilder, Version};
+        use glutin::context::{ContextApi, ContextAttributesBuilder, Version, NotCurrentGlContext};
         use glutin_winit::DisplayBuilder;
-        use glutin::display::GetGlDisplay;
+        use glutin::display::{GlDisplay, GetGlDisplay};
         use winit::raw_window_handle::HasWindowHandle;
         use winit::window::Window;
 
@@ -216,7 +215,7 @@ impl AppBuilder {
         }
 
         let event_loop = glium::winit::event_loop::EventLoop::builder()
-        .build().map_err(|e| Error::Winit(WinitError::EventLoop(e)))?;
+            .build().map_err(|e| Error::Winit(WinitError::EventLoop(e)))?;
 
         let attrs = Window::default_attributes()
             .with_title("Thyme GL Demo")
@@ -233,7 +232,6 @@ impl AppBuilder {
         let window_handle = window.window_handle().map_err(|e| Error::Winit(WinitError::HandleError(e)))?;
         let raw_window_handle = window_handle.as_raw();
 
-        // Now we get the window size to use as the initial size of the Surface
         let (width, height): (u32, u32) = window.inner_size().into();
         let attrs =
             glutin::surface::SurfaceAttributesBuilder::<glutin::surface::WindowSurface>::new()

@@ -72,8 +72,10 @@ impl ApplicationHandler for AppRunner {
         use glium::Surface;
         match event {
             WindowEvent::RedrawRequested => {
+                self.party.check_context_changes(&mut self.context, &mut self.renderer);
+
                 let mut target = self.display.draw();
-                target.clear_color(0.25, 0.25, 0.25, 1.0);
+                target.clear_color(0.21, 0.21, 0.21, 1.0);
     
                 bench::run("thyme", || {
                     self.window.set_cursor_visible(!self.party.theme_has_mouse_cursor());
