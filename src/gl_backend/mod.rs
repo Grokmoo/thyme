@@ -566,19 +566,15 @@ pub(crate) struct GLVertex {
 /// An error originating from the [`GLRenderer`](struct.GLRenderer.html)
 #[derive(Debug)]
 pub enum GlError {
-    /// An error creating the glutin context
-    GlutinCreation(glutin::CreationError),
-
-    /// An error using or creating the OpenGL context
-    GlutinContext(glutin::ContextError),
+    /// An error originating from glutin
+    Glutin(glutin::error::Error),
 }
 
 impl std::fmt::Display for GlError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use self::GlError::*;
         match self {
-            GlutinCreation(e) => write!(f, "Error creating Glutin context: {}", e),
-            GlutinContext(e) => write!(f, "Error in OpenGL context: {}", e),
+            Glutin(e) => write!(f, "Glutin error: {}", e),
         }
     }
 }
@@ -587,20 +583,7 @@ impl Error for GlError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         use self::GlError::*;
         match self {
-            GlutinCreation(e) => Some(e),
-            GlutinContext(e) => Some(e),
+            Glutin(e) => Some(e),
         }
-    }
-}
-
-impl From<glutin::CreationError> for GlError {
-    fn from(e: glutin::CreationError) -> GlError {
-        GlError::GlutinCreation(e)
-    }
-}
-
-impl From<glutin::ContextError> for GlError {
-    fn from(e: glutin::ContextError) -> GlError {
-        GlError::GlutinContext(e)
     }
 }

@@ -1,5 +1,8 @@
 use std::path::PathBuf;
 
+use glium::glutin::surface::WindowSurface;
+use winit::{application::ApplicationHandler, error::EventLoopError};
+
 use crate::{Error, Point, BuildOptions, ContextBuilder, Context, WinitIo, Frame};
 
 /// An easy to use but still fairly configurable builder, allowing you to get
@@ -192,8 +195,13 @@ impl AppBuilder {
     /// builder and using the [`GlRenderer`](struct.GlRenderer.html).
     #[cfg(feature="gl_backend")]
     pub fn build_gl(self) -> Result<GlApp, Error> {
-        use glutin::event_loop::EventLoop;
+        use glium::backend::Facade;
+        use glutin::context::{ContextApi, ContextAttributesBuilder, Version};
+        use winit::raw_window_handle::HasWindowHandle;
+        use glutin::display::GlDisplay;
+
         use crate::gl_backend::GlError;
+        use crate::winit_io::WinitError;
 
         const OPENGL_MAJOR_VERSION: u8 = 3;
         const OPENGL_MINOR_VERSION: u8 = 2;
@@ -202,33 +210,43 @@ impl AppBuilder {
             crate::log::init(log::Level::Warn).unwrap();
         }
 
-        let event_loop = EventLoop::new();
-        let window_builder = glutin::window::WindowBuilder::new()
+        let event_loop = glium::winit::event_loop::EventLoop::builder()
+        .build().map_err(|e| Error::Winit(WinitError::EventLoop(e)))?;
+
+        let (window, display) = glium::backend::glutin::SimpleWindowBuilder::new()
             .with_title(&self.title)
-            .with_inner_size(glutin::dpi::LogicalSize::new(self.window_size.x, self.window_size.y));
+            .with_inner_size(self.window_size.x as u32, self.window_size.y as u32)
+            .build(&event_loop);
 
-        let windowed_context = glutin::ContextBuilder::new()
-            .with_gl(glutin::GlRequest::Specific(
-                glutin::Api::OpenGl,
-                (OPENGL_MAJOR_VERSION, OPENGL_MINOR_VERSION),
-            ))
-            .build_windowed(window_builder, &event_loop)
-            .map_err(GlError::GlutinCreation)
-            .map_err(Error::Gl)?;
+        let window_handle = window.window_handle().map_err(|e| Error::Winit(WinitError::HandleError(e)))?;
+        let raw_window_handle = window_handle.as_raw();
 
-        let windowed_context = unsafe {
-            windowed_context
-                .make_current()
-                .map_err(|(_context, e)| GlError::GlutinContext(e))
-                .map_err(Error::Gl)?
-        };
+        let context_attrs = ContextAttributesBuilder::new()
+            .with_context_api(ContextApi::OpenGl(Some(Version::new(OPENGL_MAJOR_VERSION, OPENGL_MINOR_VERSION))))
+            .build(Some(raw_window_handle));
 
-        {
-            let gl_context = windowed_context.context();
-            gl::load_with(|ptr| gl_context.get_proc_address(ptr) as *const _)
-        }
+        // let windowed_context = glutin::ContextBuilder::new()
+        //     .with_gl(glutin::GlRequest::Specific(
+        //         glutin::Api::OpenGl,
+        //         (OPENGL_MAJOR_VERSION, OPENGL_MINOR_VERSION),
+        //     ))
+        //     .build_windowed(window_builder, &event_loop)
+        //     .map_err(GlError::GlutinCreation)
+        //     .map_err(Error::Gl)?;
 
-        let mut io = crate::WinitIo::new(&event_loop, self.window_size)
+        // let windowed_context = unsafe {
+        //     windowed_context
+        //         .make_current()
+        //         .map_err(|(_context, e)| GlError::GlutinContext(e))
+        //         .map_err(Error::Gl)?
+        // };
+
+        // {
+        //     let gl_context = windowed_context.context();
+        //     gl::load_with(|ptr| gl_context.get_proc_address(ptr) as *const _)
+        // }
+
+        let mut io = crate::WinitIo::new(&window, self.window_size)
             .map_err(Error::Winit)?;
         let mut renderer = crate::GLRenderer::new();
         let mut context_builder = crate::ContextBuilder::new(self.options.clone());
@@ -237,30 +255,28 @@ impl AppBuilder {
 
         let context = context_builder.build(&mut renderer, &mut io)?;
 
-        Ok(GlApp { io, renderer, context, event_loop, windowed_context })
+        Ok(GlApp { io, renderer, context, event_loop, window })
     }
     
     /// Creates a [`GliumApp`](struct.GliumApp.html) object, setting up Thyme as specified
     /// in this Builder and using the [`GliumRenderer`](struct.GliumRenderer.html).
     #[cfg(feature="glium_backend")]
     pub fn build_glium(self) -> Result<GliumApp, Error> {
-        use glium::glutin::{event_loop::EventLoop, window::WindowBuilder};
-        use glium::Display;
-        use crate::glium_backend::GliumError;
+        use crate::winit_io::WinitError;
 
         if self.logger {
             crate::log::init(log::Level::Warn).unwrap();
         }
 
-        let event_loop = EventLoop::new();
-        let context = glium::glutin::ContextBuilder::new();
-        let builder = WindowBuilder::new()
-            .with_title(&self.title)
-            .with_inner_size(glium::glutin::dpi::LogicalSize::new(self.window_size.x, self.window_size.y));
-        let display = Display::new(builder, context, &event_loop).map_err(GliumError::DisplayCreation)
-            .map_err(Error::Glium)?;
+        let event_loop = glium::winit::event_loop::EventLoop::builder()
+            .build().map_err(|e| Error::Winit(WinitError::EventLoop(e)))?;
 
-        let mut io = crate::WinitIo::new(&event_loop, self.window_size)
+        let (window, display) = glium::backend::glutin::SimpleWindowBuilder::new()
+            .with_title(&self.title)
+            .with_inner_size(self.window_size.x as u32, self.window_size.y as u32)
+            .build(&event_loop);
+
+        let mut io = crate::WinitIo::new(&window, self.window_size)
             .map_err(Error::Winit)?;
         let mut renderer = crate::GliumRenderer::new(&display)
             .map_err(Error::Glium)?;
@@ -270,7 +286,7 @@ impl AppBuilder {
 
         let context = context_builder.build(&mut renderer, &mut io)?;
 
-        Ok(GliumApp { io, renderer, context, display, event_loop })
+        Ok(GliumApp { io, renderer, context, display, window, event_loop })
     }
 
     fn register_resources(&self, context_builder: &mut ContextBuilder) -> Result<(), Error> {
@@ -324,41 +340,68 @@ pub struct GlApp {
     pub event_loop: winit::event_loop::EventLoop<()>,
 
     /// The OpenGL / Glutin windowed context
-    pub windowed_context: glutin::ContextWrapper<glutin::PossiblyCurrent, glutin::window::Window>,
+    pub window: winit::window::Window,
+    //pub windowed_context: glutin::ContextWrapper<glutin::PossiblyCurrent, glutin::window::Window>,
+}
+
+#[cfg(feature="gl_backend")]
+struct GlAppRunner<F: Fn(&mut Frame)> {
+    io: WinitIo,
+    renderer: crate::GLRenderer,
+    context: Context,
+    window: winit::window::Window,
+    f: F,
+}
+
+#[cfg(feature="gl_backend")]
+impl<F: Fn(&mut Frame)> ApplicationHandler for GlAppRunner<F> {
+    fn resumed(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) { }
+
+    fn window_event(
+        &mut self,
+        event_loop: &winit::event_loop::ActiveEventLoop,
+        _window_id: winit::window::WindowId,
+        event: winit::event::WindowEvent,
+    ) {
+        use winit::event::WindowEvent;
+        match event {
+            WindowEvent::RedrawRequested => {
+                self.renderer.clear_color(0.0, 0.0, 0.0, 0.0);
+
+                let mut ui = self.context.create_frame();
+    
+                (self.f)(&mut ui);
+    
+                self.renderer.draw_frame(ui);
+    
+                // Was:
+                // renderer.clear_color(0.0, 0.0, 0.0, 1.0);
+                // let mut ui = context.create_frame();
+                // (f)(&mut ui);
+                // renderer.draw_frame(ui);
+                // windowed_context.swap_buffers().unwrap();
+            }
+            WindowEvent::CloseRequested => event_loop.exit(),
+            event => {
+                self.io.handle_event(&mut self.context, &event);
+            }
+        }
+    }
 }
 
 #[cfg(feature="gl_backend")]
 impl GlApp {
     /// Runs the Winit main loop for this app
-    pub fn main_loop<F: Fn(&mut Frame) + 'static>(self, f: F) -> ! {
-        use glutin::{
-            event::{Event, WindowEvent},
-            event_loop::ControlFlow,
+    pub fn main_loop<F: Fn(&mut Frame) + 'static>(self, f: F) -> Result<(), EventLoopError> {
+        let mut runner = GlAppRunner {
+            io: self.io,
+            renderer: self.renderer,
+            context: self.context,
+            window: self.window,
+            f,
         };
 
-        let event_loop = self.event_loop;
-        let windowed_context = self.windowed_context;
-        let mut context = self.context;
-        let mut renderer = self.renderer;
-        let mut io = self.io;
-
-        event_loop.run(move |event, _, control_flow| match event {
-            Event::MainEventsCleared => {
-                renderer.clear_color(0.0, 0.0, 0.0, 1.0);
-    
-                let mut ui = context.create_frame();
-    
-                (f)(&mut ui);
-    
-                renderer.draw_frame(ui);
-    
-                windowed_context.swap_buffers().unwrap();
-            }
-            Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => *control_flow = ControlFlow::Exit,
-            event => {
-                io.handle_event(&mut context, &event);
-            }
-        })
+        self.event_loop.run_app(&mut runner)
     }
 }
 
@@ -376,8 +419,11 @@ pub struct GliumApp {
     /// The Thyme Context
     pub context: Context,
 
+    /// The Winit Window
+    pub window: winit::window::Window,
+
     /// The Glium / Winit Display
-    pub display: glium::Display,
+    pub display: glium::Display<WindowSurface>,
 
     /// The Glium / Winit Event loop
     pub event_loop: winit::event_loop::EventLoop<()>,
@@ -386,37 +432,64 @@ pub struct GliumApp {
 #[cfg(feature="glium_backend")]
 impl GliumApp {
     /// Runs the Winit main loop for this app
-    pub fn main_loop<F: Fn(&mut Frame) + 'static>(self, f: F) -> ! {
-        use glium::glutin::{
-            event::{Event, WindowEvent},
-            event_loop::ControlFlow,
+    pub fn main_loop<F: Fn(&mut Frame) + 'static>(self, f: F) -> Result<(), EventLoopError> {
+        let mut runner = GliumAppRunner {
+            io: self.io,
+            renderer: self.renderer,
+            context: self.context,
+            display: self.display,
+            window: self.window,
+            f,
         };
+        
+        self.event_loop.run_app(&mut runner)
+    }
+}
+
+#[cfg(feature="glium_backend")]
+struct GliumAppRunner<F: Fn(&mut Frame)> {
+    pub io: WinitIo,
+    pub renderer: crate::GliumRenderer,
+    pub context: Context,
+    pub display: glium::Display<WindowSurface>,
+    pub window: winit::window::Window,
+    pub f: F,
+}
+
+#[cfg(feature="glium_backend")]
+impl<F: Fn(&mut Frame)> ApplicationHandler for GliumAppRunner<F> {
+    fn resumed(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) { }
+
+    fn about_to_wait(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) {
+        self.window.request_redraw();
+    }
+
+    fn window_event(
+        &mut self,
+        event_loop: &winit::event_loop::ActiveEventLoop,
+        _window_id: winit::window::WindowId,
+        event: winit::event::WindowEvent,
+    ) {
         use glium::Surface;
-
-        let event_loop = self.event_loop;
-        let display = self.display;
-        let mut context = self.context;
-        let mut renderer = self.renderer;
-        let mut io = self.io;
-
-        event_loop.run(move |event, _, control_flow| match event {
-            Event::MainEventsCleared => {
-                let mut target = display.draw();
+        use winit::event::WindowEvent;
+        match event {
+            WindowEvent::RedrawRequested => {
+                let mut target = self.display.draw();
                 target.clear_color(0.0, 0.0, 0.0, 0.0);
     
-                let mut ui = context.create_frame();
+                let mut ui = self.context.create_frame();
     
-                (f)(&mut ui);
+                (self.f)(&mut ui);
     
-                renderer.draw_frame(&mut target, ui).unwrap();
+                self.renderer.draw_frame(&mut target, ui).unwrap();
     
                 target.finish().unwrap();
             }
-            Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => *control_flow = ControlFlow::Exit,
+            WindowEvent::CloseRequested => event_loop.exit(),
             event => {
-                io.handle_event(&mut context, &event);
+                self.io.handle_event(&mut self.context, &event);
             }
-        })
+        }
     }
 }
 
