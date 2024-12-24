@@ -1,5 +1,5 @@
-use winit::{event::{Event, WindowEvent}, event_loop::{EventLoop, ControlFlow}};
-use thyme::bench;
+use winit::{application::ApplicationHandler, event::WindowEvent};
+use thyme::{bench, Context, ContextBuilder, GliumRenderer, WinitError, WinitIo};
 
 mod demo;
 
@@ -8,71 +8,96 @@ mod demo;
 /// the `demo.rs` file contains the Thyme UI code and logic.
 /// A simple party creator and character sheet for an RPG.
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    use glium::glutin::window::WindowBuilder;
-    use glium::{Display, Surface};
-
     // initialize our very basic logger so error messages go to stdout
     thyme::log::init(log::Level::Warn).unwrap();
 
     let window_size = [1280.0, 720.0];
-    let events_loop = EventLoop::new();
+
+    let event_loop = glium::winit::event_loop::EventLoop::builder()
+        .build().map_err(|e| thyme::Error::Winit(WinitError::EventLoop(e)))?;
 
     // create glium display
-    let builder = WindowBuilder::new()
+    let (window, display) = glium::backend::glutin::SimpleWindowBuilder::new()
         .with_title("Thyme Demo")
-        .with_inner_size(glium::glutin::dpi::LogicalSize::new(window_size[0], window_size[1]));
-    let context = glium::glutin::ContextBuilder::new();
-    let display = Display::new(builder, context, &events_loop)?;
+        .with_inner_size(window_size[0] as u32, window_size[1] as u32)
+        .build(&event_loop);
 
     // create thyme backend
-    let mut renderer = thyme::GliumRenderer::new(&display)?;
-    let mut io = thyme::WinitIo::new(&events_loop, window_size.into())?;
-    let mut context_builder = thyme::ContextBuilder::with_defaults();
+    let mut renderer = GliumRenderer::new(&display)?;
+    let mut io = WinitIo::new(&window, window_size.into())?;
+    let mut context_builder = ContextBuilder::with_defaults();
 
     demo::register_assets(&mut context_builder);
 
-    let mut context = context_builder.build(&mut renderer, &mut io)?;
+    let context = context_builder.build(&mut renderer, &mut io)?;
 
-    let mut party = demo::Party::default();
+    let party = demo::Party::default();
 
-    let mut last_frame = std::time::Instant::now();
-    let frame_time = std::time::Duration::from_millis(16);
+    let mut app = AppRunner { io, renderer, context, display, window, party, frames: 0 };
+
+    let start = std::time::Instant::now();
+
+    event_loop.run_app(&mut app)?;
+
+    let finish = std::time::Instant::now();
+
+    log::warn!("Drew {} frames in {:.2}s", app.frames, (finish - start).as_secs_f32());
+
+    Ok(())
+}
+
+struct AppRunner {
+    io: WinitIo,
+    renderer: GliumRenderer,
+    context: Context,
+    display: glium::Display<glium::glutin::surface::WindowSurface>,
+    window: winit::window::Window,
+    party: demo::Party,
+    frames: u32,
+}
+
+impl ApplicationHandler for AppRunner {
+    fn resumed(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) { }
+
+    fn about_to_wait(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) {
+        self.window.request_redraw();
+    }
+
+    fn window_event(
+        &mut self,
+        event_loop: &winit::event_loop::ActiveEventLoop,
+        _window_id: winit::window::WindowId,
+        event: WindowEvent,
+    ) {
+        use glium::Surface;
+        match event {
+            WindowEvent::RedrawRequested => {
+                self.party.check_context_changes(&mut self.context, &mut self.renderer);
+
+                let mut target = self.display.draw();
+                target.clear_color(0.21, 0.21, 0.21, 1.0);
     
-    // run main loop
-    events_loop.run(move |event, _, control_flow| match event {
-        Event::MainEventsCleared => {
-            if std::time::Instant::now() > last_frame + frame_time {
-                display.gl_window().window().request_redraw();
+                bench::run("thyme", || {
+                    self.window.set_cursor_visible(!self.party.theme_has_mouse_cursor());
+    
+                    let mut ui = self.context.create_frame();
+    
+                    bench::run("frame", || {
+                        demo::build_ui(&mut ui, &mut self.party);
+                    });
+    
+                    bench::run("draw", || {
+                        self.renderer.draw_frame(&mut target, ui).unwrap();
+                    });
+                });
+    
+                target.finish().unwrap();
+                self.frames += 1;
             }
-            *control_flow = ControlFlow::WaitUntil(last_frame + frame_time);
-        },
-        Event::RedrawRequested(_) => {
-            last_frame = std::time::Instant::now();
-
-            party.check_context_changes(&mut context, &mut renderer);
-
-            let mut target = display.draw();
-            target.clear_color(0.21404, 0.21404, 0.21404, 1.0); // manual sRGB conversion for 0.5
-
-            bench::run("thyme", || {
-                display.gl_window().window().set_cursor_visible(!party.theme_has_mouse_cursor());
-
-                let mut ui = context.create_frame();
-
-                bench::run("frame", || {
-                    demo::build_ui(&mut ui, &mut party);
-                });
-
-                bench::run("draw", || {
-                    renderer.draw_frame(&mut target, ui).unwrap();
-                });
-            });
-
-            target.finish().unwrap();
-        },
-        Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => *control_flow = ControlFlow::Exit,
-        event => {
-            io.handle_event(&mut context, &event);
+            WindowEvent::CloseRequested => event_loop.exit(),
+            event => {
+                self.io.handle_event(&mut self.context, &event);
+            }
         }
-    })
+    }
 }

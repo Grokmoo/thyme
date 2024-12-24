@@ -15,5 +15,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     
             ui.button("label", "Hello, World!");
         });
-    });
+    })?;
+
+    Ok(())
 }

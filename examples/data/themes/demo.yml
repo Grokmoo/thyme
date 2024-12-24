@@ -63,6 +63,9 @@ widgets:
             text: "Edit Character"
       pane:
         from: scrollpane
+        children:
+          content:
+            border: { all: 5 }
   name_panel:
     width_from: Parent
     height: 25

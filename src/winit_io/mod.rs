@@ -1,7 +1,8 @@
 use std::error::Error;
 
-use winit::event::{ElementState, Event, MouseButton, MouseScrollDelta, VirtualKeyCode, WindowEvent};
-use winit::event_loop::EventLoop;
+use winit::event::{ElementState, MouseButton, MouseScrollDelta, WindowEvent};
+use winit::keyboard::{Key, NamedKey, ModifiersKeyState};
+use winit::window::Window;
 
 use crate::point::Point;
 use crate::context::{InputModifiers, Context};
@@ -49,11 +50,11 @@ impl IO for WinitIo {
 impl WinitIo {
     /// Creates a new adapter from the given `EventLoop`, with the specified initial display size,
     /// in logical pixels.  This may change over time.
-    pub fn new<T>(
-        event_loop: &EventLoop<T>,
+    pub fn new(
+        window: &Window,
         logical_display_size: Point,
     ) -> Result<WinitIo, WinitError> {
-        let monitor = event_loop.primary_monitor().ok_or(WinitError::PrimaryMonitorNotFound)?;
+        let monitor = window.primary_monitor().ok_or(WinitError::PrimaryMonitorNotFound)?;
         let scale_factor = monitor.scale_factor() as f32;
         Ok(WinitIo {
             scale_factor,
@@ -62,12 +63,7 @@ impl WinitIo {
     }
 
     /// Handles a winit `Event` and passes it to the Thyme [`Context`](struct.Context.html).
-    pub fn handle_event<T>(&mut self, context: &mut Context, event: &Event<T>) {
-        let event = match event {
-            Event::WindowEvent { event, .. } => event,
-            _ => return,
-        };
-
+    pub fn handle_event(&mut self, context: &mut Context, event: &WindowEvent) {
         use WindowEvent::*;
         match event {
             Resized(size) => {
@@ -77,11 +73,11 @@ impl WinitIo {
                 context.set_display_size(size);
             },
             ModifiersChanged(m) => {
-                context.set_input_modifiers(InputModifiers {
-                    shift: m.shift(),
-                    ctrl: m.ctrl(),
-                    alt: m.alt(),
-                });
+                use ModifiersKeyState::*;
+                let shift = m.lshift_state() == Pressed || m.rshift_state() == Pressed;
+                let ctrl = m.lcontrol_state() == Pressed || m.rcontrol_state() == Pressed;
+                let alt = m.lalt_state() == Pressed || m.ralt_state() == Pressed;
+                context.set_input_modifiers(InputModifiers { shift, ctrl, alt });
             },
             WindowEvent::ScaleFactorChanged { scale_factor, .. } => {
                 let scale = *scale_factor as f32;
@@ -98,7 +94,9 @@ impl WinitIo {
                     MouseButton::Left => 0,
                     MouseButton::Right => 1,
                     MouseButton::Middle => 2,
-                    MouseButton::Other(index) => *index as usize + 3,
+                    MouseButton::Back => 3,
+                    MouseButton::Forward => 4,
+                    MouseButton::Other(index) => *index as usize + 5,
                 };
 
                 context.set_mouse_pressed(pressed, index);
@@ -118,14 +116,24 @@ impl WinitIo {
             CursorMoved { position, .. } => {
                 context.set_mouse_pos((position.x as f32 / self.scale_factor, position.y as f32 / self.scale_factor).into());
             },
-            ReceivedCharacter(c) => {
-                context.push_character(*c);
-            },
-            KeyboardInput { input, .. } => {
-                if let Some(event) = key_event(input.virtual_keycode) {
-                    if let ElementState::Released = input.state {
-                        context.push_key_event(event);
+            KeyboardInput { event, .. } => {
+                if let Some(str) = event.text.as_ref() {
+                    if let ElementState::Pressed = event.state {
+                        for c in str.chars() {
+                            context.push_character(c);
+                        }
                     }
+                }
+
+                match &event.logical_key {
+                    Key::Named(named_key) => {
+                        if let ElementState::Released = event.state {
+                            if let Some(key) = key_event(*named_key) {
+                                context.push_key_event(key);
+                            }
+                        }
+                    },
+                    Key::Character(_) | Key::Unidentified(_) | Key::Dead(_) => (),
                 }
             },
             _ => (),
@@ -133,10 +141,20 @@ impl WinitIo {
     }
 }
 
+/// An error of several types originating from winit Windowing functions
 #[derive(Debug)]
 pub enum WinitError {
+    /// No primary monitor is found
     PrimaryMonitorNotFound,
+
+    /// Internal OS error forwarded to winit
     Os(winit::error::OsError),
+
+    /// An error in the creation or execution of the EventLoop
+    EventLoop(winit::error::EventLoopError),
+
+    /// An error getting the window handle associated with a window
+    HandleError(winit::raw_window_handle::HandleError),
 }
 
 impl std::fmt::Display for WinitError {
@@ -145,6 +163,8 @@ impl std::fmt::Display for WinitError {
         match self {
             PrimaryMonitorNotFound => write!(f, "Primary monitor not found."),
             Os(e) => write!(f, "OS Error: {}", e),
+            EventLoop(e) => write!(f, "Event Loop error: {}", e),
+            HandleError(e) => write!(f, "Window handle error: {}", e),
         }
     }
 }
@@ -155,17 +175,14 @@ impl Error for WinitError {
         match self {
             PrimaryMonitorNotFound => None,
             Os(e) => Some(e),
+            EventLoop(e) => Some(e),
+            HandleError(e) => Some(e),
         }
     }
 }
 
-fn key_event(input: Option<VirtualKeyCode>) -> Option<KeyEvent> {
-    let input = match input {
-        None => return None,
-        Some(i) => i,
-    };
-
-    use VirtualKeyCode::*;
+fn key_event(input: NamedKey) -> Option<KeyEvent> {
+    use NamedKey::*;
     Some(match input {
         Insert => KeyEvent::Insert,
         Home => KeyEvent::Home,
@@ -173,12 +190,12 @@ fn key_event(input: Option<VirtualKeyCode>) -> Option<KeyEvent> {
         End => KeyEvent::End,
         PageDown => KeyEvent::PageDown,
         PageUp => KeyEvent::PageUp,
-        Left => KeyEvent::Left,
-        Up => KeyEvent::Up,
-        Right => KeyEvent::Right,
-        Down => KeyEvent::Down,
-        Back => KeyEvent::Back,
-        Return => KeyEvent::Return,
+        ArrowLeft => KeyEvent::Left,
+        ArrowUp => KeyEvent::Up,
+        ArrowRight => KeyEvent::Right,
+        ArrowDown => KeyEvent::Down,
+        Backspace => KeyEvent::Back,
+        Enter => KeyEvent::Return,
         Space => KeyEvent::Space,
         Escape => KeyEvent::Escape,
         Tab => KeyEvent::Tab,
