@@ -1,6 +1,6 @@
-use std::collections::{HashMap, hash_map::Entry};
 use std::fmt;
 
+use indexmap::{IndexMap, map::Entry};
 use serde::{Serialize, Deserialize, Deserializer, Serializer, de::{self, Visitor}};
 
 use crate::{Border, Point};
@@ -9,13 +9,13 @@ use crate::{Border, Point};
 #[serde(deny_unknown_fields)]
 pub struct ThemeDefinition {
     #[serde(default)]
-    pub fonts: HashMap<String, FontDefinition>,
+    pub fonts: IndexMap<String, FontDefinition>,
 
     #[serde(default)]
-    pub image_sets: HashMap<String, ImageSet>,
+    pub image_sets: IndexMap<String, ImageSet>,
 
     #[serde(default)]
-    pub widgets: HashMap<String, WidgetThemeDefinition>,
+    pub widgets: IndexMap<String, WidgetThemeDefinition>,
 }
 
 impl ThemeDefinition {
@@ -86,10 +86,10 @@ pub struct WidgetThemeDefinition {
     pub layout_spacing: Option<Point>,
 
     #[serde(default)]
-    pub custom: HashMap<String, CustomData>,
+    pub custom: IndexMap<String, CustomData>,
 
     #[serde(default)]
-    pub children: HashMap<String, WidgetThemeDefinition>,
+    pub children: IndexMap<String, WidgetThemeDefinition>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -108,7 +108,7 @@ pub struct ImageSet {
     #[serde(default="f32_one")]
     pub scale: f32,
 
-    pub images: HashMap<String, ImageDefinition>,
+    pub images: IndexMap<String, ImageDefinition>,
 }
 
 fn f32_one() -> f32 { 1.0 }
@@ -148,22 +148,22 @@ pub enum ImageDefinitionKind {
     Group {
         group_scale: [u32; 2],
         fill: ImageFill,
-        images: HashMap<String, [u32; 4]>,
+        images: IndexMap<String, [u32; 4]>,
     },
     Group1x1 {
         group_scale: [u32; 2],
         fill: ImageFill,
-        images: HashMap<String, [u32; 2]>,
+        images: IndexMap<String, [u32; 2]>,
     },
     ComposedGroup {
         grid_size: [u32; 2],
-        images: HashMap<String, [u32; 2]>,
+        images: IndexMap<String, [u32; 2]>,
     },
     Alias {
         from: String,
     },
     Collected {
-        sub_images: HashMap<String, CollectedSubImage>,
+        sub_images: IndexMap<String, CollectedSubImage>,
     },
     Composed {
         position: [u32; 2],
@@ -192,7 +192,7 @@ pub enum ImageDefinitionKind {
         once: bool,
     },
     Animated {
-        states: HashMap<AnimState, String>,
+        states: IndexMap<AnimState, String>,
     }
 }
 

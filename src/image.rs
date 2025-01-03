@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use indexmap::IndexMap;
 
 use crate::Error;
 use crate::render::{TexCoord, DrawList, TextureHandle, TextureData};
@@ -230,7 +230,7 @@ impl Image {
         image_id: &str,
         def: &ImageDefinition,
         texture: &TextureData,
-        others: &HashMap<String, Image>,
+        others: &IndexMap<String, Image>,
         scale: f32,
     )-> Result<Image, Error> {
         let base_size;
@@ -571,7 +571,7 @@ impl Image {
     }
 }
 
-fn find_image_in_set(parent_id: &str, set: &HashMap<String, Image>, id: &str) -> Result<Image, Error> {
+fn find_image_in_set(parent_id: &str, set: &IndexMap<String, Image>, id: &str) -> Result<Image, Error> {
     match set.get(id) {
         None => {
             Err(

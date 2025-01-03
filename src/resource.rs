@@ -1,9 +1,9 @@
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
-use std::collections::HashMap;
 use std::sync::{atomic::{AtomicBool, Ordering}, mpsc::{Receiver, channel}};
 
+use indexmap::IndexMap;
 use notify::{Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 
 use crate::Error;
@@ -294,8 +294,8 @@ impl ResourceSet {
         Ok(())
     }
 
-    fn build_fonts(&mut self) -> HashMap<String, crate::font::FontSource> {
-        let mut output = HashMap::new();
+    fn build_fonts(&mut self) -> IndexMap<String, crate::font::FontSource> {
+        let mut output = IndexMap::new();
 
         for (id, source) in self.fonts.iter_mut() {
             let font = source.font.take().unwrap();
@@ -305,8 +305,8 @@ impl ResourceSet {
         output
     }
 
-    fn build_images<R: Renderer>(&self, renderer: &mut R) -> Result<HashMap<String, TextureData>, Error> {
-        let mut output = HashMap::new();
+    fn build_images<R: Renderer>(&self, renderer: &mut R) -> Result<IndexMap<String, TextureData>, Error> {
+        let mut output = IndexMap::new();
         let mut handle = TextureHandle::default();
 
         // register a 1x1 pixel texture for use with minimal themes

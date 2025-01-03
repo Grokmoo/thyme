@@ -1,4 +1,5 @@
-use std::collections::{HashMap, VecDeque};
+use std::collections::VecDeque;
+use indexmap::{IndexMap, map::Entry};
 
 use crate::theme_definition::{
     ThemeDefinition, ImageDefinition, ImageDefinitionKind, WidgetThemeDefinition,
@@ -12,12 +13,12 @@ use crate::{Color, Error, Point, Border, Align, Layout, WidthRelative, HeightRel
 
 pub struct ThemeSet {
     fonts: Vec<Font>,
-    font_handles: HashMap<String, FontSummary>,
+    font_handles: IndexMap<String, FontSummary>,
 
     images: Vec<Image>,
-    image_handles: HashMap<String, ImageHandle>,
+    image_handles: IndexMap<String, ImageHandle>,
 
-    theme_handles: HashMap<String, WidgetThemeHandle>,
+    theme_handles: IndexMap<String, WidgetThemeHandle>,
     themes: Vec<WidgetTheme>,
 }
 
@@ -25,8 +26,8 @@ impl ThemeSet {
     pub(crate) fn new<R: Renderer>(
         // we pass in a mutable reference to allow easier expanding of image aliases with less copying
         definition: &mut ThemeDefinition,
-        textures: HashMap<String, TextureData>,
-        font_sources: HashMap<String, FontSource>,
+        textures: IndexMap<String, TextureData>,
+        font_sources: IndexMap<String, FontSource>,
         renderer: &mut R,
         display_scale: f32,
     ) -> Result<ThemeSet, Error> {
@@ -37,7 +38,7 @@ impl ThemeSet {
 
         // TODO need to be able to rebuild fonts when scale factor changes
         // FontSummary size will stay the same for this
-        let mut font_handles = HashMap::new();
+        let mut font_handles = IndexMap::new();
         let mut font_handle = FontHandle::default();
         let mut fonts = Vec::new();
         for (font_id, font) in &definition.fonts {
@@ -68,12 +69,12 @@ impl ThemeSet {
             font_handles.insert(font_id.to_string(), FontSummary { handle, line_height });
         }
 
-        let mut images = HashMap::new();
+        let mut images = IndexMap::new();
         for (set_id, set) in definition.image_sets.iter_mut() {
             // insert empty image for each set
             set.images.insert("empty".to_string(), ImageDefinition { color: Color::white(), kind: ImageDefinitionKind::Empty });
 
-            let mut images_in_set = HashMap::new();
+            let mut images_in_set = IndexMap::new();
 
             let texture = if let Some(source) = set.source.as_ref() {
                 textures.get(source).ok_or_else(||
@@ -88,7 +89,7 @@ impl ThemeSet {
             let mut animated_images: Vec<(&str, &ImageDefinition)> = Vec::new();
 
             // first expand all aliases
-            let mut aliases = HashMap::new();
+            let mut aliases = IndexMap::new();
             for (image_id, image_def) in &set.images {
                 if let ImageDefinitionKind::Alias { from } = &image_def.kind {
                     let from = match set.images.get(from) {
@@ -205,7 +206,7 @@ impl ThemeSet {
         }
 
         let mut images_out = Vec::new();
-        let mut image_handles = HashMap::new();
+        let mut image_handles = IndexMap::new();
         for (index, (id, image)) in images.into_iter().enumerate() {
             let handle = ImageHandle { id: index };
             images_out.push(image);
@@ -213,7 +214,7 @@ impl ThemeSet {
         }
 
         // build the set of themes
-        let mut theme_handles = HashMap::new();
+        let mut theme_handles = IndexMap::new();
         let mut themes = Vec::new();
 
         // create the default theme
@@ -334,7 +335,7 @@ impl ThemeSet {
 
 fn resolve_from(
     themes: &[WidgetTheme],
-    handles: &HashMap<String, WidgetThemeHandle>,
+    handles: &IndexMap<String, WidgetThemeHandle>,
     from_str: &str,
     to_id: WidgetThemeHandle
 ) -> Option<WidgetThemeHandle> {
@@ -394,7 +395,7 @@ pub struct WidgetTheme {
     pub layout_spacing: Option<Point>,
     pub children: Vec<WidgetThemeHandle>,
 
-    pub custom: HashMap<String, CustomData>,
+    pub custom: IndexMap<String, CustomData>,
 }
 
 impl WidgetTheme {
@@ -427,7 +428,7 @@ impl WidgetTheme {
             layout: None,
             layout_spacing: None,
             children: Vec::new(),
-            custom: HashMap::new(),
+            custom: IndexMap::new(),
         }
     }
 
@@ -437,11 +438,11 @@ impl WidgetTheme {
         parent_handle: Option<WidgetThemeHandle>,
         id: String,
         handle_index: &mut u64,
-        handles: &mut HashMap<String, WidgetThemeHandle>,
+        handles: &mut IndexMap<String, WidgetThemeHandle>,
         themes: &mut Vec<WidgetTheme>,
         def: &WidgetThemeDefinition,
-        images: &HashMap<String, ImageHandle>,
-        fonts: &HashMap<String, FontSummary>,
+        images: &IndexMap<String, ImageHandle>,
+        fonts: &IndexMap<String, FontSummary>,
     ) -> Result<WidgetThemeHandle, Error> {
         if id.contains('/') {
             return Err(
@@ -559,7 +560,7 @@ fn merge_from(
     to_id: WidgetThemeHandle,
     themes: &mut Vec<WidgetTheme>,
     handle_index: &mut u64,
-    theme_handles: &mut HashMap<String, WidgetThemeHandle>,
+    theme_handles: &mut IndexMap<String, WidgetThemeHandle>,
 ) {
     let from = themes[from_id.id as usize].clone();
     let from_children = from.children.clone();
@@ -594,8 +595,8 @@ fn merge_from(
 
     for (id, value) in from.custom.iter() {
         match to.custom.entry(id.to_string()) {
-            std::collections::hash_map::Entry::Occupied(_) => (),
-            std::collections::hash_map::Entry::Vacant(entry) => {
+            Entry::Occupied(_) => (),
+            Entry::Vacant(entry) => {
                 entry.insert(value.clone());
             }
         }
@@ -659,7 +660,7 @@ fn add_children_recursive(
     to_id: WidgetThemeHandle,
     themes: &mut Vec<WidgetTheme>,
     handle_index: &mut u64,
-    theme_handles: &mut HashMap<String, WidgetThemeHandle>,
+    theme_handles: &mut IndexMap<String, WidgetThemeHandle>,
 ) {
     let mut from = themes[from_id.id as usize].clone();
 
