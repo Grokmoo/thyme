@@ -1,4 +1,4 @@
-use winit::{application::ApplicationHandler, event::WindowEvent};
+use winit::{application::ApplicationHandler, dpi::LogicalSize, event::WindowEvent, window::Window};
 use thyme::{bench, Context, ContextBuilder, GliumRenderer, WinitError, WinitIo};
 
 mod demo;
@@ -16,10 +16,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let event_loop = glium::winit::event_loop::EventLoop::builder()
         .build().map_err(|e| thyme::Error::Winit(WinitError::EventLoop(e)))?;
 
+    let attrs = Window::default_attributes()
+        .with_title("Thyme Demo")
+        .with_inner_size(LogicalSize::new(window_size[0], window_size[1]));
+
     // create glium display
     let (window, display) = glium::backend::glutin::SimpleWindowBuilder::new()
-        .with_title("Thyme Demo")
-        .with_inner_size(window_size[0] as u32, window_size[1] as u32)
+        .set_window_builder(attrs)
         .build(&event_loop);
 
     // create thyme backend

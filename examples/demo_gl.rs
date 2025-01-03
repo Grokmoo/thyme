@@ -4,6 +4,7 @@ use glutin::surface::{Surface, WindowSurface, GlSurface};
 use glutin_winit::DisplayBuilder;
 use glutin::display::{GlDisplay, GetGlDisplay};
 use winit::application::ApplicationHandler;
+use winit::dpi::LogicalSize;
 use winit::event::WindowEvent;
 use winit::window::Window;
 use winit::raw_window_handle::HasWindowHandle;
@@ -33,7 +34,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let attrs = Window::default_attributes()
         .with_title("Thyme GL Demo")
-        .with_inner_size(winit::dpi::PhysicalSize::new(1280, 720));
+        .with_inner_size(LogicalSize::new(1280, 720));
 
     let display_builder = DisplayBuilder::new().with_window_attributes(Some(attrs));
     let config_template_builder = ConfigTemplateBuilder::new();
