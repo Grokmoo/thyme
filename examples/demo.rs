@@ -5,7 +5,7 @@
 
 use std::path::Path;
 use std::collections::HashMap;
-use thyme::{Context, ContextBuilder, Frame, bench, ShowElement, Renderer};
+use thyme::{bench::{self, ReportConfig}, Context, ContextBuilder, Frame, Renderer, ShowElement};
 
 pub fn register_assets(context_builder: &mut ContextBuilder) {
     // register resources in thyme by reading from files.  this enables live reload.
@@ -199,11 +199,12 @@ pub fn build_ui(ui: &mut Frame, party: &mut Party) {
         }
     }
 
+    let config = ReportConfig::new().with_short_length().with_moving_average_samples();
     ui.label("bench", format!(
         "{}\n{}\n{}",
-        bench::short_report("thyme"),
-        bench::short_report("frame"),
-        bench::short_report("draw"),
+        bench::report("thyme", config),
+        bench::report("frame", config),
+        bench::report("draw", config),
     ));
 
     ui.start("theme_panel").children(|ui| {

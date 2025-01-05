@@ -15,6 +15,109 @@ const MOVING_AVG_LEN: usize = 30;
 
 static BENCH: Mutex<BenchSet> = const_mutex(BenchSet::new());
 
+/// Configuration values to pass to the benchmark [`report`](fn.report.html) function.
+#[derive(Copy, Clone)]
+pub struct ReportConfig {
+    /// The length of the given report
+    pub length: ReportConfigLength,
+
+    /// The number of samples to average for the given report
+    pub samples: ReportConfigSamples,
+}
+
+impl Default for ReportConfig {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ReportConfig {
+    /// Constructs a default Report config with full length and all samples
+    pub fn new() -> Self {
+        Self {
+            length: ReportConfigLength::Long,
+            samples: ReportConfigSamples::All,
+        }
+    }
+
+    /// Builds a report config utilizing the specified `length`
+    pub fn with_length(self, length: ReportConfigLength) -> Self {
+        Self {
+            length,
+            samples: self.samples,
+        }
+    }
+
+    /// Builds a report config utilizing the specified `samples`
+    pub fn with_samples(self, samples: ReportConfigSamples) -> Self {
+        Self {
+            length: self.length,
+            samples,
+        }
+    }
+
+    /// Builds a report with short report length
+    pub fn with_short_length(self) -> Self {
+        Self {
+            length: ReportConfigLength::Short,
+            samples: self.samples,
+        }
+    }
+
+    /// Builds a report with long report length.
+    pub fn with_long_length(self) -> Self {
+        Self {
+            length: ReportConfigLength::Long,
+            samples: self.samples,
+        }
+    }
+
+    /// Builds a report using all samples
+    pub fn with_all_samples(self) -> Self {
+        Self {
+            length: self.length,
+            samples: ReportConfigSamples::All
+        }
+    }
+
+    /// Builds a report using a moving average of samples
+    pub fn with_moving_average_samples(self) -> Self {
+        Self {
+            length: self.length,
+            samples: ReportConfigSamples::MovingAverage,
+        }
+    }
+}
+
+/// For a given benchmark report, whether to use the condensed report output
+#[derive(Copy, Clone)]
+pub enum ReportConfigLength {
+    /// Use the condensed report output
+    Short,
+
+    /// Use the full length report output
+    Long,
+}
+
+/// For a given benchmark report, how many samples to average
+#[derive(Copy, Clone)]
+pub enum ReportConfigSamples {
+    /// Average all samples that have ever been taken
+    All,
+
+    /// Perform a moving average of the most recent samples taken
+    MovingAverage,
+}
+
+impl ReportConfigSamples {
+    fn limit(&self) -> Option<usize> {
+        match self {
+            ReportConfigSamples::All => None,
+            ReportConfigSamples::MovingAverage => Some(MOVING_AVG_LEN),
+        }
+    }
+}
+
 /// A benchmarking handle created by [`start`](fn.start.html).  [`end`](#method.end) this to
 /// finish the given benchmark timing
 pub struct Handle {
@@ -47,42 +150,45 @@ pub fn start(tag: &str) -> Handle {
 }
 
 /// Returns a `Stats` object for the benchmark timings
-/// associated with the given `tag`.  Limits to a number
-/// of recent samples if there are a large number of total samples.
-pub fn stats(tag: &str) -> Stats {
+/// associated with the given `tag`, utilizing the specified
+/// `samples`.
+pub fn stats(tag: &str, samples: ReportConfigSamples) -> Stats {
     let bench = BENCH.lock();
-    bench.stats(tag, Some(MOVING_AVG_LEN))
+
+    bench.stats(tag, samples.limit())
 }
 
-/// Like [`stats`](fn.stats.html), but there is no limit on the
-/// number of samples to be considered.
-pub fn stats_all(tag: &str) -> Stats {
+/// Returns stats for all benchmark tags that have been benchmarked.
+/// See [`stats`](fn.stats.html).
+pub fn stats_all(samples: ReportConfigSamples) -> Vec<Stats> {
     let bench = BENCH.lock();
-    bench.stats(tag, None)
+    bench.stats_all(samples.limit())
 }
 
-/// Like [`report`](fn.report.html), but produces a condensed version
-/// of the data.
-pub fn short_report(tag: &str) -> String {
+/// Generate a report string for all tags that have been
+/// benchmarked.  See [`report`](fn.report.html)
+pub fn report_all(config: ReportConfig) -> Vec<String> {
     let bench = BENCH.lock();
-    bench.short_report(tag, Some(MOVING_AVG_LEN))
+    let limit = config.samples.limit();
+
+    match config.length {
+        ReportConfigLength::Long => bench.report_all(limit),
+        ReportConfigLength::Short => bench.short_report_all(limit),
+    }
 }
 
-/// A convenience method to automatically generate a report
-/// String for the given `tag`.  The report will include all of the
+/// Generate a report string for the given `tag`, utilizing the
+/// specified report `config`.  The report will include the
 /// data in the [`Stats`](struct.Stats.html) associated with this `tag`,
-/// and be formatted with appropriate units.  Limits to a number of
-/// recent samples if there are a large number of total samples.
-pub fn report(tag: &str) -> String {
+/// and be formatted with the appropriate units.
+pub fn report(tag: &str, config: ReportConfig) -> String {
     let bench = BENCH.lock();
-    bench.report(tag, Some(MOVING_AVG_LEN))
-}
+    let limit = config.samples.limit();
 
-/// Like [`report`](fn.report.html), but there is no limit on the
-/// number of samples to be considered.
-pub fn report_all(tag: &str) -> String {
-    let bench = BENCH.lock();
-    bench.report(tag, None)
+    match config.length {
+        ReportConfigLength::Long => bench.report(tag, limit),
+        ReportConfigLength::Short => bench.short_report(tag, limit),
+    }
 }
 
 fn end(handle: Handle) {
@@ -231,6 +337,14 @@ impl BenchSet {
         Stats::default()
     }
 
+    fn stats_all(&self, limit: Option<usize>) -> Vec<Stats> {
+        let mut out = Vec::new();
+        for bench in self.benches.iter() {
+            out.push(bench.stats(limit));
+        }
+        out
+    }
+
     fn report(&self, tag: &str, limit: Option<usize>) -> String {
         for bench in self.benches.iter() {
             if bench.tag == tag {
@@ -249,6 +363,22 @@ impl BenchSet {
         }
 
         "Bench not found".to_string()
+    }
+
+    fn short_report_all(&self, limit: Option<usize>) -> Vec<String> {
+        let mut out = Vec::new();
+        for bench in self.benches.iter() {
+            out.push(bench.short_report_str(limit));
+        }
+        out
+    }
+
+    fn report_all(&self, limit: Option<usize>) -> Vec<String> {
+        let mut out = Vec::new();
+        for bench in self.benches.iter() {
+            out.push(bench.report_str(limit));
+        }
+        out
     }
 }
 
