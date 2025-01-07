@@ -2,6 +2,8 @@ use std::collections::HashMap;
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use serde::{Deserialize, Serialize};
+
 use crate::context::{Context, ContextInternal, InputModifiers};
 use crate::{
     AnimState, AnimStateKey, Rect, Point, WidgetBuilder, PersistentState, Align,
@@ -741,7 +743,7 @@ impl Frame {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub(crate) struct RendGroup {
     index: u16,
 }

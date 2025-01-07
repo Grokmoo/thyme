@@ -658,6 +658,8 @@ impl Context {
         SavedContext {
             modal: internal.modal.clone(),
             persistent_state: internal.persistent_state.clone(),
+            keyboard_focus_widget: internal.keyboard_focus_widget.clone(),
+            top_rend_group: internal.top_rend_group,
         }
     }
 
@@ -665,9 +667,11 @@ impl Context {
     /// Context, restoring the overall UI state.  The [`SavedContext`](struct.SavedContext.html)
     /// passed in should be generated from [`save`](struct.Context.html#save).
     pub fn load(&mut self, save: SavedContext) {
-        let mut internal = self.internal.borrow_mut();
+        let mut internal: std::cell::RefMut<'_, ContextInternal> = self.internal.borrow_mut();
         internal.modal = save.modal;
         internal.persistent_state = save.persistent_state;
+        internal.top_rend_group = save.top_rend_group;
+        internal.keyboard_focus_widget = save.keyboard_focus_widget;
     }
 
     /// Creates a [`Frame`](struct.Frame.html), the main object that should pass through
@@ -732,4 +736,6 @@ impl Modal {
 pub struct SavedContext {
     modal: Option<Modal>,
     persistent_state: HashMap<String, PersistentState>,
+    top_rend_group: RendGroup,
+    keyboard_focus_widget: Option<String>,
 }
