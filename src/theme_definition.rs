@@ -498,17 +498,18 @@ impl Align {
     /// For example, [`TopLeft`](#variant.TopLeft) will return (0, 0), while
     /// [`BotRight`](#variant.BotRight) will return `size`.
     pub fn adjust_for(self, size: Point) -> Point {
+        let s = size;
         use Align::*;
         match self {
-            Left => Point { x: 0.0, y: size.y / 2.0 },
-            Right => Point { x: size.x, y: size.y / 2.0 },
-            Bot => Point { x: size.x / 2.0, y: size.y },
-            Top => Point { x: size.x / 2.0, y: 0.0 },
-            Center => Point { x: size.x / 2.0, y: size.y / 2.0 },
-            BotLeft => Point { x: 0.0, y: size.y },
-            BotRight => Point { x: size.x, y: size.y },
+            Left => Point { x: 0.0, y: s.y / 2.0 },
+            Right => Point { x: s.x, y: s.y / 2.0 },
+            Bot => Point { x: s.x / 2.0, y: s.y },
+            Top => Point { x: s.x / 2.0, y: 0.0 },
+            Center => Point { x: s.x / 2.0, y: s.y / 2.0 },
+            BotLeft => Point { x: 0.0, y: s.y },
+            BotRight => Point { x: s.x, y: s.y },
             TopLeft => Point { x: 0.0, y: 0.0 },
-            TopRight => Point { x: size.x, y: 0.0 },
+            TopRight => Point { x: s.x, y: 0.0 },
         }
     }
 }

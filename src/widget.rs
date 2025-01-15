@@ -440,12 +440,12 @@ impl<'a> WidgetBuilder<'a> {
             HeightRelative::Parent => raw.y + parent.size.y - parent.border.vertical(),
             HeightRelative::FontLine => raw.y + widget.font.map_or(0.0, |sum| sum.line_height) + widget.border.vertical(),
         };
-        let self_size = Point { x, y };
+        let self_size = Point { x, y } + state_resize;
 
         let pos = pos(parent, self.data.raw_pos, self_size, self.data.align);
 
         self.widget.pos = pos + state_moved;
-        self.widget.size = self_size + state_resize;
+        self.widget.size = self_size;
         self.data.recalc_pos_size = false;
     }
 
