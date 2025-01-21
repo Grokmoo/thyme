@@ -1002,7 +1002,7 @@ impl<'a> WidgetBuilder<'a> {
 
         font.layout(params, text, &mut cursor);
 
-        cursor.x / internal.scale_factor()
+        cursor.x / internal.scale_factor() + 1.0
     }
 
     fn calculate_font_layout_cursor(&self, cursor: Point) -> Option<Point> {
