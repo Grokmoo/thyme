@@ -1,7 +1,7 @@
 use std::error::Error;
 
 use winit::event::{ElementState, MouseButton, MouseScrollDelta, WindowEvent};
-use winit::keyboard::{Key, NamedKey, ModifiersKeyState};
+use winit::keyboard::{Key, NamedKey};
 use winit::window::Window;
 
 use crate::point::Point;
