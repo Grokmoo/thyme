@@ -120,6 +120,13 @@ pub struct InputModifiers {
     pub alt: bool,
 }
 
+impl InputModifiers {
+    /// Returns true if any of shift, control, or alt is currently pressed.
+    pub fn any(self) -> bool {
+        self.shift || self.ctrl || self.alt
+    }
+}
+
 pub struct ContextInternal {
     resources: ResourceSet,
     options: BuildOptions,

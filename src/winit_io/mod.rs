@@ -73,10 +73,9 @@ impl WinitIo {
                 context.set_display_size(size);
             },
             ModifiersChanged(m) => {
-                use ModifiersKeyState::*;
-                let shift = m.lshift_state() == Pressed || m.rshift_state() == Pressed;
-                let ctrl = m.lcontrol_state() == Pressed || m.rcontrol_state() == Pressed;
-                let alt = m.lalt_state() == Pressed || m.ralt_state() == Pressed;
+                let shift = m.state().shift_key();
+                let ctrl = m.state().control_key();
+                let alt = m.state().alt_key();
                 context.set_input_modifiers(InputModifiers { shift, ctrl, alt });
             },
             WindowEvent::ScaleFactorChanged { scale_factor, .. } => {
