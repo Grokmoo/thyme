@@ -431,18 +431,26 @@ impl<'a> WidgetBuilder<'a> {
         let x = match self.data.width_from {
             WidthRelative::Children => raw.x, // this will be added to after children are layed out
             WidthRelative::Normal => raw.x,
-            WidthRelative::Parent => raw.x + parent.size.x - parent.border.horizontal(),
+            WidthRelative::Parent | WidthRelative::ParentFill => raw.x + parent.size.x - parent.border.horizontal(),
             WidthRelative::Text => raw.x + self.calculate_single_line_text_width() + 2.0 * widget.border.horizontal(),
         };
+
         let y = match self.data.height_from {
             HeightRelative::Children => raw.y, // this will be added to after children are layed out
             HeightRelative::Normal => raw.y,
-            HeightRelative::Parent => raw.y + parent.size.y - parent.border.vertical(),
+            HeightRelative::Parent | HeightRelative::ParentFill => raw.y + parent.size.y - parent.border.vertical(),
             HeightRelative::FontLine => raw.y + widget.font.map_or(0.0, |sum| sum.line_height) + widget.border.vertical(),
         };
-        let self_size = Point { x, y } + state_resize;
+        let mut self_size = Point { x, y } + state_resize;
 
         let pos = pos(parent, self.data.raw_pos, self_size, self.data.align);
+
+        if let HeightRelative::ParentFill = self.data.height_from {
+            self_size.y -= pos.y - parent.pos.y;
+        }
+        if let WidthRelative::ParentFill = self.data.width_from {
+            self_size.x -= pos.x - parent.pos.x;
+        }
 
         self.widget.pos = pos + state_moved;
         self.widget.size = self_size;

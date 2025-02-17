@@ -547,6 +547,10 @@ pub enum WidthRelative {
     /// Width is equal to the parent widget's inner width plus the `x` field of the widget's `size`.
     Parent,
 
+    /// Widget is set such that this widget fills the parent widget's inner widget, accounting for this
+    /// widget's position within the parent, plus the `x` field of the widget's `size`
+    ParentFill,
+
     /// Width is equal to the text layout width plus the `x` field of the widget's `size`.
     Text,
 }
@@ -561,6 +565,10 @@ pub enum HeightRelative {
 
     /// Height is equal to the parent widget's inner height plus the `y` field of the widget's `size`.
     Parent,
+
+    /// Height is set such that this widget fills the parent widget's inner height, accounting for this
+    /// widget's position within the parent, plus the `y` field of the widget's `size`
+    ParentFill,
 
     /// Height is sized so that the widget's inner height just encompasses all child widgets, plus the `y` field
     /// of the widget's `size`.  Note that any children of this Widget should not use `Parent` height if this
