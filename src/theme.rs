@@ -165,11 +165,11 @@ impl ThemeSet {
 
                 if collected_failure_count > collected_images.len() {
                     for (id, def) in collected_images.iter() {
-                        if let Err(e) = Image::new(id, def, texture, &images_in_set, set.scale) {
+                        match Image::new(id, def, texture, &images_in_set, set.scale) { Err(e) => {
                             log::error!("{}", e);
-                        } else {
+                        } _ => {
                             unreachable!("All remaining images must be errors");
-                        }
+                        }}
                     }
                     return Err(Error::Theme("Unable to resolve all collected images due to cyclic or invalid references".to_string()));
                 }

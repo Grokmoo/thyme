@@ -54,7 +54,7 @@ impl Program {
     }
 }
 
-unsafe fn create_shader(shader_type: u32, src: &str) -> u32 {
+unsafe fn create_shader(shader_type: u32, src: &str) -> u32 { unsafe {
     let shader_str = std::ffi::CString::new(src).unwrap();
     
     let gl_handle = gl::CreateShader(shader_type);
@@ -75,7 +75,7 @@ unsafe fn create_shader(shader_type: u32, src: &str) -> u32 {
     }
 
     gl_handle
-}
+}}
 
 impl Drop for Program {
     fn drop(&mut self) {

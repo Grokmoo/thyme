@@ -157,7 +157,7 @@ impl ApplicationHandler for AppRunner {
 
 // this is passed as a fn pointer to gl::DebugMessageCallback
 // and cannot be marked as an "unsafe extern"
-#[no_mangle]
+#[unsafe(no_mangle)]
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "system" fn debug_callback(
     _: gl::types::GLenum,

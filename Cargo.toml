@@ -10,7 +10,7 @@ readme = "README.md"
 keywords = ["gamedev", "graphics", "gui"]
 categories = ["game-development", "gui", "rendering"]
 license = "Apache-2.0"
-edition = "2021"
+edition = "2024"
 autoexamples = false
 
 [package.metadata.docs.rs]
