@@ -471,7 +471,7 @@ impl Frame {
         context.state(id).timer
     }
 
-    /// Sets the internal `scroll` of the [`PersistentState`](struct.PersistentState.html) for
+    /// Gets the internal `scroll` of the [`PersistentState`](struct.PersistentState.html) for
     /// the widget with the specified `id`.  Useful for [`Scrollpanes`](struct.WidgetBuilder.html#method.scrollpane).
     pub fn scroll(&self, id: &str) -> Point {
         let context = self.context.internal().borrow();
@@ -484,6 +484,22 @@ impl Frame {
         let mut context = self.context.internal().borrow_mut();
         let state = context.state_mut(id);
         state.scroll = state.scroll + Point { x, y }
+    }
+
+    /// Modifies the internal `scroll` of the widget with the specified `id` to be the leftmost / topmost amounts.
+    /// See [`scroll`](#method.scroll)
+    pub fn scroll_to_start<T: Into<String>>(&mut self, id: T) {
+        let mut context = self.context.internal().borrow_mut();
+        let state = context.state_mut(id);
+        state.scroll = Point::default();
+    }
+
+    /// Modifies the internal `scroll` of the widget with the specified `id` to be the rightmost / bottommost amounts.
+    /// See [`scroll`](#method.scroll)
+    pub fn scroll_to_end<T: Into<String>>(&mut self, id: T) {
+        let mut context = self.context.internal().borrow_mut();
+        let state = context.state_mut(id);
+        state.scroll = Point { x: -1e12, y: -1e12 };
     }
 
     /// Returns the current `text` associated with the [`PersistentState`](struct.PersistentState.html) of

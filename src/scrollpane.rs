@@ -299,11 +299,13 @@ impl<'a> ScrollpaneBuilder<'a> {
 
         delta = delta + pane_result.moved;
 
+        let range = min_scroll - max_scroll;
+        let range: Point = (range.x.abs(), range.y.abs()).into();
+        let min = range * -1.0;
+        let max = Point::default();
+
         // set the scroll every frame to bound it, in case it was modified externally
         ui.modify(&content_id, |state| {
-            let min = min_scroll + state.scroll;
-            let max = Point::default();
-
             state.scroll = (state.scroll + delta).max(min).min(max);
         });
     }
