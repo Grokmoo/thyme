@@ -120,10 +120,8 @@ impl Frame {
             return None;
         }
 
-        if let Some(group) = context.mouse_in_rend_group_last_frame() {
-            if widget.rend_group() != group {
-                return None;
-            }
+        if let Some(group) = context.mouse_in_rend_group_last_frame() && widget.rend_group() != group {
+            return None;
         }
 
         let bounds = Rect::new(widget.pos(), widget.size());
@@ -148,10 +146,8 @@ impl Frame {
             return MOUSE_NOT_TAKEN;
         }
 
-        if let Some(group) = context.mouse_in_rend_group_last_frame() {
-            if widget.rend_group() != group {
-                return MOUSE_NOT_TAKEN;
-            }
+        if let Some(group) = context.mouse_in_rend_group_last_frame() && widget.rend_group() != group {
+            return MOUSE_NOT_TAKEN;
         }
 
         if context.mouse_pressed_outside() || self.mouse_taken.is_some() ||
@@ -249,7 +245,7 @@ impl Frame {
 
     */
     #[must_use]
-    pub fn start(&mut self, theme: &str) -> WidgetBuilder {
+    pub fn start(&'_ mut self, theme: &str) -> WidgetBuilder<'_> {
         let parent = &self.widgets[self.parent_index];
 
         let theme_id = if parent.theme_id().is_empty() {

@@ -70,11 +70,10 @@ impl ResourceSet {
     }
 
     fn remove_path_from_watcher(&mut self, path: &Path) {
-        if let Some(watcher) = self.watcher.as_mut() {
-            if let Err(e) = watcher.unwatch(path) {
-                log::warn!("Unable to watch path: {:?}", path);
-                log::warn!("{}", e);
-            }
+        let Some(watcher) = self.watcher.as_mut() else { return; };
+        if let Err(e) = watcher.unwatch(path) {
+            log::warn!("Unable to watch path: {:?}", path);
+            log::warn!("{}", e);
         }
     }
 
@@ -196,48 +195,46 @@ impl ResourceSet {
     }
 
     pub(crate) fn cache_data(&mut self) -> Result<(), Error> {
-        if self.theme.data.is_none() {
-            if let Some(theme_source) = self.theme.files.as_ref() {
-                let mut theme_def: Option<ThemeDefinition> = None;
+        if self.theme.data.is_none() && let Some(theme_source) = self.theme.files.as_ref() {
+            let mut theme_def: Option<ThemeDefinition> = None;
 
-                let mut theme_str = String::new();
-                for path in theme_source.iter() {
-                    let mut file = match File::open(path) {
-                        Ok(file) => file,
-                        Err(e) => return Err(Error::IO(e)),
-                    };
+            let mut theme_str = String::new();
+            for path in theme_source.iter() {
+                let mut file = match File::open(path) {
+                    Ok(file) => file,
+                    Err(e) => return Err(Error::IO(e)),
+                };
 
-                    theme_str.clear();
-                    match file.read_to_string(&mut theme_str) {
-                        Err(e) => return Err(Error::IO(e)),
-                        Ok(count) => {
-                            log::debug!("Read {} bytes from '{:?}' for theme.", count, path);
-                        }
-                    }
-
-                    match theme_def.as_mut() {
-                        None => {
-                            theme_def = Some(match serde_yaml::from_str(&theme_str) {
-                                Ok(theme) => theme,
-                                Err(e) => return Err(Error::Serde(e.to_string())),
-                            });
-                        }, Some(theme) => {
-                            let new_theme_def: ThemeDefinition = match serde_yaml::from_str(&theme_str) {
-                                Ok(theme) => theme,
-                                Err(e) => return Err(Error::Serde(e.to_string())),
-                            };
-
-                            theme.merge(new_theme_def);
-                        }
+                theme_str.clear();
+                match file.read_to_string(&mut theme_str) {
+                    Err(e) => return Err(Error::IO(e)),
+                    Ok(count) => {
+                        log::debug!("Read {} bytes from '{:?}' for theme.", count, path);
                     }
                 }
 
-                if theme_def.is_none() {
-                    return Err(Error::Theme("No valid theme was specified".to_string()));
-                }
+                match theme_def.as_mut() {
+                    None => {
+                        theme_def = Some(match serde_yaml::from_str(&theme_str) {
+                            Ok(theme) => theme,
+                            Err(e) => return Err(Error::Serde(e.to_string())),
+                        });
+                    }, Some(theme) => {
+                        let new_theme_def: ThemeDefinition = match serde_yaml::from_str(&theme_str) {
+                            Ok(theme) => theme,
+                            Err(e) => return Err(Error::Serde(e.to_string())),
+                        };
 
-                self.theme.data = theme_def;
+                        theme.merge(new_theme_def);
+                    }
+                }
             }
+
+            if theme_def.is_none() {
+                return Err(Error::Theme("No valid theme was specified".to_string()));
+            }
+
+            self.theme.data = theme_def;
         }
 
         for (id, src) in self.images.iter_mut() {

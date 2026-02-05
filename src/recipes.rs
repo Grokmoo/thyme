@@ -486,10 +486,8 @@ impl Frame {
                 }
             }
 
-            if output.keyboard.is_none() {
-                if let Some(e) = state.key_events.pop() {
-                    output.keyboard = Some(InputFieldKeyboard::KeyEvent(e));
-                }
+            if output.keyboard.is_none() && let Some(e) = state.key_events.pop() {
+                output.keyboard = Some(InputFieldKeyboard::KeyEvent(e));
             }
         });
         let mut text_pos = Point::default();

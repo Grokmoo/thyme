@@ -1231,19 +1231,15 @@ impl<'a> WidgetBuilder<'a> {
             (false, AnimState::disabled(), Point::default(), None)
         };
 
-        if self.data.wants_scroll {
-            if let Some(wheel) = self.frame.check_mouse_wheel(widget_index) {
-                dragged.x += wheel.x;
-                dragged.y += wheel.y;
-            }
+        if self.data.wants_scroll && let Some(wheel) = self.frame.check_mouse_wheel(widget_index) {
+            dragged.x += wheel.x;
+            dragged.y += wheel.y;
         }
 
         let state = WidgetState::new(anim_state, clicked, dragged, button);
 
-        if state.hovered {
-            if let Some(tooltip) = self.data.tooltip.take() {
-                self.frame.tooltip_label("tooltip", tooltip);
-            }
+        if state.hovered && let Some(tooltip) = self.data.tooltip.take() {
+            self.frame.tooltip_label("tooltip", tooltip);
         }
 
         if self.data.next_render_group.is_some() {

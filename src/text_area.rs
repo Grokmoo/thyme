@@ -137,10 +137,8 @@ impl Frame {
                     end_expr = true;
                 },
                 '}' if end_expr => {
-                    if cur_var.trim() == "if" {
-                        if let Some(Expr::IfFalse) = expr_stack.pop() {
-                            if_false_level -= 1;
-                        }
+                    if cur_var.trim() == "if" && let Some(Expr::IfFalse) = expr_stack.pop() {
+                        if_false_level -= 1;
                     }
                     in_block = false;
                     cur_var.clear();
@@ -173,10 +171,8 @@ impl Frame {
                 },
                 '}' if in_block => {
                     let var_value = builder.frame().variables().get(&cur_var);
-                    if if_false_level <= 0 {
-                        if let Some(value) = var_value {
-                            text.push_str(value);
-                        }
+                    if if_false_level <= 0 && let Some(value) = var_value {
+                        text.push_str(value);
                     }
                     cur_var.clear();
                     in_block = false;

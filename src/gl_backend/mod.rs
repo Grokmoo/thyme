@@ -173,30 +173,28 @@ impl GLRenderer {
                     );
                 }
 
-                if let Some(text) = widget.text() {
-                    if let Some(font_sum) = widget.font() {
-                        self.write_group_if_changed(
-                            &mut draw_mode,
-                            DrawMode::Font(font_sum.handle),
-                        );
-                        let font = context.themes().font(font_sum.handle);
+                if let Some(text) = widget.text() && let Some(font_sum) = widget.font() {
+                    self.write_group_if_changed(
+                        &mut draw_mode,
+                        DrawMode::Font(font_sum.handle),
+                    );
+                    let font = context.themes().font(font_sum.handle);
 
-                        let params = FontDrawParams {
-                            area_size: fg_size * scale,
-                            pos: fg_pos * scale,
-                            indent: widget.text_indent(),
-                            align: widget.text_align(),
-                            color: widget.text_color(),
-                            scale_factor: context.scale_factor(),
-                        };
+                    let params = FontDrawParams {
+                        area_size: fg_size * scale,
+                        pos: fg_pos * scale,
+                        indent: widget.text_indent(),
+                        align: widget.text_align(),
+                        color: widget.text_color(),
+                        scale_factor: context.scale_factor(),
+                    };
 
-                        font.draw(
-                            &mut self.draw_list,
-                            params,
-                            text,
-                            widget.clip() * scale,
-                        )
-                    }
+                    font.draw(
+                        &mut self.draw_list,
+                        params,
+                        text,
+                        widget.clip() * scale,
+                    )
                 }
             }
 

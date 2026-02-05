@@ -243,8 +243,8 @@ impl Image {
                 ImageDefinitionKind::Group1x1 { .. } => unreachable!(),
             ImageDefinitionKind::Composed { grid_size, position} => {
                 let mut tex_coords = [[TexCoord::default(); 4]; 4];
+                #[allow(clippy::needless_range_loop)]
                 for y in 0..4 {
-                    #[allow(clippy::needless_range_loop)]
                     for x in 0..4 {
                         let x_val = position[0] + x as u32 * grid_size[0];
                         let y_val = position[1] + y as u32 * grid_size[1];
@@ -258,8 +258,8 @@ impl Image {
             },
             ImageDefinitionKind::ComposedHorizontal { grid_size_horiz, position } => {
                 let mut tex_coords = [[TexCoord::default(); 2]; 4];
+                #[allow(clippy::needless_range_loop)]
                 for y in 0..2 {
-                    #[allow(clippy::needless_range_loop)]
                     for x in 0..4 {
                         let x_val = position[0] + x as u32 * grid_size_horiz[0];
                         let y_val = position[1] + y as u32 * grid_size_horiz[1];
@@ -273,8 +273,8 @@ impl Image {
             },
             ImageDefinitionKind::ComposedVertical { grid_size_vert, position } => {
                 let mut tex_coords = [[TexCoord::default(); 4]; 2];
+                #[allow(clippy::needless_range_loop)]
                 for y in 0..4 {
-                    #[allow(clippy::needless_range_loop)]
                     for x in 0..2 {
                         let x_val = position[0] + x as u32 * grid_size_vert[0];
                         let y_val = position[1] + y as u32 * grid_size_vert[1];

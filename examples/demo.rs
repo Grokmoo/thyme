@@ -93,10 +93,8 @@ impl Party {
                 log::error!("Unable to rebuild theme: {}", e);
             }
             self.reload_assets = false;
-        } else if !self.live_reload_disabled {
-            if let Err(e) = context.check_live_reload(renderer) {
-                log::error!("Unable to live reload theme: {}", e);
-            }
+        } else if !self.live_reload_disabled && let Err(e) = context.check_live_reload(renderer) {
+            log::error!("Unable to live reload theme: {}", e);
         }
     }
 }
