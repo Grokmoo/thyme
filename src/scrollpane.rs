@@ -146,10 +146,10 @@ impl<'a> ScrollpaneBuilder<'a> {
         let (ui, pane_result) = self.builder.finish_with(
             Some(|ui: &mut Frame| {
                 let mut content_bounds = Rect::default();
-        
+
                 // TODO if horizontal and/or vertical scrollbars aren't present,
                 // change the scrollpane content size to fill up the available space
-        
+
                 ui.start("content")
                 .id(&content_id)
                 .trigger_layout(&mut content_bounds)
@@ -158,7 +158,7 @@ impl<'a> ScrollpaneBuilder<'a> {
 
                 let content_min = content_bounds.pos;
                 let content_max = content_bounds.pos + content_bounds.size;
-        
+
                 let pane_bounds = ui.parent_max_child_bounds();
                 let pane_min = pane_bounds.pos;
                 let pane_max = pane_bounds.pos + pane_bounds.size;
@@ -180,7 +180,7 @@ impl<'a> ScrollpaneBuilder<'a> {
                         if result.clicked {
                             delta_scroll.x -= ui.context().options().line_scroll;
                         }
-        
+
                         let mut left_rect = Rect::default();
                         let result = ui.start("left")
                         .enabled(pane_min.x < content_min.x)
@@ -188,11 +188,11 @@ impl<'a> ScrollpaneBuilder<'a> {
                         if result.clicked {
                             delta_scroll.x += ui.context().options().line_scroll;
                         }
-        
+
                         // compute size and position for main scroll button
                         let start_frac = ((content_min.x - pane_min.x) / pane_bounds.size.x).max(0.0);
                         let width_frac = content_bounds.size.x / pane_bounds.size.x;
-        
+
                         // assume left button starts at 0,0 within the parent widget
                         let size_y = left_rect.size.y;
                         let min_x = left_rect.size.x;
@@ -210,15 +210,15 @@ impl<'a> ScrollpaneBuilder<'a> {
                         scroll_button_center_x = pos_x + size_x * 0.5 + ui.cursor().x;
                         let scrollbar_dist = max_x - min_x - size_x; // total distance the scrollbar may move
                         let content_dist = pane_bounds.size.x - content_bounds.size.x; // total distance the content may move
-                        scroll_ratio = content_dist / (2.0 * scrollbar_dist);
+                        scroll_ratio = content_dist /  scrollbar_dist;
 
                         let result = ui.start("scroll")
                         .size(size_x, size_y)
                         .pos(pos_x, pos_y)
                         .enabled(enable_horiz)
                         .finish();
-        
-                        if result.pressed {
+
+                        if result.pressed && result.moved.x != 0.0 {
                             delta_scroll.x -= result.moved.x * scroll_ratio;
                         }
                     });
@@ -227,7 +227,7 @@ impl<'a> ScrollpaneBuilder<'a> {
                         delta_scroll.x -= (ui.mouse_pos().x - scroll_button_center_x) * scroll_ratio;
                     }
                 }
-        
+
                 let enable_vertical = pane_min.y < content_min.y || pane_max.y > content_max.y;
                 // check whether to show vertical scrollbar
                 if vert.show(enable_vertical) {
@@ -243,7 +243,7 @@ impl<'a> ScrollpaneBuilder<'a> {
                         if result.clicked {
                             delta_scroll.y += ui.context().options().line_scroll;
                         }
-        
+
                         let mut bot_rect = Rect::default();
                         let result = ui.start("down")
                         .enabled(pane_max.y > content_max.y)
@@ -251,11 +251,11 @@ impl<'a> ScrollpaneBuilder<'a> {
                         if result.clicked {
                             delta_scroll.y -= ui.context().options().line_scroll;
                         }
-        
+
                         // compute size and position for main scroll button
                         let start_frac = ((content_min.y - pane_min.y) / pane_bounds.size.y).max(0.0);
                         let height_frac = content_bounds.size.y / pane_bounds.size.y;
-        
+
                         // assume top button starts at 0,0 within the parent widget
                         let size_x = top_rect.size.x;
                         let min_y = top_rect.size.y;
@@ -280,7 +280,7 @@ impl<'a> ScrollpaneBuilder<'a> {
                         .pos(pos_x, pos_y)
                         .enabled(enable_vertical)
                         .finish();
-        
+
                         if result.pressed && result.moved.y != 0.0 {
                             delta_scroll.y -= result.moved.y * scroll_ratio;
                         }
@@ -290,7 +290,7 @@ impl<'a> ScrollpaneBuilder<'a> {
                         delta_scroll.y -= (ui.mouse_pos().y - scroll_button_center_y - scrollpane_pos.y) * scroll_ratio;
                     }
                 }
-        
+
                 min_scroll = content_max - pane_max;
                 max_scroll = content_min - pane_min;
                 delta = delta_scroll;
