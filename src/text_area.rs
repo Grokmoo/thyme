@@ -80,6 +80,18 @@ impl Frame {
     ```
     **/
     pub fn text_area(&mut self, theme: &str) {
+        self.text_area_internal(theme, None)
+    }
+
+    /**
+     * Creates a text area, but with custom supplied text, rather than relying on the theme for the text.
+     * See [`text_area`]
+     */
+    pub fn text_area_with(&mut self, theme: &str, text: &str) {
+        self.text_area_internal(theme, Some(text))
+    }
+
+    fn text_area_internal(&mut self, theme: &str, input: Option<&str>) {
         let scale_factor = self.context().scale_factor();
 
         let builder = self.start(theme);
@@ -115,7 +127,11 @@ impl Frame {
         let mut expr_stack: Vec<Expr> = Vec::new();
         let mut if_false_level = 0;
 
-        let src = builder.widget().text().unwrap_or_default();
+        let src = match input {
+            None => builder.widget().text().unwrap_or_default(),
+            Some(t) => t,
+        };
+
         let mut text = String::with_capacity(src.len());
         let mut in_block = false;
         let mut start_expr = true;
@@ -146,7 +162,7 @@ impl Frame {
                 '}' if start_expr => {
                     if let Some(var_id) = cur_var.strip_prefix("if") {
                         let var_id = var_id.trim();
-                        
+
                         if builder.frame().variables().get(var_id).is_none() {
                             expr_stack.push(Expr::IfFalse);
                             if_false_level += 1;
@@ -285,14 +301,14 @@ fn item(
         .trigger_layout(&mut size)
         .trigger_text_layout(&mut state.cursor)
         .finish();
-    
+
     if state.currently_at_new_line {
         // if this is the first element in a new line, reset the line height
         state.line_height = size.size.y;
     } else {
         state.line_height = state.line_height.max(size.size.y);
     }
-    
+
     state.cursor.y += original_y;
     state.update_cursor(ui);
     state.currently_at_new_line = false;
@@ -319,7 +335,7 @@ struct MarkdownState {
     // text indent - additional x indent within a child widget
     // beyond what is specified by the cursor position
     text_indent: f32,
-    
+
     // number of tabs we are currently indented
     indent_level: f32,
 
@@ -344,7 +360,7 @@ impl MarkdownState {
                     _ => SizeMode::Paragraph,
                 });
             },
-            
+
             Tag::List(kind) => {
                 self.indent_level += 1.0;
                 self.list_stack.push(match kind {
@@ -406,7 +422,7 @@ impl MarkdownState {
                 self.set_size(SizeMode::Paragraph);
                 self.new_line(ui, 1.5);
             },
-            
+
             TagEnd::List(_) => {
                 self.indent_level -= 1.0;
                 self.list_stack.pop();
