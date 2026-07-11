@@ -259,7 +259,7 @@ impl Frame {
     /**
     A spinner, but without any restriction on maximum or minimum values.  If there is
     a minimum or maximum, it is assumed that
-    the user is allowed to wrap around from minimum to maximum or vice-versa.  
+    the user is allowed to wrap around from minimum to maximum or vice-versa.
     See [`spinner`](struct.WidgetBuilder.html#method.spinner).
     */
     pub fn wrapping_spinner<T: Display>(&mut self, theme: &str, value: T) -> i32 {
@@ -427,90 +427,6 @@ impl Frame {
     }
 
     /**
-    Creates a simple text input field.  The `id` that is passed in must be unique.
-    The text input will grab keyboard focus when the user clicks on it, allowing
-    the user to type text.  The return value will be `None` if no event occurred
-    this frame, or will contain the character added or key event if an event did occur.
-    Optionally, pass an initial_value which will set the field's text if it
-    is not already set.
-
-    An example YAML theme definition:
-    ```yaml
-    input_field:
-      font: small
-      border: { height: 4, width: 5 }
-      background: gui/input_field
-      text_align: Left
-      wants_mouse: true
-      size: [150, 24]
-      child_align: TopLeft
-      children:
-        caret:
-          size: [2, -2]
-          height_from: Parent
-          background: gui/caret
-    ```
-
-    # Example
-    ```
-    fn select_name(ui: &mut Frame, name: &mut String) {
-        if let Some(text) = ui.input_field("input_field", "unique_id", None) {
-            *name = text;
-        }
-    }
-    ```
-    */
-    pub fn input_field(&mut self, theme: &str, id: &str, initial_value: Option<String>) -> InputFieldResult {
-        let mut output = InputFieldResult {
-            cursor: Point::default(),
-            keyboard: None,
-        };
-
-        self.modify(id, |state| {
-            let text = match state.text.as_mut() {
-                Some(text) => text,
-                None => {
-                    state.text = Some(initial_value.unwrap_or_default());
-                    state.text.as_mut().unwrap()
-                }
-            };
-
-            if let Some(c) = state.characters.pop() {
-                match c {
-                    '\x08' => { text.pop(); }, // backspace
-                    '\r' => {}, // do nothing on enter, user will receive this as a key event as well
-                    _ => {
-                        output.keyboard = Some(InputFieldKeyboard::Char(c));
-                        text.push(c);
-                    },
-                }
-            }
-
-            if output.keyboard.is_none() && let Some(e) = state.key_events.pop() {
-                output.keyboard = Some(InputFieldKeyboard::KeyEvent(e));
-            }
-        });
-        let mut text_pos = Point::default();
-
-        let result = self.start(theme)
-        .id(id)
-        .trigger_text_layout(&mut text_pos)
-        .children(|ui| {
-            if ui.is_focus_keyboard(id) {
-                ui.start("caret").pos(text_pos.x, text_pos.y).finish();
-            }
-        });
-
-        output.cursor = text_pos;
-
-        if result.clicked {
-            self.focus_keyboard(id);
-        }
-
-        output
-    }
-
-    /**
     Creates a simple progress bar.  The drawing will be clipped based on the size
     of the widget and the passed in `frac`.
 
@@ -540,7 +456,7 @@ impl Frame {
         });
     }
 
-    /** 
+    /**
     Creates a simple vertical progress bar.  See [`progress_bar`](Frame::progress_bar)
     **/
     pub fn progress_bar_vert(&mut self, theme: &str, frac: f32) {
@@ -551,7 +467,7 @@ impl Frame {
             ui.start("bar")
             .trigger_layout(&mut rect)
             .clip(Rect::new(
-                Point::new(rect.pos.x, rect.pos.y + rect.size.y * (1.0 - frac)), 
+                Point::new(rect.pos.x, rect.pos.y + rect.size.y * (1.0 - frac)),
                 Point::new(rect.size.x, rect.size.y * frac)
             ))
             .finish();
@@ -581,7 +497,7 @@ impl Frame {
     The specified closure is called to add `children` to the window.
     The window will include a titlebar, close button, be moveable, and resizable.
     See [`WindowBuilder`](struct.WindowBuilder.html) for more details and more
-    flexible window creation. 
+    flexible window creation.
 
     # Example
     ```
@@ -613,16 +529,6 @@ impl Frame {
     pub fn scrollpane<F: FnOnce(&mut Frame)>(&mut self, theme: &str, content_id: &str, children: F) {
         self.start(theme).scrollpane(content_id).children(children);
     }
-}
-
-/// Result struct returned from the creation of an input field
-#[derive(Debug)]
-pub struct InputFieldResult {
-    /// The current text cursor position for this input field
-    pub cursor: Point,
-
-    /// Any keyboard input for this input field this frame
-    pub keyboard: Option<InputFieldKeyboard>,
 }
 
 /// A single frame of keyboard input that has been passed to an input field

@@ -1,6 +1,5 @@
 use crate::{
-    AnimState, AnimStateKey, Color, Frame, Point, Border, Align, 
-    Layout, WidthRelative, HeightRelative, Rect,
+    Align, AnimState, AnimStateKey, Border, Color, Frame, HeightRelative, InputFieldBuilder, Layout, Point, Rect, WidthRelative,
 };
 use crate::font::FontDrawParams;
 use crate::{frame::{MouseButton, RendGroup, RendGroupOrder}, font::FontSummary, image::ImageHandle};
@@ -264,7 +263,7 @@ pub struct WidgetState {
 }
 
 impl WidgetState {
-    fn hidden() -> WidgetState {
+    pub(crate) fn hidden() -> WidgetState {
         WidgetState {
             visible: false,
             hovered: false,
@@ -378,7 +377,7 @@ pub struct WidgetBuilder<'a> {
     pub(crate) frame: &'a mut Frame,
     pub(crate) parent: usize,
     pub(crate) widget: Widget,
-    data: WidgetData,    
+    data: WidgetData,
 }
 
 impl<'a> WidgetBuilder<'a> {
@@ -692,7 +691,7 @@ impl<'a> WidgetBuilder<'a> {
         self.data.recalc_pos_size = false;
         self
     }
-	
+
 	/// Helper to treat this widget as a tooltip.  The widget will be placed on top
 	/// of other widgets in its own render group.  Positioning will be based on the mouse
 	/// cursor position.  See [`new_render_group`](#method.new_render_group).
@@ -758,7 +757,7 @@ impl<'a> WidgetBuilder<'a> {
         self.data.recalc_pos_size = true;
         self
     }
-    
+
     /// Specify the widget's border size, which determines the inner size of the widget
     /// relative to its [`size`](#method.size).  See [`Border`](struct.Border.html).
     /// This may also be specified in the widget's [`theme`](index.html).
@@ -911,7 +910,7 @@ impl<'a> WidgetBuilder<'a> {
         self
     }
 
-    
+
     /// Force the widget to layout its `size` and `position` immediately.
     /// Assuming these attributes are not changed after this method is
     /// called, these attributes will have their final values after this
@@ -1052,6 +1051,15 @@ impl<'a> WidgetBuilder<'a> {
     #[must_use]
     pub fn window(self, id: &str) -> WindowBuilder<'a> {
         WindowBuilder::new(self.id(id).new_render_group())
+    }
+
+    /// Turns this builder into a [`InputFieldBuilder`](struct.InputFieldBuilder.html).  You should use all
+    /// `WidgetBuilder` methods you need before calling this method.  The input field must be completed
+    /// with the `finish` method on `InputFieldBuilder`.  You must pass a unique `unique_id` for the
+    /// input field.
+    #[must_use]
+    pub fn input_field(self, unique_id: &str) -> InputFieldBuilder<'a> {
+        InputFieldBuilder::new(self.id(unique_id))
     }
 
     /// Turns this builder into a [`ScrollpaneBuilder`](struct.ScrollpaneBuilder.html).  You should use all
@@ -1206,7 +1214,7 @@ impl<'a> WidgetBuilder<'a> {
                     self.frame.widget_mut(index).pos.x -= adjust.x;
                     self.frame.widget_mut(index).pos.y -= adjust.y;
                 }
-                
+
                 rebound_rend_group = true;
             }
         }
@@ -1265,7 +1273,7 @@ impl<'a> WidgetBuilder<'a> {
 
         self.frame.widget_mut(widget_index).anim_state = anim_state;
 
-        
+
         let size = self.frame.widget(widget_index).size;
         if !self.data.manual_pos {
             use Align::*;
@@ -1298,7 +1306,7 @@ impl<'a> WidgetBuilder<'a> {
                 }
             }
         }
-        
+
         (self.frame, state)
     }
 

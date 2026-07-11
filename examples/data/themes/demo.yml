@@ -77,6 +77,17 @@ widgets:
         width_from: Parent
         text_align: Center
         font: medium
+  backstory_panel:
+    width_from: Parent
+    height: 150
+    layout: Horizontal
+    children:
+      backstory_input:
+        from: input_field
+        size: [0, 0]
+        size_from: [Parent, Parent]
+        font: small
+        text_align: TopLeft
   subpanel:
     from: tree
     background: gui/frame
@@ -95,11 +106,11 @@ widgets:
     from: text_area
     text: |
       # Overview
-      This is your character's ***very detailed*** description that spans a few lines.
-      
-      ## Background
+      {backstory}
+
+      ## Details
       This is another line of text.  <e c=#800>With some color.</e>
-      
+
       1. This is a list item.  The text is long enough to wrap around.
       1. This is another list item
          * An unordered list item
@@ -108,7 +119,7 @@ widgets:
 
       ## Stats
       This is a stats table with substituted dynamic values.
-      
+
       | Stat         | Value |
       | -------      | ----- |
       | Strength     | {Strength}     |

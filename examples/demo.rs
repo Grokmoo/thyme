@@ -109,6 +109,7 @@ const STAT_POINTS: u32 = 75;
 
 struct Character {
     name: String,
+    backstory: String,
     age: f32,
     stats: HashMap<Stat, u32>,
 
@@ -121,6 +122,7 @@ impl Character {
     fn generate(index: usize) -> Character {
         Character {
             name: format!("Charname {}", index),
+            backstory: format!("This is your backstory.\nYou may edit it as you like, and can use *markdown*."),
             age: DEFAULT_AGE,
             stats: HashMap::default(),
             gp: INITIAL_GP,
@@ -235,8 +237,17 @@ pub fn build_ui(ui: &mut Frame, party: &mut Party) {
             ui.scrollpane("pane", "character_content", |ui| {
                 ui.start("name_panel")
                 .children(|ui| {
-                    if ui.input_field("name_input", "name_input", None).keyboard.is_some() {
+                    if ui.simple_input_field("name_input", "name_input", None).keyboard.is_some() {
                         character.name = ui.text_for("name_input").unwrap_or_default();
+                    }
+                });
+
+                ui.gap(10.0);
+                ui.start("backstory_panel").children(|ui| {
+                    let result = ui.start("backstory_input")
+                        .input_field("backstory_input").with_allow_newlines(true).finish();
+                    if result.keyboard.is_some() {
+                        character.backstory = ui.text_for("backstory_input").unwrap_or_default();
                     }
                 });
 
@@ -251,6 +262,7 @@ pub fn build_ui(ui: &mut Frame, party: &mut Party) {
                     let key = format!("{:?}", stat);
                     ui.set_variable(key, value);
                 }
+                ui.set_variable("backstory", &character.backstory);
 
                 ui.scrollpane("description_panel", "description_pane", |ui| {
                     ui.text_area("description_box");
@@ -261,18 +273,18 @@ pub fn build_ui(ui: &mut Frame, party: &mut Party) {
                 if let Some(race) = ui.combo_box("race_selector", "race_selector", &character.race, Race::all()) {
                     character.race = *race;
                 }
-    
+
                 ui.gap(10.0);
-    
+
                 ui.tree("stats_panel", "stats_panel", true,
                 |ui| {
                     ui.child("title");
                 },|ui| {
                     stats_panel(ui, character);
                 });
-                
+
                 ui.gap(10.0);
-    
+
                 if ui.button("tooltip_button", "Hover Inventory").hovered {
                     ui.start("inventory_tooltip").render_as_tooltip().children(|ui| {
                         ui.label("label", "This is a tooltip that will show your list of items.");
@@ -331,6 +343,9 @@ fn set_active_character(ui: &mut Frame, character: &Character) {
     ui.open("character_window");
     ui.modify("name_input", |state| {
         state.text = Some(character.name.clone());
+    });
+    ui.modify("backstory_input", |state| {
+        state.text = Some(character.backstory.clone());
     });
     ui.close("item_picker");
 }
@@ -401,7 +416,7 @@ fn inventory_panel(ui: &mut Frame, character: &mut Character) {
 
         ui.label("gold", format!("{} Gold", character.gp));
     });
-    
+
     ui.start("items_panel")
     .scrollpane("items_content")
     .show_vertical_scrollbar(ShowElement::Always)
@@ -417,7 +432,7 @@ fn items_panel(ui: &mut Frame, character: &mut Character) {
         if result.clicked {
             sell = Some(index);
         }
-        
+
         if result.hovered {
             // manually specify a tooltip
             ui.tooltip_label("tooltip", "Remove Item");

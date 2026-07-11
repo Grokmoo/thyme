@@ -181,8 +181,7 @@ widgets:
     child_align: TopLeft
     children:
       caret:
-        size: [2, -2]
-        height_from: Parent
+        size: [4, 16]
         background: gui/caret
   text_area_item:
     from: label
