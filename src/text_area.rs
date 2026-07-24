@@ -30,6 +30,10 @@ impl Frame {
     be parsed by the [`Color`](struct.Color.html) struct.  Quotes are not used in specifying the value.  For
     example, `<e c=#f00>Red text</e>`.  The extended tag may be nested.
 
+    ### Image Scale
+    The default image size is set using the `text_area_image` child widget of the main text area.  The size of
+    individual images may be adjusted using the `<e>` tag with `scale` attribute, for example `<e scale=0.5>![](images/icon)</e>`
+
     ### Column Widths
     In addition to specifying a default column width using the `custom` value `column_width`, the width of individual
     columns of tables may be set using the `<e>` tag with `width` attribute, for example `<e width=30.0></e>`.
@@ -107,7 +111,7 @@ impl Frame {
             text_indent: 0.0,
             indent_level: 0.0,
             list_stack: Vec::new(),
-            color_stack: Vec::new(),
+            extended_stack: Vec::new(),
             cursor: Point::default(),
             table_column: None,
             table_header: false,
@@ -245,18 +249,30 @@ fn image(
     state: &mut MarkdownState,
     src: &str,
 ) {
+    let scale = state.extended_stack.iter().rev().find_map(|e| match e {
+        ExtendedAttr::Color(_) => None,
+        ExtendedAttr::ImageScale(s) => Some(*s),
+    });
+
     let current_cursor = ui.cursor();
     ui.set_cursor(current_cursor.x + state.text_indent, current_cursor.y);
-    let mut rect = Rect::default();
-    ui.start("text_area_image").background(src).trigger_layout(&mut rect).finish();
+
+    let mut size = Point::default();
+    ui.start("text_area_image").background(src).edit(|builder| {
+        size = builder.widget.size();
+        if let Some(scale) = scale {
+            size = size * scale;
+        }
+        builder.size(size.x, size.y)
+    }).finish();
 
     if state.currently_at_new_line {
         // if this is the first element in a new line, reset the line height
-        state.line_height = rect.size.y;
+        state.line_height = size.y;
     } else {
-        state.line_height = state.line_height.max(rect.size.y);
+        state.line_height = state.line_height.max(size.y);
     }
-    state.cursor.x += rect.size.x;
+    state.cursor.x += size.x;
     state.update_cursor(ui);
     state.currently_at_new_line = false;
 }
@@ -289,8 +305,13 @@ fn item(
             .text_align(align);
     }
 
-    if let Some(color) = state.color_stack.last() {
-        builder = builder.text_color(*color);
+    let color = state.extended_stack.iter().rev().find_map(|e| match e {
+        ExtendedAttr::Color(c) => Some(*c),
+        ExtendedAttr::ImageScale(_) => None,
+    });
+
+    if let Some(color) = color {
+        builder = builder.text_color(color);
     }
 
     let mut size = Rect::default();
@@ -339,13 +360,18 @@ struct MarkdownState {
     // number of tabs we are currently indented
     indent_level: f32,
 
-    color_stack: Vec<Color>,
+    extended_stack: Vec<ExtendedAttr>,
     list_stack: Vec<ListMode>,
 
     size: SizeMode,
     font: FontMode,
 
     cur_theme: String, // computed based on size and font
+}
+
+enum ExtendedAttr {
+    Color(Color),
+    ImageScale(f32),
 }
 
 impl MarkdownState {
@@ -479,7 +505,7 @@ impl MarkdownState {
                     None => {
                         ui.log(log::Level::Warn, format!("Unable to parse color from {}", val));
                     }, Some(c) => {
-                        self.color_stack.push(c);
+                        self.extended_stack.push(ExtendedAttr::Color(c));
                     }
                 }
             },
@@ -494,7 +520,16 @@ impl MarkdownState {
                             ui.log(log::Level::Warn, format!("Attempted to set column width to {val} outside of table"));
                         }
                     }, Err(_) => {
-                        ui.log(log::Level::Warn, format!("Unable to parse float value from {val}"));
+                        ui.log(log::Level::Warn, format!("Unable to parse float value for width from {val}"));
+                    }
+                }
+            },
+            "s" | "scale" => {
+                match val.parse::<f32>() {
+                    Ok(val) => {
+                        self.extended_stack.push(ExtendedAttr::ImageScale(val));
+                    }, Err(_) => {
+                        ui.log(log::Level::Warn, format!("Unable to parse float value for scale from {val}"));
                     }
                 }
             },
@@ -558,7 +593,7 @@ impl MarkdownState {
         }
 
         if end_tag {
-            self.color_stack.pop();
+            self.extended_stack.pop();
         }
     }
 
