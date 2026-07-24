@@ -1202,6 +1202,8 @@ impl<'a> WidgetBuilder<'a> {
             }
 
             if Some(widget_index as u32) == self.frame.child_request_rebound_parent() {
+                let mouse = self.frame.mouse_rect();
+
                 let size = self.frame.widget(widget_index).size;
                 let mut adjust = self.data.align.adjust_for(size);
                 let pos = self.frame.widget(widget_index).pos - adjust;
@@ -1210,6 +1212,23 @@ impl<'a> WidgetBuilder<'a> {
                 max.y /= self.frame.context().scale_factor();
                 adjust.x -= if pos.x < 0.0 { -pos.x } else if pos.x + size.x > max.x { max.x - pos.x - size.x } else { 0.0 };
                 adjust.y -= if pos.y < 0.0 { -pos.y } else if pos.y + size.y > max.y { max.y - pos.y - size.y } else { 0.0 };
+
+                if adjust.y > 0.0 {
+                    // at bottom of screen
+                    let new_rect = Rect::new(self.frame.widget(widget_index).pos - adjust, size);
+                    if new_rect.intersects(mouse) {
+                        adjust.y = size.y + pos.y - mouse.top();
+                    }
+                }
+
+                if adjust.x > 0.0 {
+                    // at right of screen
+                    let new_rect = Rect::new(self.frame.widget(widget_index).pos - adjust, size);
+                    if new_rect.intersects(mouse) {
+                        adjust.x = size.x + pos.x - mouse.left();
+                    }
+                }
+
                 for index in widget_index..self.frame.num_widgets() {
                     self.frame.widget_mut(index).pos.x -= adjust.x;
                     self.frame.widget_mut(index).pos.y -= adjust.y;
