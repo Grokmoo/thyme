@@ -229,7 +229,7 @@ impl Frame {
                         state.new_line(ui, 1.0);
                     },
                     Event::HardBreak => {
-                        state.new_line(ui, 1.5);
+                        state.new_line(ui, 1.0);
                     },
                     Event::Html(data) | Event::InlineHtml(data) => {
                         state.parse_extended(ui, data.as_ref());
