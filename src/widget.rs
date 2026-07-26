@@ -705,13 +705,11 @@ impl<'a> WidgetBuilder<'a> {
         self.frame.set_child_request_rebound_parent(Some(self.frame.num_widgets() as u32));
 
 		// recalculate pos size
-		let (state_moved, state_resize, display_size, scale_factor) = {
+		let (state_moved, state_resize, display_size) = {
             let internal = self.frame.context_internal().borrow();
             let state = internal.state(&self.widget.id);
-            (state.moved, state.resize, internal.display_size(), internal.scale_factor())
+            (state.moved, state.resize, internal.display_size())
         };
-        let mouse = self.frame.mouse_rect();
-
         if self.data.recalc_pos_size {
             self.recalculate_pos_size(state_moved, state_resize);
         }
@@ -720,18 +718,8 @@ impl<'a> WidgetBuilder<'a> {
 		self.data.unparent = true; // unparent
         self.data.next_render_group = Some(RendGroupOrder::AlwaysTop); // always_top
 
-        let x = tooltip_pos.x.min(display_size.x / scale_factor - self.widget.size.x);
-        let y = tooltip_pos.y.min(display_size.y / scale_factor - self.widget.size.y);
-        let mut pos = Point::new(x, y);
-
-        // shift widget above the cursor if it would overlap
-        let widget_rect = Rect::new(pos, self.widget.size);
-        if widget_rect.is_inside(mouse.pos) {
-            pos.y = (mouse.pos.y - mouse.size.y - self.widget.size.y).max(0.0);
-        }
-
         let align = self.data.align;
-        let mut builder= self.screen_pos(pos.x, pos.y);
+        let mut builder= self.screen_pos(tooltip_pos.x, tooltip_pos.y);
         builder.data.align = align;
         builder
 	}
@@ -1171,84 +1159,16 @@ impl<'a> WidgetBuilder<'a> {
         self.frame.push_widget(self.widget);
 
         let mut rebound_rend_group = false;
+        let old_parent_index = self.frame.parent_index();
+
+        // push the max_child pos and parent index
+        self.frame.set_max_child_bounds(self_bounds);
+        self.frame.set_parent_index(widget_index);
 
         // if there is a child function
         if let Some(f) = f {
-            // push the max_child pos and parent index
-            self.frame.set_max_child_bounds(self_bounds);
-            let old_parent_index = self.frame.parent_index();
-            self.frame.set_parent_index(widget_index);
-
             // build all children
             (f)(self.frame);
-
-            self.frame.set_parent_index(old_parent_index);
-            let this_children_max_bounds = self.frame.max_child_bounds();
-            self.frame.set_parent_max_child_bounds(this_children_max_bounds);
-
-            // adjust widget size if needed for Child relative size
-            if self.data.height_from == HeightRelative::Children {
-                let border = self.frame.widget(widget_index).border().bot;
-                self_bounds.size.y += this_children_max_bounds.size.y + border;
-                self.frame.widget_mut(widget_index).size.y += this_children_max_bounds.size.y + border;
-                rebound_rend_group = true;
-            }
-
-            if self.data.width_from == WidthRelative::Children {
-                let border = self.frame.widget(widget_index).border().right;
-                self_bounds.size.x += this_children_max_bounds.size.x + border;
-                self.frame.widget_mut(widget_index).size.x += this_children_max_bounds.size.x + border;
-                rebound_rend_group = true;
-            }
-
-            if Some(widget_index as u32) == self.frame.child_request_rebound_parent() {
-                let mouse = self.frame.mouse_rect();
-
-                let size = self.frame.widget(widget_index).size;
-                let mut adjust = self.data.align.adjust_for(size);
-                let pos = self.frame.widget(widget_index).pos - adjust;
-                let mut max = self.frame.context().display_size();
-                max.x /= self.frame.context().scale_factor();
-                max.y /= self.frame.context().scale_factor();
-                adjust.x -= if pos.x < 0.0 { -pos.x } else if pos.x + size.x > max.x { max.x - pos.x - size.x } else { 0.0 };
-                adjust.y -= if pos.y < 0.0 { -pos.y } else if pos.y + size.y > max.y { max.y - pos.y - size.y } else { 0.0 };
-
-                if adjust.y > 0.0 {
-                    // at bottom of screen
-                    let new_rect = Rect::new(self.frame.widget(widget_index).pos - adjust, size);
-                    if new_rect.intersects(mouse) {
-                        adjust.y = size.y + pos.y - mouse.top();
-                    }
-                }
-
-                if adjust.x > 0.0 {
-                    // at right of screen
-                    let new_rect = Rect::new(self.frame.widget(widget_index).pos - adjust, size);
-                    if new_rect.intersects(mouse) {
-                        adjust.x = size.x + pos.x - mouse.left();
-                    }
-                }
-
-                for index in widget_index..self.frame.num_widgets() {
-                    self.frame.widget_mut(index).pos.x -= adjust.x;
-                    self.frame.widget_mut(index).pos.y -= adjust.y;
-                }
-
-                rebound_rend_group = true;
-            }
-        }
-
-        if rebound_rend_group {
-            // if we just created the render group, rebound it
-            if self.data.next_render_group.is_some() {
-                self.frame.rebound_cur_render_group(self_bounds);
-            }
-        }
-
-        if !self.data.unparent {
-            self.frame.set_max_child_bounds(old_max_child_bounds.max(self_bounds));
-        } else {
-            self.frame.set_max_child_bounds(old_max_child_bounds);
         }
 
         let (clicked, mut anim_state, mut dragged, button) = if self.data.enabled && self.data.wants_mouse {
@@ -1264,9 +1184,77 @@ impl<'a> WidgetBuilder<'a> {
         }
 
         let state = WidgetState::new(anim_state, clicked, dragged, button);
-
         if state.hovered && let Some(tooltip) = self.data.tooltip.take() {
             self.frame.tooltip_label("tooltip", tooltip);
+        }
+
+        self.frame.set_parent_index(old_parent_index);
+        let this_children_max_bounds = self.frame.max_child_bounds();
+        self.frame.set_parent_max_child_bounds(this_children_max_bounds);
+
+
+        // adjust widget size if needed for Child relative size
+        if self.data.height_from == HeightRelative::Children {
+            let border = self.frame.widget(widget_index).border().bot;
+            self_bounds.size.y += this_children_max_bounds.size.y + border;
+            self.frame.widget_mut(widget_index).size.y += this_children_max_bounds.size.y + border;
+            rebound_rend_group = true;
+        }
+
+        if self.data.width_from == WidthRelative::Children {
+            let border = self.frame.widget(widget_index).border().right;
+            self_bounds.size.x += this_children_max_bounds.size.x + border;
+            self.frame.widget_mut(widget_index).size.x += this_children_max_bounds.size.x + border;
+            rebound_rend_group = true;
+        }
+
+        if Some(widget_index as u32) == self.frame.child_request_rebound_parent() {
+            let mouse = self.frame.mouse_rect();
+
+            let size = self.frame.widget(widget_index).size;
+            let mut adjust = self.data.align.adjust_for(size);
+            let pos = self.frame.widget(widget_index).pos - adjust;
+            let mut max = self.frame.context().display_size();
+            max.x /= self.frame.context().scale_factor();
+            max.y /= self.frame.context().scale_factor();
+            adjust.x -= if pos.x < 0.0 { -pos.x } else if pos.x + size.x > max.x { max.x - pos.x - size.x } else { 0.0 };
+            adjust.y -= if pos.y < 0.0 { -pos.y } else if pos.y + size.y > max.y { max.y - pos.y - size.y } else { 0.0 };
+
+            if adjust.y > 0.0 {
+                // at bottom of screen
+                let new_rect = Rect::new(self.frame.widget(widget_index).pos - adjust, size);
+                if new_rect.intersects(mouse) {
+                    adjust.y = size.y + pos.y - mouse.top();
+                }
+            }
+
+            if adjust.x > 0.0 {
+                // at right of screen
+                let new_rect = Rect::new(self.frame.widget(widget_index).pos - adjust, size);
+                if new_rect.intersects(mouse) {
+                    adjust.x = size.x + pos.x - mouse.left();
+                }
+            }
+
+            for index in widget_index..self.frame.num_widgets() {
+                self.frame.widget_mut(index).pos.x -= adjust.x;
+                self.frame.widget_mut(index).pos.y -= adjust.y;
+            }
+
+            rebound_rend_group = true;
+        }
+
+        if rebound_rend_group {
+            // if we just created the render group, rebound it
+            if self.data.next_render_group.is_some() {
+                self.frame.rebound_cur_render_group(self_bounds);
+            }
+        }
+
+        if !self.data.unparent {
+            self.frame.set_max_child_bounds(old_max_child_bounds.max(self_bounds));
+        } else {
+            self.frame.set_max_child_bounds(old_max_child_bounds);
         }
 
         if self.data.next_render_group.is_some() {
