@@ -7,7 +7,7 @@ use std::time::Instant;
 use serde::{Serialize, Deserialize};
 
 use crate::KeyEvent;
-use crate::{BuildOptions, Error, Point, Frame, MouseButton, Rect, frame::{RendGroup, RendGroupDef}};
+use crate::{BuildOptions, Error, Point, Frame, MouseButton, Rect, frame::RendGroup};
 use crate::{font::FontSummary, widget::Widget, image::ImageHandle, theme::ThemeSet, resource::ResourceSet};
 use crate::theme_definition::{AnimState, AnimStateKey};
 use crate::render::Renderer;
@@ -137,8 +137,7 @@ pub struct ContextInternal {
     mouse_taken_switch_position: Option<Point>,
     mouse_taken_last_frame: Option<(String, RendGroup)>,
     mouse_in_rend_group_last_frame: Option<RendGroup>,
-    top_rend_group: RendGroup,
-    check_set_top_rend_group: Option<String>,
+    top_rend_group_stack: Vec<String>,
 
     mouse_pressed_outside: [bool; 3],
     keyboard_focus_widget: Option<String>,
@@ -199,30 +198,17 @@ impl ContextInternal {
         self.mouse_in_rend_group_last_frame
     }
 
-    pub(crate) fn set_top_rend_group(&mut self, group: RendGroup) {
-        self.top_rend_group = group;
+    pub(crate) fn set_top_rend_group(&mut self, id: &str) {
+        if self.top_rend_group_stack.first().map(|s| s.as_str()) == Some(id) { return; }
+
+        self.top_rend_group_stack.insert(0, id.to_string());
     }
 
-    pub(crate) fn top_rend_group(&self) -> RendGroup { self.top_rend_group }
-
-    pub(crate) fn set_top_rend_group_id(&mut self, id: &str) {
-        self.check_set_top_rend_group = Some(id.to_string());
+    pub(crate) fn truncate_top_rend_group_stack(&mut self, size: usize) {
+        self.top_rend_group_stack.truncate(size);
     }
 
-    pub(crate) fn check_set_rend_group_top(&mut self, groups: &[RendGroupDef]) {
-        let id = match &self.check_set_top_rend_group {
-            None => return,
-            Some(id) => id,
-        };
-
-        for group in groups {
-            if group.id() == id {
-                self.top_rend_group = group.group();
-                self.check_set_top_rend_group = None;
-                break;
-            }
-        }
-    }
+    pub(crate) fn top_rend_group(&self) -> &[String] { &self.top_rend_group_stack }
 
     pub(crate) fn base_time_millis_for(&self, id: &str) -> u32 {
         self.persistent_state.get(id).map_or(0, |state| state.base_time_millis)
@@ -388,8 +374,7 @@ impl Context {
             mouse_taken_switch_position: None,
             mouse_taken_last_frame: None,
             mouse_in_rend_group_last_frame: None,
-            top_rend_group: RendGroup::default(),
-            check_set_top_rend_group: None,
+            top_rend_group_stack: Vec::new(),
             mouse_pressed_outside: [false; 3],
             modal: None,
             time_millis: 0,
@@ -517,7 +502,7 @@ impl Context {
     /// # Inputs:
     /// - button `pressed` state
     /// - index: 0 = LeftClick, 1 = Right Click, 2 = Middle Click
-    /// 
+    ///
     /// This is normally handled by the [`IO`](trait.IO.html) backend, which will set
     /// this in response to a window resize event.  User code should
     /// not need to call this.
@@ -666,7 +651,7 @@ impl Context {
             modal: internal.modal.clone(),
             persistent_state: internal.persistent_state.clone(),
             keyboard_focus_widget: internal.keyboard_focus_widget.clone(),
-            top_rend_group: internal.top_rend_group,
+            top_rend_group_stack: internal.top_rend_group_stack.clone(),
         }
     }
 
@@ -677,7 +662,7 @@ impl Context {
         let mut internal: std::cell::RefMut<'_, ContextInternal> = self.internal.borrow_mut();
         internal.modal = save.modal;
         internal.persistent_state = save.persistent_state;
-        internal.top_rend_group = save.top_rend_group;
+        internal.top_rend_group_stack = save.top_rend_group_stack;
         internal.keyboard_focus_widget = save.keyboard_focus_widget;
     }
 
@@ -743,6 +728,6 @@ impl Modal {
 pub struct SavedContext {
     modal: Option<Modal>,
     persistent_state: HashMap<String, PersistentState>,
-    top_rend_group: RendGroup,
+    top_rend_group_stack: Vec<String>,
     keyboard_focus_widget: Option<String>,
 }

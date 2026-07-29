@@ -142,16 +142,7 @@ impl Frame {
 
         let mut context = self.context.internal().borrow_mut();
 
-        if context.has_modal() && !self.in_modal_tree {
-            return MOUSE_NOT_TAKEN;
-        }
-
         if let Some(group) = context.mouse_in_rend_group_last_frame() && widget.rend_group() != group {
-            return MOUSE_NOT_TAKEN;
-        }
-
-        if context.mouse_pressed_outside() || self.mouse_taken.is_some() ||
-            !widget.clip().is_inside(context.mouse_pos()) {
             return MOUSE_NOT_TAKEN;
         }
 
@@ -163,7 +154,9 @@ impl Frame {
                 self.mouse_taken = Some((widget.id().to_string(), widget.rend_group()));
                 let dragged = context.mouse_pos() - context.last_mouse_pos();
 
-                context.set_top_rend_group(widget.rend_group());
+                let rend_group_id = &self.render_groups[widget.rend_group().index as usize].id;
+
+                context.set_top_rend_group(rend_group_id);
 
                 return MouseState {
                     clicked: context.mouse_clicked_button().is_some(),
@@ -176,13 +169,23 @@ impl Frame {
             }
         }
 
+        if context.has_modal() && !self.in_modal_tree {
+            return MOUSE_NOT_TAKEN;
+        }
+
+        if context.mouse_pressed_outside() || self.mouse_taken.is_some() ||
+            !widget.clip().is_inside(context.mouse_pos()) {
+            return MOUSE_NOT_TAKEN;
+        }
+
         let bounds = Rect::new(widget.pos(), widget.size());
         if !bounds.is_inside(context.mouse_pos()) {
             return MOUSE_NOT_TAKEN;
         }
 
         if context.mouse_pressed(0) {
-            context.set_top_rend_group(widget.rend_group());
+            let rend_group_id = &self.render_groups[widget.rend_group().index as usize].id;
+            context.set_top_rend_group(rend_group_id);
         }
 
         self.mouse_taken = Some((widget.id().to_string(), widget.rend_group()));
@@ -367,7 +370,7 @@ impl Frame {
     /// ```
     /// fn open_query_popup(ui: &mut Frame) {
     ///     ui.open("query_popup");
-    ///     ui.focus_keyboard("query_popup_input_field");  
+    ///     ui.focus_keyboard("query_popup_input_field");
     /// }
     /// ```
     pub fn focus_keyboard<T: Into<String>>(&mut self, id: T) {
@@ -440,7 +443,7 @@ impl Frame {
         let context = self.context.internal().borrow();
         context.state(id).base_time_millis
     }
-    
+
     /// Sets the internal timer value of the [`PersistentState`](struct.PersistentState.html) for the widget
     /// with the specified `id` to the specified time in milliseconds.  This time should probably be based on something
     /// obtained from [`cur_time_millis`](#method.cur_time_millis) or [`base_time_millis`](#method.base_time_millis).
@@ -533,7 +536,7 @@ impl Frame {
         let id: String = id.into();
 
         let mut context = self.context.internal().borrow_mut();
-        context.set_top_rend_group_id(&id);
+        context.set_top_rend_group(&id);
         context.state_mut(id.clone()).is_open = true;
         context.set_modal(id);
     }
@@ -551,7 +554,7 @@ impl Frame {
     pub fn open<T: Into<String>>(&mut self, id: T) {
         let id = id.into();
         let mut context = self.context.internal().borrow_mut();
-        context.set_top_rend_group_id(&id);
+        context.set_top_rend_group(&id);
         context.state_mut(id).is_open = true;
     }
 
@@ -569,7 +572,7 @@ impl Frame {
     pub fn open_parent(&mut self) {
         let mut context = self.context.internal().borrow_mut();
         let id = self.widgets[self.parent_index].id();
-        context.set_top_rend_group_id(id);
+        context.set_top_rend_group(id);
         context.state_mut(id).is_open = true;
     }
 
@@ -581,7 +584,7 @@ impl Frame {
         context.state_mut(id).is_open = false;
     }
 
-    /// Completely clears all [`PersistentState`](struct.PersistentState.html) associated with the 
+    /// Completely clears all [`PersistentState`](struct.PersistentState.html) associated with the
     /// specified `id`, resetting it to its default state.
     /// This includies clearing the modal state if the `id` is the current modal.
     pub fn clear(&mut self, id: &str) {
@@ -724,22 +727,25 @@ impl Frame {
     }
 
     pub(crate) fn finish_frame(self) -> (Context, Vec<Widget>, Vec<RendGroupDef>) {
-        let (top_rend_group, mouse_pos) = {
+        let (render_groups, mouse_pos) = {
             let mut context = self.context.internal().borrow_mut();
 
-            context.check_set_rend_group_top(&self.render_groups);
+            // can never have more on the top stack than the number of groups
+            context.truncate_top_rend_group_stack(self.render_groups.len());
 
-            (context.top_rend_group(), context.mouse_pos())
+            let mut render_groups = self.render_groups;
+            render_groups.sort_by_cached_key(|group| {
+                let top_index = context.top_rend_group().iter().position(|id| id == group.id()).unwrap_or(usize::MAX - 2) + 1;
+
+                match (group.order, top_index) {
+                    (RendGroupOrder::AlwaysTop, _) => 0,
+                    (RendGroupOrder::Normal, i) => i,
+                    (RendGroupOrder::AlwaysBottom, _) => usize::MAX,
+                }
+            });
+
+            (render_groups, context.mouse_pos())
         };
-
-        let mut render_groups = self.render_groups;
-        render_groups.sort_by_key(|group| {
-            match group.order {
-                RendGroupOrder::Normal => if group.group == top_rend_group { 1 } else { 2 },
-                RendGroupOrder::AlwaysTop => 0,
-                RendGroupOrder::AlwaysBottom => 3,
-            }
-        });
 
         let mut mouse_in_rend_group = None;
         for rend_group in render_groups.iter() {
@@ -785,7 +791,6 @@ impl RendGroupDef {
     }
 
     pub(crate) fn id(&self) -> &str { &self.id }
-    pub(crate) fn group(&self) -> RendGroup { self.group }
 }
 
 /// An enum for representing which mouse button has been pressed or clicked.
