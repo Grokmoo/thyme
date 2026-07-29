@@ -139,14 +139,14 @@ enum Race {
     Elf,
     Dwarf,
     Halfling,
+    Orc,
+    Gnome
 }
 
 impl Race {
-    fn all() -> impl Iterator<Item=&'static Race> {
+    fn all() -> impl ExactSizeIterator<Item=&'static Race> {
         use Race::*;
-        const ALL: [Race; 4] = [Human, Elf, Dwarf, Halfling];
-
-        ALL.iter()
+        [Human, Elf, Dwarf, Halfling, Orc, Gnome].iter()
     }
 }
 

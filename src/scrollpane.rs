@@ -114,6 +114,11 @@ impl<'a> ScrollpaneBuilder<'a> {
         }
     }
 
+    /// Returns the internal widget builder for this scrollpane
+    pub fn widget_builder(&self) -> &WidgetBuilder<'a> {
+        &self.builder
+    }
+
     /// Specify when to show the vertical scrollbar in this scrollpane.  If `show` is
     /// equal to `Sometimes`, will show the vertical scrollbar if the pane content height
     /// is greater than the scrollpane's inner height.

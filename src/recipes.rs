@@ -349,12 +349,17 @@ impl Frame {
     /**
     A drop down box. It displays its currently active selection (`current`), and opens a modal popup to select a new
     choice from the list of `values` when the user clicks on it.  The specified `id` must be unique.
-    The method will return a selected choice on the frame the user clicks on it, otherwise returning `None`.
+    The method will return a selected choice on the frame the user clicks on it, otherwise returning `None`.  The
+    height of individual entries is set as a custom field on the parent rather than the usual way
+    to assist with popup positioning.
 
     An example theme definition;  See [`ScrollpaneBuilder`](struct.ScrollpaneBuilder.html) for the scrollpane example.
     ```yaml
     combo_box:
       from: button
+      custom:
+        popup_entry_height: 26.0
+        popup_entry_spacing: 2.0
       children:
         expand:
           size: [12, 12]
@@ -373,7 +378,6 @@ impl Frame {
                 entry:
                   from: button
                   width_from: Parent
-                  size: [0, 25]
             scrollbar_vertical:
               size: [20, 20]
     ```
@@ -383,30 +387,56 @@ impl Frame {
         theme: &str,
         id: &str,
         current: &T,
-        values: impl Iterator<Item=&'a T>,
+        values: impl ExactSizeIterator<Item=&'a T>,
     ) -> Option<&'a T> {
         let popup_id = format!("{}_popup", id);
+        let max_y = self.context().display_size().y / self.context().scale_factor();
 
         let mut result = None;
-        let open_result = self.start(theme)
+
+        let builder = self.start(theme);
+
+        let entry_height = builder.custom_float("popup_entry_height", 10.0);
+        let entry_spacing = builder.custom_float("popup_entry_spacing", 0.0);
+        let entries_height = (entry_height * values.len() as f32 + entry_spacing * (values.len() as f32 - 1.0)).max(0.0);
+
+        let open_result = builder
         .text(current.to_string())
         .wants_mouse(true)
         .children(|ui| {
             ui.child("expand");
 
-            ui.start("combo_box_popup")
-            .id(&popup_id)
-            .initially_open(false)
-            .unclip()
-            .unparent()
-            .new_render_group()
-            .scrollpane(&format!("{}_content", popup_id))
-            .children(|ui| {
+            let mut popup_size = Rect::default();
+
+            let mut builder = ui.start("combo_box_popup")
+                .id(&popup_id)
+                .initially_open(false)
+                .unclip()
+                .unparent()
+                .new_render_group()
+                .trigger_layout_inner(&mut popup_size);
+
+            if popup_size.size.y > entries_height {
+                let new_h = builder.widget().border().vertical() + entries_height;
+                builder = builder.height(new_h);
+            }
+
+            builder = builder.trigger_layout(&mut popup_size);
+
+            if popup_size.bot() > max_y {
+                builder = builder.screen_pos(popup_size.pos.x, (max_y - popup_size.size.y).max(0.0));
+            }
+
+            builder.scrollpane(&format!("{popup_id}_content")).children(|ui| {
+                let mut y = 0.0;
                 for value in values {
-                    if ui.button("entry", value.to_string()).clicked {
+                    let res = ui.start("entry").text(value.to_string()).height(entry_height).pos(0.0, y).finish();
+                    if res.clicked {
                         result = Some(value);
                         ui.close(&popup_id);
                     }
+
+                    y += entry_height + entry_spacing;
                 }
             });
 

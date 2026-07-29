@@ -60,6 +60,9 @@ widgets:
         size: [15, 15]
   combo_box:
     from: button
+    custom:
+      popup_entry_height: 26.0
+      popup_entry_spacing: 2
     children:
       expand:
         from: dropdown_expand
@@ -78,7 +81,7 @@ widgets:
               entry:
                 from: button
                 width_from: Parent
-                size: [0, 25]
+                width: 0
   scrollpane_vertical:
     from: scrollpane
     children:
