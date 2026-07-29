@@ -1171,23 +1171,6 @@ impl<'a> WidgetBuilder<'a> {
             (f)(self.frame);
         }
 
-        let (clicked, mut anim_state, mut dragged, button) = if self.data.enabled && self.data.wants_mouse {
-            let mouse_state = self.frame.check_mouse_state(widget_index);
-            (mouse_state.clicked, mouse_state.anim, mouse_state.dragged, mouse_state.button)
-        } else {
-            (false, AnimState::disabled(), Point::default(), None)
-        };
-
-        if self.data.wants_scroll && let Some(wheel) = self.frame.check_mouse_wheel(widget_index) {
-            dragged.x += wheel.x;
-            dragged.y += wheel.y;
-        }
-
-        let state = WidgetState::new(anim_state, clicked, dragged, button);
-        if state.hovered && let Some(tooltip) = self.data.tooltip.take() {
-            self.frame.tooltip_label("tooltip", tooltip);
-        }
-
         self.frame.set_parent_index(old_parent_index);
         let this_children_max_bounds = self.frame.max_child_bounds();
         self.frame.set_parent_max_child_bounds(this_children_max_bounds);
@@ -1206,6 +1189,23 @@ impl<'a> WidgetBuilder<'a> {
             self_bounds.size.x += this_children_max_bounds.size.x + border;
             self.frame.widget_mut(widget_index).size.x += this_children_max_bounds.size.x + border;
             rebound_rend_group = true;
+        }
+
+        let (clicked, mut anim_state, mut dragged, button) = if self.data.enabled && self.data.wants_mouse {
+            let mouse_state = self.frame.check_mouse_state(widget_index);
+            (mouse_state.clicked, mouse_state.anim, mouse_state.dragged, mouse_state.button)
+        } else {
+            (false, AnimState::disabled(), Point::default(), None)
+        };
+
+        if self.data.wants_scroll && let Some(wheel) = self.frame.check_mouse_wheel(widget_index) {
+            dragged.x += wheel.x;
+            dragged.y += wheel.y;
+        }
+
+        let state = WidgetState::new(anim_state, clicked, dragged, button);
+        if state.hovered && let Some(tooltip) = self.data.tooltip.take() {
+            self.frame.tooltip_label("tooltip", tooltip);
         }
 
         if Some(widget_index as u32) == self.frame.child_request_rebound_parent() {
