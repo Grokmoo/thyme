@@ -331,7 +331,7 @@ fn party_members_panel(ui: &mut Frame, party: &mut Party) {
         }
     }
 
-    if ui.start("add_character_button").finish().clicked {
+    if ui.start("add_character_button").tooltip_text("Create a new Character").finish().clicked {
         let new_member = Character::generate(party.members.len());
         set_active_character(ui, &new_member);
         party.members.push(new_member);

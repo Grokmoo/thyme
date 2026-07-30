@@ -946,10 +946,11 @@ impl<'a> WidgetBuilder<'a> {
     }
 
     /// Causes this widget to layout its current text.  The final position of the text
-    /// cursor is written into `cursor`.  If this widget does not have a font or has no text,
-    /// nothing is written into `cursor`.
+    /// cursor is written into `cursor`.  The number of lines is written to `lines`.
+    /// If this widget does not have a font or has no text,
+    /// nothing is written into `cursor` or `lines`.
     #[must_use]
-    pub fn trigger_text_layout(mut self, cursor: &mut Point) -> WidgetBuilder<'a> {
+    pub fn trigger_text_layout(mut self, cursor: &mut Point, lines: &mut u32) -> WidgetBuilder<'a> {
         // recalculate pos size and calculate text, if needed
         let (text, state_moved, state_resize) = {
             let internal = self.frame.context_internal().borrow();
@@ -969,8 +970,9 @@ impl<'a> WidgetBuilder<'a> {
             self.widget.text = Some(text);
         }
 
-        if let Some(result) = self.calculate_font_layout_cursor(*cursor) {
-            *cursor = result;
+        if let Some((pos, line_num)) = self.calculate_font_layout_cursor(*cursor) {
+            *cursor = pos;
+            *lines = line_num;
         }
 
         self
@@ -1000,7 +1002,7 @@ impl<'a> WidgetBuilder<'a> {
         cursor.x / internal.scale_factor() + 1.0
     }
 
-    fn calculate_font_layout_cursor(&self, cursor: Point) -> Option<Point> {
+    fn calculate_font_layout_cursor(&self, cursor: Point) -> Option<(Point, u32)> {
         let (text, font_def) = match (&self.widget.text, self.widget.font) {
             (Some(text), Some(font)) => (text, font),
             _ => return None,
@@ -1027,9 +1029,9 @@ impl<'a> WidgetBuilder<'a> {
             scale_factor: internal.scale_factor(),
         };
 
-        font.layout(params, text, &mut scaled_cursor);
+        let line_num = font.layout(params, text, &mut scaled_cursor);
 
-        Some(scaled_cursor / scale)
+        Some((scaled_cursor / scale, line_num))
     }
 
     /// Turns this builder into a WindowBuilder.  You should use all `WidgetBuilder` methods
@@ -1057,6 +1059,29 @@ impl<'a> WidgetBuilder<'a> {
     #[must_use]
     pub fn scrollpane(self, content_id: &str) -> ScrollpaneBuilder<'a> {
         ScrollpaneBuilder::new(self.wants_scroll(true), content_id)
+    }
+
+    /// Finishes this builder by creating a `multiline_label`.  You should use all `WidgetBuilder` methods
+    /// before calling this method.  [`Frame.multiline_label`](struct.Frame.html#multiline_label).  You
+    /// must still complete this with `finish`.
+    #[must_use]
+    pub fn multiline_label<T: Into<String>>(self, text: T) -> WidgetBuilder<'a> {
+        let mut cursor = Point::default();
+        let mut lines = 0;
+        let mut builder = self.text(text).trigger_text_layout(&mut cursor, &mut lines);
+
+        let mut height = cursor.y;
+        if let Some(font) = builder.widget().font() {
+            height += font.line_height;
+        }
+        height += builder.widget().border().vertical();
+
+        if lines == 0 {
+            let width = cursor.x.ceil() + builder.widget().border().horizontal();
+            builder = builder.width(width)
+        }
+
+        builder.height(height)
     }
 
     /**

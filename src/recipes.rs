@@ -39,21 +39,10 @@ impl Frame {
     /**
     A simple label, but specifically designed to extend over multiple lines.  Generally,
     you should use `height_from: Normal` and `text_align: TopLeft`. Computes the widget height based on the theme width
-    and number of lines of text.
+    and number of lines of text.  Will decrease the theme width if the text isn't long enough to fill one line.
     **/
     pub fn multiline_label<T: Into<String>>(&mut self, theme: &str, text: T) -> WidgetState {
-        let mut cursor = Point::default();
-        let builder = self.start(theme)
-            .text(text)
-            .trigger_text_layout(&mut cursor);
-
-        let mut height = cursor.y;
-        if let Some(font) = builder.widget().font() {
-            height += font.line_height;
-        }
-        height += builder.widget().border().vertical();
-
-        builder.height(height).finish()
+        self.start(theme).multiline_label(text).finish()
     }
 
     /**
@@ -505,19 +494,20 @@ impl Frame {
     }
 
     /**
-    Creates a simple tooltip with the specified text.  The tooltip is placed based on the
-    position of the mouse.
+    Creates a simple tooltip with the specified text.  This uses the `multiline_label`.
+    The tooltip is placed based on the position of the mouse.
 
     An example YAML theme definition:
     ```yaml
     tooltip:
       background: gui/button
       font: small
-      text_align: Center
+      text_align: TopLeft
+      width: 200
     ```
     **/
     pub fn tooltip_label<T: Into<String>>(&mut self, theme: &str, label: T) {
-        self.start(theme).text(label).render_as_tooltip().finish();
+        self.start(theme).multiline_label(label).render_as_tooltip().finish();
     }
 
     /**

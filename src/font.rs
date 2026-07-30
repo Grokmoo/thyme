@@ -64,7 +64,7 @@ impl Font {
         params: FontDrawParams,
         text: &str,
         cursor: &mut Point,
-    ) {
+    ) -> u32 {
         let mut draw_list = DummyDrawList::new();
         let mut renderer = FontRenderer::new(
             self,
@@ -82,6 +82,7 @@ impl Font {
         }
 
         *cursor = renderer.pos;
+        renderer.line_num
     }
 
     pub(crate) fn draw<D: DrawList>(
@@ -117,6 +118,7 @@ struct FontRenderer<'a,  D> {
     pos: Point,
     size: Point,
     cur_line_index: usize,
+    line_num: u32,
 
     cur_word: Vec<&'a FontChar>,
     cur_word_width: f32,
@@ -146,6 +148,7 @@ impl<'a, D: DrawList> FontRenderer<'a, D> {
             pos: Point::new(params.pos.x + params.indent, params.pos.y),
             size: Point::new(params.indent, 0.0),
             cur_line_index: initial_index,
+            line_num: 0,
             cur_word: Vec::new(),
             cur_word_width: 0.0,
             is_first_line_with_indent: params.indent > 0.0,
@@ -191,7 +194,7 @@ impl<'a, D: DrawList> FontRenderer<'a, D> {
 
         self.draw_cur_word();
 
-        if self.cur_line_index < self.draw_list.len() {    
+        if self.cur_line_index < self.draw_list.len() {
             // adjust characters on the last line
             self.adjust_line_x();
             self.size.y += self.font.line_height;
@@ -227,6 +230,7 @@ impl<'a, D: DrawList> FontRenderer<'a, D> {
         self.pos.x = self.initial_pos.x;
         self.cur_line_index = self.draw_list.len();
         self.size.x = 0.0;
+        self.line_num += 1;
     }
 
     fn adjust_all_y(&mut self) {
@@ -263,7 +267,7 @@ impl<'a, D: DrawList> FontRenderer<'a, D> {
             Top =>      (self.area_size.x - self.size.x) / 2.0,
             Center =>   (self.area_size.x - self.size.x) / 2.0,
         };
-    
+
         self.pos.x += x_offset;
 
         let x = (x_offset * self.scale_factor).round() / self.scale_factor;
@@ -293,7 +297,7 @@ pub(crate) struct FontTextureWriter<'a> {
     tex_height: u32,
     font: &'a rusttype::Font<'a>,
     font_scale: rusttype::Scale,
-    
+
     //output
     data: Vec<u8>,
     characters: FxHashMap<char, FontChar>,
@@ -363,7 +367,7 @@ impl<'a> FontTextureWriter<'a> {
             tex_height: self.tex_height,
         })
     }
-    
+
     fn add_char(
         &mut self,
         c: char,
@@ -376,7 +380,7 @@ impl<'a> FontTextureWriter<'a> {
         let y_offset = glyph.pixel_bounding_box().map_or(0.0, |bb| bb.min.y as f32);
         let bounding_box = glyph.pixel_bounding_box()
             .map_or((1, 1), |bb| (bb.width() as u32, bb.height() as u32));
-        
+
         if self.tex_x + bounding_box.0 >= self.tex_width {
             // move to next row
             self.tex_x = 0;

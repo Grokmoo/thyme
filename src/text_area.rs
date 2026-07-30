@@ -315,12 +315,13 @@ fn item(
     }
 
     let mut size = Rect::default();
+    let mut text_lines = 0;
 
     builder
         .text(text)
         .text_indent(state.text_indent)
         .trigger_layout(&mut size)
-        .trigger_text_layout(&mut state.cursor)
+        .trigger_text_layout(&mut state.cursor, &mut text_lines)
         .finish();
 
     if state.currently_at_new_line {

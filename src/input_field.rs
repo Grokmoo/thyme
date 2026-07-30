@@ -113,9 +113,10 @@ impl<'a> InputFieldBuilder<'a> {
             }
         });
         let mut text_pos = Point::default();
+        let mut text_lines = 0;
 
         let (ui, result) = builder
-        .trigger_text_layout(&mut text_pos)
+        .trigger_text_layout(&mut text_pos, &mut text_lines)
         .finish_with(Some(|ui: &mut Frame| {
             if ui.is_focus_keyboard(&id) {
                 ui.start("caret").pos(text_pos.x, text_pos.y).finish();

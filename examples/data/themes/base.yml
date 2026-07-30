@@ -39,8 +39,8 @@ widgets:
   tooltip:
     background: gui/small_button_normal
     font: small
-    text_align: Center
-    size_from: [Text, FontLine]
+    text_align: TopLeft
+    width: 200
     border: { all: 5 }
   greyed_out:
     background: gui/greyed_out
