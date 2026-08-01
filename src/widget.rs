@@ -209,6 +209,7 @@ impl Widget {
             Layout::Vertical => self.cursor.y += gap,
             Layout::Free => (),
             Layout::Grid(_) => self.cursor.x += gap,
+            Layout::GridVertical(_) => self.cursor.y += gap,
         }
     }
 
@@ -1356,6 +1357,14 @@ impl<'a> WidgetBuilder<'a> {
                     if parent.cursor.x + size.x > max_x {
                         parent.cursor.x = 0.0;
                         parent.cursor.y += y + parent.layout_spacing.y;
+                    }
+                },
+                GridVertical(max_height) => {
+                    let max_y = parent.inner_size().y.max(max_height.map_or(0.0, |m| m as f32));
+                    parent.cursor.y += y + parent.layout_spacing.y;
+                    if parent.cursor.y + size.y > max_y {
+                        parent.cursor.y = 0.0;
+                        parent.cursor.x += x + parent.layout_spacing.x;
                     }
                 }
             }

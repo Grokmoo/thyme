@@ -198,7 +198,7 @@ pub enum ImageDefinitionKind {
 
 /// An `AnimState` consists of one or more (currently up to four) state keys,
 /// with each key representing a different state.
-/// 
+///
 /// For example, a state
 /// could be [`Active`](enum.AnimStateKey.html#active) + [`Pressed`](enum.AnimStateKey.html#pressed)
 /// or [`Hover`](enum.AnimStateKey#hover).
@@ -450,8 +450,18 @@ pub enum Layout {
     /// Layout children in grid rows, left to right, starting a new row
     /// to prevent placing children outside the parent inner bounds.
     /// Optionally specify a maximum width for each row, independant of the
-    /// normal widget size
+    /// normal widget size.  **NOTE:** As look ahead is not in general possible,
+    /// this requires that all child elements have the same width to work as
+    /// expected.
     Grid(Option<i16>),
+
+    /// Layout children in grid columns, top to bottom, starting a new
+    /// column to prevent placing children outside the parent inner bounds.
+    /// Optionally specify a maximum height for each column, independant of the
+    /// normal widget size.  **NOTE:** As look ahead is not in general possible,
+    /// this requires that all child elements have the same height to work as
+    /// expected.
+    GridVertical(Option<i16>),
 }
 
 /// Widget or text horizontal and vertical alignment.
@@ -590,7 +600,7 @@ pub enum HeightRelative {
 /// * 6 digits - each set of 2 digits specifies one color component - red, green, and blue.  Alpha is assumed to be the maximum value of FF.
 /// * 4 digits - each single digit specifies one color component - red, green, blue, then alpha, with half precision.
 /// * 3 digits - each single digit specifies one color component - red, green, then blue.  Alpha ia assumed to be the maximum value of F.
-/// 
+///
 /// For the 4 and 3 digit variants - each component has one of 16 possible values.  The value is multiplied by 17 to determine the
 /// corresponding full precision value.  For example, `0` maps to `00`, `F` maps to `FF`, and `8` maps to `88`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
