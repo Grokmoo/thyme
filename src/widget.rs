@@ -1238,26 +1238,48 @@ impl<'a> WidgetBuilder<'a> {
 
             let size = self.frame.widget(widget_index).size;
             let mut adjust = self.data.align.adjust_for(size);
-            let pos = self.frame.widget(widget_index).pos - adjust;
+            let base_pos = self.frame.widget_mut(widget_index).pos;
+            let pos = base_pos - adjust;
             let mut max = self.frame.context().display_size();
             max.x /= self.frame.context().scale_factor();
             max.y /= self.frame.context().scale_factor();
             adjust.x -= if pos.x < 0.0 { -pos.x } else if pos.x + size.x > max.x { max.x - pos.x - size.x } else { 0.0 };
             adjust.y -= if pos.y < 0.0 { -pos.y } else if pos.y + size.y > max.y { max.y - pos.y - size.y } else { 0.0 };
 
+            let mut adjust_left = false;
             if adjust.y > 0.0 {
                 // at bottom of screen
-                let new_rect = Rect::new(self.frame.widget(widget_index).pos - adjust, size);
+                let new_rect = Rect::new(base_pos - adjust, size);
                 if new_rect.intersects(mouse) {
-                    adjust.y = size.y + pos.y - mouse.top();
+                    // check if we can adjust up
+                    let test_y = size.y + pos.y - mouse.top();
+                    if base_pos.y - test_y < 0.0 {
+                        // can't adjust up, try adjust right
+                        let test_x = adjust.x - mouse.size.x;
+                        if base_pos.x - test_x + size.x > max.x {
+                            // can't adjust right either, below we can try to adjust left
+                            adjust_left = true;
+                        } else {
+                            adjust.x = test_x;
+                        }
+                    } else {
+                        adjust.y = test_y;
+                    }
                 }
             }
 
-            if adjust.x > 0.0 {
+            if adjust.x > 0.0 || adjust_left {
                 // at right of screen
-                let new_rect = Rect::new(self.frame.widget(widget_index).pos - adjust, size);
+                let new_rect = Rect::new(base_pos - adjust, size);
                 if new_rect.intersects(mouse) {
-                    adjust.x = size.x + pos.x - mouse.left();
+                    let test_x = size.x + pos.x - mouse.left();
+                    if base_pos.x - test_x < 0.0 {
+                        // can't adjust left this far.  just give up and set our new pos x=0
+                        adjust.x = base_pos.x;
+                    } else {
+                        adjust.x = test_x;
+                    }
+
                 }
             }
 
