@@ -134,9 +134,9 @@ impl GliumRenderer {
                 };
                 let time_millis = time_millis - context.base_time_millis_for(widget.id());
                 let image = context.themes().image(image_handle);
-    
+
                 self.write_group_if_changed(&mut draw_mode, DrawMode::Image(image.texture()));
-                
+
                 image.draw(
                     &mut self.draw_list,
                     ImageDrawParams {
@@ -158,12 +158,12 @@ impl GliumRenderer {
                 let border = widget.border();
                 let fg_pos = widget.pos() + border.tl();
                 let fg_size = widget.inner_size();
-    
+
                 if let Some(image_handle) = widget.foreground() {
                     let time_millis = time_millis - context.base_time_millis_for(widget.id());
                     let image = context.themes().image(image_handle);
                     self.write_group_if_changed(&mut draw_mode, DrawMode::Image(image.texture()));
-    
+
                     image.draw(
                         &mut self.draw_list,
                         ImageDrawParams {
@@ -177,7 +177,7 @@ impl GliumRenderer {
                         }
                     );
                 }
-    
+
                 if let Some(text) = widget.text() && let Some(font_sum) = widget.font() {
                     self.write_group_if_changed(&mut draw_mode, DrawMode::Font(font_sum.handle));
                     let font = context.themes().font(font_sum.handle);
@@ -370,7 +370,7 @@ impl Renderer for GliumRenderer {
         } else {
             self.fonts[handle.id()] = GliumTexture { texture: font_tex, sampler };
         }
-        
+
 
         Ok(writer_out.font)
     }
@@ -492,7 +492,7 @@ const VERT_SHADER_SRC: &str = r#"
 
   void main() {
     gl_Position = vec4(position, 0.0, 1.0);
-	
+
 	g_size = size;
 	g_tex0 = tex0;
 	g_tex1 = tex1;
@@ -522,7 +522,7 @@ const GEOM_SHADER_SRC: &str = r#"
 
   void main() {
 	vec4 base = gl_in[0].gl_Position;
-    
+
     vec2 clip_pos = g_clip_pos[0];
     vec2 clip_size = g_clip_size[0];
 
@@ -538,7 +538,7 @@ const GEOM_SHADER_SRC: &str = r#"
 	v_tex_coords = g_tex0[0];
 	v_color = g_color[0];
 	EmitVertex();
-    
+
     // [0, 1] vertex
     position = base + vec4(0.0, g_size[0].y, 0.0, 0.0);
     gl_ClipDistance[0] = position.x - clip_pos.x;
@@ -549,7 +549,7 @@ const GEOM_SHADER_SRC: &str = r#"
 	v_tex_coords = vec2(g_tex0[0].x, g_tex1[0].y);
 	v_color = g_color[0];
     EmitVertex();
-    
+
     // [1, 0] vertex
     position = base + vec4(g_size[0].x, 0.0, 0.0, 0.0);
 	gl_ClipDistance[0] = position.x - clip_pos.x;
@@ -560,7 +560,7 @@ const GEOM_SHADER_SRC: &str = r#"
 	v_tex_coords = vec2(g_tex1[0].x, g_tex0[0].y);
 	v_color = g_color[0];
     EmitVertex();
-    
+
     // [1, 1] vertex
     position = base + vec4(g_size[0].x, g_size[0].y, 0.0, 0.0);
     gl_ClipDistance[0] = position.x - clip_pos.x;
@@ -600,9 +600,9 @@ const FONT_FRAGMENT_SHADER_SRC: &str = r#"
     out vec4 color;
 
     uniform sampler2D tex;
-    
+
     void main() {
-        color = vec4(v_color.rgb, texture(tex, v_tex_coords).r);
+        color = vec4(v_color.rgb, texture(tex, v_tex_coords).r * v_color.a);
     }
 "#;
 
