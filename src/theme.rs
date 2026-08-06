@@ -228,11 +228,11 @@ impl ThemeSet {
             WidgetTheme::create(
                 "",
                 None,
-                theme_id.to_string(), 
-                &mut handle_index, 
-                &mut theme_handles, 
-                &mut themes, 
-                theme, 
+                theme_id.to_string(),
+                &mut handle_index,
+                &mut theme_handles,
+                &mut themes,
+                theme,
                 &image_handles,
                 &font_handles,
             )?;
@@ -474,9 +474,16 @@ impl WidgetTheme {
         };
 
         let font = if let Some(font) = def.font.as_ref() {
-            let font_handle = fonts.get(font).ok_or_else(||
-                Error::Theme(format!("Unable to locate font '{}' for widget '{}'", font, parent_id))
-            )?;
+            let font_handle = fonts.get(font).ok_or_else(|| {
+                let mut available_fonts = fonts.keys().collect::<Vec<_>>();
+                available_fonts.sort();
+                Error::Theme(format!(
+                    "Unable to locate font '{}' for widget '{}': Available fonts: {:?}",
+                    font,
+                    parent_id,
+                    available_fonts
+                ))
+            })?;
             Some(*font_handle)
         } else {
             None
@@ -607,7 +614,7 @@ fn merge_from(
 
         {
             let child = &themes[child_id.id as usize];
-            
+
             for from_child_id in from_children.iter() {
                 let from_child = &themes[from_child_id.id as usize];
                 if from_child.id == child.id {
