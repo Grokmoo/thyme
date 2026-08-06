@@ -1,4 +1,4 @@
-use crate::{Frame, widget::WidgetBuilder, WidgetState, Point};
+use crate::{Align, Frame, Point, WidgetState, widget::WidgetBuilder};
 
 /**
 A [`WidgetBuilder`](struct.WidgetBuilder.html) specifically for creating windows.
@@ -139,8 +139,12 @@ impl<'a> WindowBuilder<'a> {
         let builder = self.builder;
         let state = self.state;
         let id = builder.widget.id().to_string();
+        let mut align = Align::default();
 
-        builder.children(|ui| {
+        builder.edit(|b| {
+            align = b.data.align();
+            b
+        }).children(|ui: &mut Frame| {
             (children)(ui);
 
             let drag_move = if state.with_titlebar {
@@ -151,7 +155,7 @@ impl<'a> WindowBuilder<'a> {
                     } else {
                         ui.start("title").finish();
                     }
-                    
+
                     if state.with_close_button {
                         let clicked = ui.child("close").clicked;
 
@@ -180,6 +184,18 @@ impl<'a> WindowBuilder<'a> {
                 let result = ui.button("handle", "");
                 if result.pressed {
                     ui.modify(&id, |state| {
+                        match align {
+                            Align::Left | Align::BotLeft | Align::TopLeft => (),
+                            Align::Top | Align::Center | Align::Bot => state.moved.x += result.moved.x * 0.5,
+                            Align::Right | Align::BotRight | Align::TopRight => state.moved.x += result.moved.x,
+                        }
+
+                        match align {
+                            Align::Top | Align::TopLeft | Align::TopRight => (),
+                            Align::Left | Align::Center | Align::Right => state.moved.y += result.moved.y * 0.5,
+                            Align::Bot | Align::BotLeft | Align::BotRight => state.moved.y += result.moved.y,
+                        }
+
                         state.resize = state.resize + result.moved;
                     });
                 }

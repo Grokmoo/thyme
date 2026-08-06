@@ -188,6 +188,12 @@ impl Widget {
     /// The position of this widget in logical pixels
     pub fn pos(&self) -> Point { self.pos }
 
+    /// The layout type of this widget
+    pub fn layout(&self) -> Layout { self.layout }
+
+    /// The layout spacing of this widget
+    pub fn layout_spacing(&self) -> Point { self.layout_spacing }
+
     /// The inner size of thiw widget, or size subtracting the border, in logical pixels
     pub fn inner_size(&self) -> Point {
         Point { x: self.size.x - self.border.horizontal(), y: self.size.y - self.border.vertical() }
@@ -363,6 +369,10 @@ pub(crate) struct WidgetData {
     tooltip: Option<String>,
 }
 
+impl WidgetData {
+    pub(crate) fn align(&self) -> Align { self.align }
+}
+
 /// A `WidgetBuilder` is used to customize widgets within your UI tree, following a builder pattern.
 ///
 ///Although there are several convenience methods on
@@ -378,7 +388,7 @@ pub struct WidgetBuilder<'a> {
     pub(crate) frame: &'a mut Frame,
     pub(crate) parent: usize,
     pub(crate) widget: Widget,
-    data: WidgetData,
+    pub(crate) data: WidgetData,
 }
 
 impl<'a> WidgetBuilder<'a> {
