@@ -65,7 +65,7 @@ widgets:
         from: scrollpane
         children:
           content:
-            border: { all: 5 }
+            border: { all: 4 }
   name_panel:
     width_from: Parent
     height: 25

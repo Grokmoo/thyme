@@ -148,16 +148,18 @@ impl<'a> ScrollpaneBuilder<'a> {
         let horiz = state.show_horiz;
         let vert = state.show_vert;
 
+        let mut content_bounds = Rect::default();
+        let mut content_inner = Rect::default();
+
         let (ui, pane_result) = self.builder.finish_with(
             Some(|ui: &mut Frame| {
-                let mut content_bounds = Rect::default();
-
                 // TODO if horizontal and/or vertical scrollbars aren't present,
                 // change the scrollpane content size to fill up the available space
 
                 ui.start("content")
                 .id(&content_id)
                 .trigger_layout(&mut content_bounds)
+                .trigger_layout_inner(&mut content_inner)
                 .clip(content_bounds)
                 .children(children);
 
@@ -304,14 +306,19 @@ impl<'a> ScrollpaneBuilder<'a> {
 
         delta = delta + pane_result.moved;
 
+        // TODO don't fully understand the need for this adjust and can probably be done earlier
+        let top = content_bounds.top() - content_inner.top();
+        let left = content_bounds.left() - content_inner.left();
+        let adjust = Point::new(left, top);
+
         let range = min_scroll - max_scroll;
         let range: Point = (range.x.abs(), range.y.abs()).into();
-        let min = range * -1.0;
+        let min = (range - adjust) * -1.0;
         let max = Point::default();
 
         // set the scroll every frame to bound it, in case it was modified externally
         ui.modify(&content_id, |state| {
-            state.scroll = (state.scroll + delta).max(min).min(max);
+            state.scroll = (state.scroll + delta).min(max).max(min);
         });
     }
 }

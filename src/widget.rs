@@ -1201,7 +1201,6 @@ impl<'a> WidgetBuilder<'a> {
         let this_children_max_bounds = self.frame.max_child_bounds();
         self.frame.set_parent_max_child_bounds(this_children_max_bounds);
 
-
         // adjust widget size if needed for Child relative size
         if self.data.height_from == HeightRelative::Children {
             let border = self.frame.widget(widget_index).border().bot;
@@ -1375,7 +1374,7 @@ impl<'a> WidgetBuilder<'a> {
 
     /// Queries the theme for the specified custom int, in the `custom` field for the
     /// theme for this widget with the specified `key`.  Returns the `default_value` if
-    /// the theme or key cannot be found, or if the key is specified but is not a float
+    /// the theme or key cannot be found, or if the key is specified but is not an int
     pub fn custom_int(&self, key: &str, default_value: i32) -> i32 {
         self.frame.custom_int(&self.widget.theme_id, key, default_value)
     }
