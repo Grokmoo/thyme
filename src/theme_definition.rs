@@ -766,6 +766,6 @@ impl<'de> Deserialize<'de> for Color {
 
 impl Serialize for Color {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.serialize_str(&format!("#{:x?}{:x?}{:x?}{:x?}", self.r, self.g, self.b, self.a))
+        serializer.serialize_str(&format!("#{:02x?}{:02x?}{:02x?}{:02x?}", self.r, self.g, self.b, self.a))
     }
 }
