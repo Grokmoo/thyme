@@ -451,9 +451,13 @@ impl Context {
     /// This is normally handled by the [`IO`](trait.IO.html) backend, which will set
     /// the scale factor based on a scale factor changed event.  User code should
     /// not need to call this.
-    pub fn set_scale_factor(&mut self, scale: f32) {
-        let mut internal = self.internal.borrow_mut();
-        internal.scale_factor = scale;
+    pub fn set_scale_factor<R: Renderer>(&mut self, renderer: &mut R, scale: f32) -> Result<(), Error> {
+        {
+            let mut internal = self.internal.borrow_mut();
+            internal.scale_factor = scale;
+        }
+
+        self.rebuild_all(renderer)
     }
 
     /// Returns the current scale factor being used internally by Thyme.  See

@@ -7,7 +7,7 @@ use winit::window::Window;
 use crate::point::Point;
 use crate::context::{InputModifiers, Context};
 use crate::render::IO;
-use crate::KeyEvent;
+use crate::{KeyEvent, Renderer};
 
 /**
 A Thyme Input/Output adapter for [`winit`](https://github.com/rust-windowing/winit).
@@ -63,7 +63,12 @@ impl WinitIo {
     }
 
     /// Handles a winit `Event` and passes it to the Thyme [`Context`](struct.Context.html).
-    pub fn handle_event(&mut self, context: &mut Context, event: &WindowEvent) {
+    pub fn handle_event<R: Renderer>(
+        &mut self,
+        renderer: &mut R,
+        context: &mut Context,
+        event: &WindowEvent,
+    ) -> Result<(), crate::Error> {
         use WindowEvent::*;
         match event {
             Resized(size) => {
@@ -81,7 +86,7 @@ impl WinitIo {
             WindowEvent::ScaleFactorChanged { scale_factor, .. } => {
                 let scale = *scale_factor as f32;
                 self.scale_factor = scale;
-                context.set_scale_factor(scale);
+                context.set_scale_factor(renderer, scale)?;
             },
             MouseInput { state, button, .. } => {
                 let pressed = match state {
@@ -133,6 +138,8 @@ impl WinitIo {
             },
             _ => (),
         }
+
+        Ok(())
     }
 }
 

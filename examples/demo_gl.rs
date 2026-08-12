@@ -149,7 +149,9 @@ impl ApplicationHandler for AppRunner {
             }
             WindowEvent::CloseRequested => event_loop.exit(),
             event => {
-                self.io.handle_event(&mut self.context, &event);
+                if let Err(e) = self.io.handle_event(&mut self.renderer, &mut self.context, &event) {
+                    eprintln!("Error handling event: {}", e);
+                }
             }
         }
     }

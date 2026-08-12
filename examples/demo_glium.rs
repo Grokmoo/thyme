@@ -79,27 +79,29 @@ impl ApplicationHandler for AppRunner {
 
                 let mut target = self.display.draw();
                 target.clear_color(0.21, 0.21, 0.21, 1.0);
-    
+
                 bench::run("thyme", || {
                     self.window.set_cursor_visible(!self.party.theme_has_mouse_cursor());
-    
+
                     let mut ui = self.context.create_frame();
-    
+
                     bench::run("frame", || {
                         demo::build_ui(&mut ui, &mut self.party);
                     });
-    
+
                     bench::run("draw", || {
                         self.renderer.draw_frame(&mut target, ui).unwrap();
                     });
                 });
-    
+
                 target.finish().unwrap();
                 self.frames += 1;
             }
             WindowEvent::CloseRequested => event_loop.exit(),
             event => {
-                self.io.handle_event(&mut self.context, &event);
+                if let Err(e) = self.io.handle_event(&mut self.renderer, &mut self.context, &event) {
+                    eprintln!("Error handling event: {}", e);
+                }
             }
         }
     }

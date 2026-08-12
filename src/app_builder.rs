@@ -30,7 +30,7 @@ impl Default for AppBuilder {
 impl AppBuilder {
     /**
     Creates a new empty App builder.  Use with the builder pattern.
-    
+
     # Example
     // Assuming you have a theme definition in theme.yml, fonts in the `fonts`
     // directory and images in the `images` directory:
@@ -276,7 +276,7 @@ impl AppBuilder {
 
         Ok(GlApp { io, renderer, context, event_loop, window, surface, display_context })
     }
-    
+
     /// Creates a [`GliumApp`](struct.GliumApp.html) object, setting up Thyme as specified
     /// in this Builder and using the [`GliumRenderer`](struct.GliumRenderer.html).
     #[cfg(feature="glium_backend")]
@@ -341,7 +341,7 @@ impl AppBuilder {
         for (tag, path) in font_src.get_files(self.base_dir.clone(), &["ttf", "otf"])? {
             context_builder.register_font_from_file(tag, path.as_path());
         }
-        
+
         Ok(())
     }
 }
@@ -405,16 +405,18 @@ impl<F: Fn(&mut Frame)> ApplicationHandler for GlAppRunner<F> {
                 self.renderer.clear_color(0.0, 0.0, 0.0, 0.0);
 
                 let mut ui = self.context.create_frame();
-    
+
                 (self.f)(&mut ui);
-    
+
                 self.renderer.draw_frame(ui);
 
                 self.surface.swap_buffers(&self.display_context).unwrap();
             }
             WindowEvent::CloseRequested => event_loop.exit(),
             event => {
-                self.io.handle_event(&mut self.context, &event);
+                if let Err(e) = self.io.handle_event(&mut self.renderer, &mut self.context, &event) {
+                    eprintln!("Error handling event: {}", e);
+                }
             }
         }
     }
@@ -474,7 +476,7 @@ impl GliumApp {
             window: self.window,
             f,
         };
-        
+
         self.event_loop.run_app(&mut runner)
     }
 }
@@ -509,18 +511,20 @@ impl<F: Fn(&mut Frame)> ApplicationHandler for GliumAppRunner<F> {
             WindowEvent::RedrawRequested => {
                 let mut target = self.display.draw();
                 target.clear_color(0.0, 0.0, 0.0, 0.0);
-    
+
                 let mut ui = self.context.create_frame();
-    
+
                 (self.f)(&mut ui);
-    
+
                 self.renderer.draw_frame(&mut target, ui).unwrap();
-    
+
                 target.finish().unwrap();
             }
             WindowEvent::CloseRequested => event_loop.exit(),
             event => {
-                self.io.handle_event(&mut self.context, &event);
+                if let Err(e) = self.io.handle_event(&mut self.renderer, &mut self.context, &event) {
+                    eprintln!("Error handling event: {}", e);
+                }
             }
         }
     }
