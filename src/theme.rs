@@ -683,7 +683,7 @@ fn add_children_recursive(
 
     // take all the children out of our new theme and add them recursively
     // as new themes, rather than just making a shallow copy
-    let from_children: Vec<_> = from.children.drain(..).collect();
+    let from_children: Vec<_> = std::mem::take(&mut from.children);
 
     to.children.push(handle);
     themes.push(from);

@@ -316,7 +316,6 @@ impl ContextInternal {
     pub(crate) fn next_frame(&mut self, mouse_taken: Option<(String, RendGroup)>, mouse_in_rend_group: Option<RendGroup>) {
         if mouse_in_rend_group.is_none() {
             self.mouse_taken_switch_position = None;
-            self.mouse_taken_switch_time = self.time_millis;
         }
 
         let mut clear_modal = false;
