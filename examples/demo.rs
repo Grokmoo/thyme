@@ -122,7 +122,7 @@ impl Character {
     fn generate(index: usize) -> Character {
         Character {
             name: format!("Charname {}", index),
-            backstory: format!("This is your backstory.\nYou may edit it as you like, and can use *markdown*."),
+            backstory: "This is your backstory.\nYou may edit it as you like, and can use *markdown*.".to_string(),
             age: DEFAULT_AGE,
             stats: HashMap::default(),
             gp: INITIAL_GP,

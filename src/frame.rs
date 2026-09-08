@@ -286,6 +286,18 @@ impl Frame {
         Rect::new(mouse_pos + align.adjust_for(size), size)
     }
 
+    /// Returns whether or not the specified mouse button is currently pressed
+    pub fn is_mouse_pressed(&self, button: MouseButton) -> bool {
+        let context = self.context_internal().borrow();
+        context.mouse_pressed(button as usize)
+    }
+
+    /// Returns whether or not the specified mouse button is clicked this frame
+    pub fn is_mouse_clicked(&self, button: MouseButton) -> bool {
+        let context = self.context_internal().borrow();
+        context.mouse_clicked(button as usize)
+    }
+
     /// Returns the current mouse cursor position, in logical pixels
     pub fn mouse_pos(&self) -> Point {
         let context = self.context_internal().borrow();
@@ -797,13 +809,13 @@ impl RendGroupDef {
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum MouseButton {
     /// The left mouse button
-    Left,
+    Left = 0,
 
     /// The right mouse button
-    Right,
+    Right = 1,
 
     /// The middle mouse button
-    Middle,
+    Middle = 2,
 }
 
 #[macro_export]
