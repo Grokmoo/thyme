@@ -72,6 +72,7 @@ impl Frame {
                 start: 0,
                 num: 0,
                 order: RendGroupOrder::Normal,
+                index: 0,
             }],
             parent_index: 0,
             child_request_rebound_parent: None,
@@ -712,6 +713,11 @@ impl Frame {
         self.widgets.push(widget);
     }
 
+    /// Returns the index of the current render group.
+    pub fn cur_render_group_index(&self) -> u16 {
+        self.cur_rend_group.index
+    }
+
     pub(crate) fn cur_render_group(&self) -> RendGroup { self.cur_rend_group }
 
     pub(crate) fn prev_render_group(&mut self, group: RendGroup) {
@@ -730,6 +736,7 @@ impl Frame {
             start: widgets_len,
             num: 0,
             order,
+            index: index as usize,
         });
         self.cur_rend_group = cur_rend_group;
     }
@@ -794,6 +801,7 @@ pub(crate) struct RendGroupDef {
     start: usize,
     num: usize,
     order: RendGroupOrder,
+    index: usize,
 }
 
 impl RendGroupDef {
@@ -803,6 +811,8 @@ impl RendGroupDef {
     }
 
     pub(crate) fn id(&self) -> &str { &self.id }
+
+    pub(crate) fn index(&self) -> usize { self.index }
 }
 
 /// An enum for representing which mouse button has been pressed or clicked.

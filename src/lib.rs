@@ -413,7 +413,7 @@ mod winit_io;
 mod glium_backend;
 
 #[cfg(feature = "glium_backend")]
-pub use glium_backend::{GliumRenderer, GliumError};
+pub use glium_backend::{GliumRenderer, GliumError, GliumGroupIndex};
 
 pub use app_builder::AppBuilder;
 

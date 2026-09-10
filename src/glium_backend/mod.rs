@@ -47,6 +47,8 @@ pub struct GliumRenderer {
     groups: Vec<DrawGroup>,
     matrix: [[f32; 4]; 4],
     params: DrawParameters<'static>,
+
+    vertex_buffer: glium::VertexBuffer<GliumVertex>,
 }
 
 impl GliumRenderer {
@@ -82,6 +84,8 @@ impl GliumRenderer {
             },
         )?;
 
+        let vertex_buffer = glium::VertexBuffer::empty(&context, 0)?;
+
         Ok(GliumRenderer {
             context,
             base_program,
@@ -96,6 +100,7 @@ impl GliumRenderer {
                 clip_planes_bitmask: 0b1111, //enable the first 4 clip planes
                 ..DrawParameters::default()
             },
+            vertex_buffer,
         })
     }
 
@@ -107,8 +112,44 @@ impl GliumRenderer {
         &self.textures[texture.id()]
     }
 
+    /// Draws this specified [`Frame`](struct.Frame.html) but stops rendering after the specified render group index.
+    /// You must call [`finish_draw_partial_frame`] with the returned [`GroupIndex`] to complete the draw operation.
+    /// This is useful for rendering something else (such as a 3D scene) between two render groups.  The `render_group_index`
+    /// is obtained from [`Frame.cur_render_group_index`](struct.Frame.html#method.cur_render_group_index) called during the
+    /// construction of the appropriate part of the UI.
+    pub fn draw_partial_frame<T: Surface>(
+        &mut self,
+        target: &mut T,
+        frame: Frame,
+        render_group_index: u16
+    ) -> Result<GliumGroupIndex, GliumError> {
+        let Some(group_index) = self.draw_frame_internal(frame, Some(render_group_index))? else {
+            return Err(GliumError::PartialDrawFailure);
+        };
+        self.create_vertex_buffer()?;
+        self.render_result(target, None, Some(group_index.index))?;
+        Ok(group_index)
+    }
+
+    /// Finishes drawing a partial frame started with [`draw_partial_frame`].
+    pub fn finish_draw_partial_frame<T: Surface>(
+        &mut self,
+        target: &mut T,
+        group_index: GliumGroupIndex,
+    ) -> Result<(), GliumError> {
+        self.render_result(target, Some(group_index.index), None)?;
+        Ok(())
+    }
+
     /// Draws the specified [`Frame`](struct.Frame.html) to the Glium surface, usually the Glium Frame.
     pub fn draw_frame<T: Surface>(&mut self, target: &mut T, frame: Frame) -> Result<(), GliumError> {
+        self.draw_frame_internal(frame, None)?;
+        self.create_vertex_buffer()?;
+        self.render_result(target, None, None)?;
+        Ok(())
+    }
+
+    fn draw_frame_internal(&mut self, frame: Frame, rend_group_index: Option<u16>) -> Result<Option<GliumGroupIndex>, GliumError> {
         let mouse_cursor = frame.mouse_cursor();
         let (context, widgets, render_groups) = frame.finish_frame();
         let context = context.internal().borrow();
@@ -121,6 +162,8 @@ impl GliumRenderer {
 
         self.draw_list.clear();
         self.groups.clear();
+
+        let mut group_index = None;
 
         for render_group in render_groups.into_iter().rev() {
             let mut draw_mode = None;
@@ -204,6 +247,10 @@ impl GliumRenderer {
             if let Some(mode) = draw_mode {
                 self.write_group(mode);
             }
+
+            if Some(render_group.index() as u16) == rend_group_index {
+                group_index = Some(GliumGroupIndex { index: self.groups.len() - 1 });
+            }
         }
 
         if let Some((mouse_cursor, align, anim_state)) = mouse_cursor {
@@ -227,12 +274,23 @@ impl GliumRenderer {
             self.write_group(DrawMode::Image(image.texture()));
         }
 
-        // create the vertex buffer and draw all groups
-        let vertices = glium::VertexBuffer::immutable(
+        Ok(group_index)
+    }
+
+    fn create_vertex_buffer(&mut self) -> Result<(), GliumError> {
+        self.vertex_buffer = glium::VertexBuffer::immutable(
             &self.context, &self.draw_list.vertices
         )?;
+
+        Ok(())
+    }
+
+    fn render_result<T: Surface>(&mut self, target: &mut T, start_index: Option<usize>, end_index: Option<usize>) -> Result<(), GliumError> {
+        let start_index = start_index.unwrap_or(0);
+        let end_index = end_index.unwrap_or(self.groups.len());
+
         let indices = glium::index::NoIndices(PrimitiveType::Points);
-        for group in &self.groups {
+        for group in self.groups[start_index..end_index].iter() {
             match group.mode {
                 DrawMode::Font(font_handle) => {
                     let font = self.font(font_handle);
@@ -241,7 +299,7 @@ impl GliumRenderer {
                         matrix: self.matrix,
                     };
                     target.draw(
-                        vertices.slice(group.start..group.end).unwrap(),
+                        self.vertex_buffer.slice(group.start..group.end).unwrap(),
                         indices,
                         &self.font_program,
                         &uniforms,
@@ -254,7 +312,7 @@ impl GliumRenderer {
                         tex: Sampler(&texture.texture, texture.sampler),
                         matrix: self.matrix,
                     };
-                    target.draw(vertices.slice(group.start..group.end).unwrap(),
+                    target.draw(self.vertex_buffer.slice(group.start..group.end).unwrap(),
                         indices,
                         &self.base_program,
                         &uniforms,
@@ -376,6 +434,11 @@ impl Renderer for GliumRenderer {
     }
 }
 
+/// Represents the index of a draw group in the Glium renderer.  Valid only during drawing of a single frame.
+pub struct GliumGroupIndex {
+    index: usize,
+}
+
 struct DrawGroup {
     start: usize,
     end: usize,
@@ -413,6 +476,9 @@ pub enum GliumError {
 
     /// An error occurred creating a Glium vertex buffer
     Vertex(glium::vertex::BufferCreationError),
+
+    /// Failed to draw a partial frame due to invalid render group index
+    PartialDrawFailure,
 }
 
 impl Display for GliumError {
@@ -427,6 +493,7 @@ impl Display for GliumError {
             InvalidFont(handle) => write!(f, "Invalid font: {:?}", handle),
             Program(e) => write!(f, "Shader program creation failed: {}", e),
             Vertex(e) => write!(f, "Vertex buffer creation failed: {}", e),
+            PartialDrawFailure => write!(f, "Failed to draw a partial frame due to invalid render group index"),
         }
     }
 }
@@ -443,6 +510,7 @@ impl Error for GliumError {
             Index(e) => Some(e),
             Program(e) => Some(e),
             Vertex(e) => Some(e),
+            PartialDrawFailure => None,
         }
     }
 }
