@@ -412,8 +412,8 @@ impl Renderer for GliumRenderer {
         ).unwrap();
 
         let sampler = SamplerBehavior {
-            minify_filter: MinifySamplerFilter::Nearest,
-            magnify_filter: MagnifySamplerFilter::Nearest,
+            minify_filter: MinifySamplerFilter::Linear,
+            magnify_filter: MagnifySamplerFilter::Linear,
             wrap_function: (
                 SamplerWrapFunction::BorderClamp,
                 SamplerWrapFunction::BorderClamp,
